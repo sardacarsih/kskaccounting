@@ -1,0 +1,195 @@
+ToDo
+1. Export Luasan Block di COA
+2. Diharapkan dapat copy code dibagian input jurnal
+3. Nota debet harusnya juga termasuk jurnal ND dan KK, begitu jg dengan bagian nota kredit
+4. pada bagian input kode, tidak perlu di tampilkan hasil pencarian yg bagian tengah atau akhir, misal pencairan "10" kode xx.x10xx.xx tidak perlu muncul pisahkan kolom pencarian kode dan keterangan
+5.Add COA Export Advanced ( Export Saldo by range periode, range KODEACC)
+===================================
+Release 1.0.9
+-Fix Import Jurnal Excel Periode Kosong
+-Fix RJE Multi Lokasi
+-Add Jurnal Export berdasarkan pilihan baris
+-Add Hapus Jurnal by Range ( pilihan baris)
+
+===================================
+Release 1.0.8
+-Fixed Filtering jumlah ( Debet or Kredit)
+-Copy text from seleted
+-Validasi Format Jurnal sebelum import(file excel)
+-Validasi Format COA sebelum import(file excel)
+-fixed login profile untuk akses hanya 1 lokasi
+-Add Update Developer to User
+-Charackter length Fixed ( NOJURNAL MAX 30, IDDATA MAX 20)
+-Fixed "ORA-16550: truncated result" pada saat import jurnal karena nomor baris jurnal nilai minus
+-Fixed balanced_cek is null
+-Cek  NoJurnal dan RowNo double pada saat import jurnal
+-Fix Jurnal RE ( Reversal Entri Jurnal Balik)
+-Cek Import Jurnal Balanced ( Per Nomor Jurnal )
+-Add Import Jurnal dari Module Lain ( AIS,KAS,Inventory)
+-Jurnal Closing Optional
+-NERACA KONSOLIDASI PER PT.
+-FIX GENERAL LEDGER(SUMBER KODE AKUN ( DARI NERACA ATAU LABA RUGI))
+-add Pembebanan Kode Akun Pekerjaan AISPAD
+
+
+===================================
+Release 1.0.7
+-Pencegahan nilai minus jurnal pada saat input dan Import
+-Fixed Add New Account and edit Account
+-Checking COA Parent
+-pada saat input jurnal, setelah ketik tanggal, kursor otomatis pindah ke bulan, jadi tidak perlu tekan tombol panah kanan untuk ketik bulan
+-Fixed Closing Month ( cheking delete triger status)
+-add change noted
+-Export Daftar Blok
+
+1. Setelah save, kursor tidak selalu muncul di kolom kode jurnal, kdng di keterangan, kdng menghilang
+2. Setelah save, lebih baik tanggal mengikuti tanggal terakhir input
+3. User mengalami kesulitan dalam proses copy keterangan, kdng lgsg select all kdng ngak
+4. Diharapkan dapat copy keterangan di bagian daftar jurnal
+5. Tombol f4 utk save tidak berfungsi setelah user menekan tombol f3 perubahan fungsi f2
+6. Setelah user melakukan edit jurnal, jurnal tidak lgsg terupdate, user harus close jurnal umum dl baru masuk lg baru terupdate yg tadi di edit
+7. Fungsi centang lengkap di bagian cari jurnal, setelah di centang jurnal yg tampil tetap hanya yg mengandung kata yg dicari
+8. Mesti ada pilihan close/exit dibagian input kode baru, atau auto close setelah kode baru berhasil di buat ubah tampilan seperti awal masuk saja
+9. Diharapkan ada total transaksi periode tertentu di baguan buku besar
+10. User Tjhiang hia, tidak bisa menampilan buku besar kode 31 dan 91
+11. Pada saat import  keterangan perkiraan tdk berubah otomatis kl ada perubahan kode
+12. diharapkan menu lookup search ditukar saja tempatnya, karna user lebih sering menggunakan yg lookup search lgsg aktif mode lookupsearch
+13. Lgsg menampilkan menu yg di buka
+14. Kalkulasi nilai - dari proses import
+15. Input tanggal di proses setelah user inpur tanggal dan bulan
+
+
+===================================
+Release 1.0.6
+Update .Net 6 LTS
+Update DX Version 22.1.3.0
+
+===================================
+Release 1.0.5
+Fitur Tambahan( 20 Desember 2021)
+1.Analisa Biaya Blok
+2.Laporan Kebun
+-Rekapitulasi biaya TM INTI perdivisi
+-Rincian pekerjaan TBM ( Inti dan KKPA )
+-Rincin pekerjaan pemeliharaan TM ( inti dan KKPA)
+-Rincian pekerjaan panen ( inti dan KKPA)
+3.Kalkulasi luasan divisi(TBM/TM) berdasarkan penambahan,perubahan,penghapusan master blok AKTIF.
+
+===================================
+Release 1.0.4
+Fitur Tambahan( 06 Desember 2021)
+1. Update DX Version 21.2.3.0
+2. Automatic Checking & Fix  Level Account
+3. Checking kesalahan induk perkiraan pada saat tutup tahun.
+4. Checking Kode Perkiraan Detail tidak memiliki induk
+5. Generate daftar perkiraan blok
+- Generate Akun Blok TBM
+- Generate Akun Bok TM
+- Disable/Enable Akun Blok TBM
+6. Indikator Selisih pada saat input/edit jurnal
+7. Fix View base on screen resolution 
+8. Add Drag n Drop baris Jurnal
+9.RESET SALDO AWAL TAHUN PERKIRAAAN SEMENTARA JIKA SALDO DESEMBER AKUN 40.00000.000 SUDAH 0
+10. Add Perkiraan Master Akun Blok 'Jenis Pekerjaan'
+
+
+
+Fitur Perbaikan ( 06 Desember 2021)
+1. Fix ubah daftar perkiraan
+2. Fix grid view daftar perkiraan
+3. Optimalisasi Kalkulasi ( Sample KSKINTI periode Januari 2007 
+				  				sebelum 1Menit 21Detik 513MiliDetik
+				  				sesudah 0Menit 47Detik 208MiliDetik
+			   Sample KSKINTI periode Desember 2007
+				  				sebelum 1Menit 16Detik 322MiliDetik
+				  				sesudah 0Menit 41Detik 859MiliDetik
+4. Fix Tutup Buku Jenis Akunting LAIN ( Pelsus )
+5. Fix Keterangan Penerima Nota Debet/Nota Kredit
+6. Optimalisasi Loading Daftar Perkiraan
+7. Fix laporan General Ledger multi tahun dan multi periode
+8. Fix edit jurnal pada periode yang memiliki tanggal diluar periode aktif.
+9. fix validasi import daftar perkiraan dan jurnal
+10. fix export daftar perkiraan(support import kembali)
+
+
+===================================
+Release 1.0.3
+Fitur Tambahan( 29 Nopember 2021)
+1. penambahan tipe akunting untuk kantor PERWAKILAN dan LAIN ( PERLSUS, tidak memiliki jurnal closing )
+2. penambahan library EPPlus ( Export Excel )
+3. Jurnal Balik,reverse jurnal entry(berlaku setiap periode, jika ada) format nomor NOMORJURNALLAMA-RE
+
+
+Fitur Perbaikan ( 29 Nopember 2021)
+1. penambahan pada karakter ID Daftar Perkiraan ( error pada saat tutup tahunan )
+2. perbaikan pada neraca ( tampilkan saldo awal tahun, meskipun saldo akhir 0)
+3. perbaikan min dan max tahun berdasarkan tahun daftar perkiraan dan perbaikan format tahun pada semua form tahun.
+4. perbaikan laporan general ledger ( tampilan mutasi per periode)
+5. pengecekan saldo neraca tidak seimbang karena double jurnal closing
+6. fix ora-16550 truncated result ( khusus import jurnal MSL), increase RowNo ke 6 digit
+7. default closing account(jika masih kosong)
+8. Drill Down (Proses indikator pada neraca)
+9. Fix keterangan perkiraan jurnal 001/LABA
+10. Rekalkulasi server side ( rekalkulasi januari update saldo jan-des, rekalkulasi oktober update saldo okt-des ) tahun berjalan.
+
+
+
+
+===================================
+Release 1.0.2
+Fitur Perbaikan
+1. Input Jurnal dan Daftar Jurnal, Filter
+   exort jurnal tambahan formula pada no baris, input jurnal dengan keyboard shortcut (F1,F2,F3 DLL )
+2. Input Jurnal, Validasi hanya bisa isi nilai satu sisi D/K
+3. Penomoron ND/NK berdasarkan Jenis NOJURNAL misal /JP, /SP, support multi pengirimn ND/NK 
+4. Buang label tanggal cetak pada laporan, fitur export ke excel agar 
+5. Nomor Jurnal berdasarkan 4 parameter IDDATA,PERIODE,TANGGAL,NOJURNAL
+   dalam satu bulan bisa berisi nomor yang sama pada tnggal yang berbeda contoh
+   001/ND-KSKPUSAT tanggal 05-Januari-2021
+   001/ND-KSKPUSAT tanggal 31-Januari-2021
+6. Filtering Daftar Perkiraan
+   berdasarkan Akun Neraca, Akun Laba Rugi,TM, TBM tampilkan yang hanya memiliki nilai dan costum filter
+7. Laporan Buku Besar, Support multi periode dan multi akun.
+8. Remove fitur import cek nomor jurnal double untuk transaksi lama
+9. Perbaikan fitur export Daftar Perkiraan
+   PUSAT/PKS tambahan kolom saldo awaltahun, dan mutasi 
+   KEBUN tambahan kolom	saldo awaltahun, mutasi ,divisi,blok,tahuntanam
+10.perbaikan beberapa database integrity
+11.cek validasi induk akun pada saat import coa
+12.Redesign export jurnal by filter
+
+
+
+===================================
+Release 1.0.1	
+Fitur Perbaikan (25 Oktober 2021)	
+1.	Identitas Perusahaan Lengkap di Form Utama bagian atas
+2.	Geser kolom induk disebelah kanan kolom level
+3.	Judul Laporan Buku besar tampikan disetiap halaman
+4.	Mode Ubah dan Hapus Jurnal (tombol dan klik kanan pada grid)
+5.	Export jurnal sekaligus dengan mode input ( N/A ),Mode Export jurnal tetap di menu Jurnal, Export Jurnal dengan full filter, daftar jurnal pada mode input hanya untuk kebutuhan edit dan hapus jurnal
+6.	Buang tombol baru pada input jurnal, notifikasi simpan jurnal dihilangkan diganti dengan mode entri baru
+7.	Update Daftar Lokasi Pembukuan
+8.	Notifikasi double nojurnal pada saat input dan pada simpan
+9.	Optimasi kecepatan input jurnal
+10.	Finishing Management login user
+11.	Perbaikan perpindahan baris pada daftar nomor jurnal, untuk menampilkan jurnal detail dengan benar
+	
+Fitur Tambahan ( 25 Oktober 2021)	
+1.	Nota Debet dan Nota Kredit
+2.	Input Jurnal Full Keyboard Operation
+3.	Full Filter pada Daftar Perkiraan ( CTRL + F )
+4.	Full filter pada Import Jurnal,Export Jurnal,Nota Debet
+5.	Pengecekan Neraca ( pada Tutup Bulanan and Tutup Akhir tahun)	
+	
+First Release Version 1.0.0 	
+22 October 2021	
+- Support Unlimited Company Data
+- Unlimited Level Account
+- Drill Down Report
+- Custom Access Level
+- UI/UX Fast Respond
+- Report Consolidations
+- Design Database Integrity
+
+
