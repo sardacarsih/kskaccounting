@@ -1,0 +1,1 @@
+REG ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /v ctfmon /t REG_SZ /d CTFMON.EXE

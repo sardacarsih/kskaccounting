@@ -1,0 +1,241 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_LastSelectedProfileId>D:\Project\DotNet\GL_MVC_Repository\Accounting\Properties\PublishProfiles\FolderProfile1.pubxml</_LastSelectedProfileId>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Update="Form\About.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\BalancedError.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\COAError.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmAksesLevel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmAkunAdd.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmAkunEdit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmAkunEF.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmAkunEF_Luas.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmBiayaBlok.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmBiayaBlokPusat.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmChangePass.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmClosingMonth.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmClosingYear.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmCompany.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmCompanyProfile.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmDaftarJurnal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmDeveloper.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmExportJurnal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmImportCOA.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmImportJurnalSheet.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmImportJurnal_Parsial.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\Frmlogin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmLokasi.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmMasterAkun.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmMasterBlok.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmMasterDivisi.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmNeracaKonsolidasi.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmNotaDebet.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmNotaKredit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmPeriode.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmPeriodeNew.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmReportParam.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmReportParamKebun.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmSetAkun.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmSetAkunAgronomy.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmSettingRL.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmUpdateSaldoAwal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmUsers.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\Jurnal_NotBalanced.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\SplashScreen1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\SplashScreen2.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\SplashScreen2.Designer.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Form\SplashScreen_Start.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\treeview.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\WaitForm_CheckTransac.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\WaitForm_Exporting.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\WaitForm_Load.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\WaitForm_Prosess.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Laporan\BalanceSheet.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\BalanceSheetDetail.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\BalanceSheetHalf1.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\BalanceSheetHalf2.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\BalanceSheetIndukSkontro.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\BalanceSheet_Sub.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\GeneralLedger.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\GeneralLedgerD2.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\GeneralLedgerK2.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\Income_statement.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\NeracaKonsolidasi.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\NeracaLajur.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\NeracaSaldoTahun.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\NotaDebet.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\NotaKredit.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\RekapTMperDivisi.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\Report1.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\rsub_rl_DetailD.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\rsub_rl_DetailK.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\TBMINTI.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\TBMKKPA.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\TMJenisKerjaINTI.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\TMJenisKerjaKKPA.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\TMPanen.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\XtraReport1.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="MainView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Partition.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Form\SplashScreen2.resx">
+      <SubType>Code</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>
