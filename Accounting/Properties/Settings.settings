@@ -8,8 +8,5 @@
     <Setting Name="Palette" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="Server" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">KSKGROUP</Value>
-    </Setting>
   </Settings>
 </SettingsFile>
