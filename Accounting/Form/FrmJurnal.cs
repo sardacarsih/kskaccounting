@@ -136,6 +136,7 @@ namespace Accounting.Form
             UnregisterEventHandlers();
             resizeDebounceTimer?.Dispose();
             _player?.Dispose();
+            DisposeLoadingInfrastructure();
 
             base.OnFormClosed(e);
         }
@@ -187,9 +188,12 @@ namespace Accounting.Form
         private void ExecuteImportJurnal(DataTable sourceData, int month, int year, int yearControlValue, string moduleLabel)
         {
             string p_periode = FormatPeriod(month, year);
+            int sourceRows = sourceData?.Rows.Count ?? 0;
+            using var perf = BeginPerfMeasurement(
+                "FrmJurnal.ExecuteImportJurnal",
+                () => $"module={moduleLabel};periode={p_periode};sourceRows={sourceRows}");
 
-            using var handle = SplashScreenManager.ShowOverlayForm(this);
-            handle.QueueFocus(IntPtr.Zero);
+            using var loadingScope = BeginGlobalLoadingScope();
 
             Stopwatch watch = new();
             watch.Start();

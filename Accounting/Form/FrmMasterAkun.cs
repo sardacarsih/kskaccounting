@@ -13,7 +13,6 @@ namespace Accounting.Form
 {
     public partial class FrmMasterAkun : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
         public FrmMasterAkun()
         {
             InitializeComponent();   
@@ -59,26 +58,7 @@ namespace Accounting.Form
 
         private void Load_MasterAkun(string KATEGORI, string KEL)
         {
-            String selectQuery = "select ACCOUNT "+
-             ", lpad ( ' ', (level - 1) * 3) || PERKIRAAN PERKIRAAN "+
-             ",JENIS,LVL,INDUK,GD,POSISI from master_AKUN where KATEGORI =:p_KAT AND SUBSTR(ACCOUNT, 1, 2) =:p_KEL "+
-             "start  with LVL='3'"+
-             "connect by prior ACCOUNT = INDUK " +
-             "ORDER SIBLINGS BY ACCOUNT";
-            OracleCommand _command = new OracleCommand(selectQuery, conn)
-            {
-                CommandType = CommandType.Text
-            };
-            conn.Open();
-            _command.Parameters.Add(":p_KAT", OracleDbType.Varchar2, 3).Value = KATEGORI;
-            _command.Parameters.Add(":p_KEL", OracleDbType.Varchar2, 2).Value = KEL;
-            OracleDataReader dr;
-            dr = _command.ExecuteReader();
-            DataTable _dt = new DataTable();
-            _dt.Load(dr);
-            dr.Close();
-            conn.Close();
-            gridControl1.DataSource = _dt;
+            gridControl1.DataSource = AccountServices.GetMasterAkun(KATEGORI, KEL);
             gridView1.BestFitColumns();
         }
 
@@ -104,14 +84,12 @@ namespace Accounting.Form
                     p_kategori = "TM";
                 }
 
-                OracleCommand _command = new OracleCommand("ACCT_TOOLS.AddorUpdateMasterAkun", conn)
+                using var localConn = new OracleConnection(LoginInfo.OracleConnString);
+                using var _command = new OracleCommand("ACCT_TOOLS.AddorUpdateMasterAkun", localConn)
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
+                localConn.Open();
                 _command.Parameters.Add(":p_status", OracleDbType.Varchar2, 30).Value = p_status;
                 _command.Parameters.Add(":p_kode", OracleDbType.Varchar2, 30).Value = txtkode.Text+txtkodeakhir.Text;
                 _command.Parameters.Add(":p_perkiraan", OracleDbType.Varchar2, 100).Value = txtnama.Text;
@@ -120,8 +98,7 @@ namespace Accounting.Form
                 _command.Parameters.Add(":p_induk", OracleDbType.Varchar2, 30).Value = leinduk.Text;
                 _command.Parameters.Add(":p_gd", OracleDbType.Varchar2, 30).Value = txtdg.Text;
                 _command.Parameters.Add(":p_kategori", OracleDbType.Varchar2, 30).Value = p_kategori;
-                _command.ExecuteReader();               
-                conn.Close();
+                _command.ExecuteNonQuery();
                 Bersihkan();
                 XtraMessageBox.Show("Master Akun Blok Saved Successfully", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 p_status = "New";
@@ -157,7 +134,7 @@ namespace Accounting.Form
         }
         private void Load_BlokList()
         {
-           var data = ToolsServices.GetBlokList(CompanyInfo.INIT);
+           var data = ToolsServices.GetBlokList(CompanyInfo.IDDATA);
             gridControl1.DataSource = data;
             gridView1.Columns[1].Visible = false;
             gridView1.Columns[2].Visible = false;
@@ -175,19 +152,11 @@ namespace Accounting.Form
 
        
     
-        private void gridView1_Click(object sender, EventArgs e)
-        {
-
-           // LoadPerkiraanBlok();
-        }
-     
-
-      
         private void txtkodeblok_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -195,7 +164,7 @@ namespace Accounting.Form
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -203,7 +172,7 @@ namespace Accounting.Form
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -211,13 +180,8 @@ namespace Accounting.Form
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
-        }
-
-        private void cmbstatus_KeyDown(object sender, KeyEventArgs e)
-        {
-
         }
 
         private void btnbaru_Click(object sender, EventArgs e)
@@ -251,11 +215,6 @@ namespace Accounting.Form
             Load_MasterAkun(KATEGORI, KEL);
         }
 
-        private void LEINDUK_EditValueChanged(object sender, EventArgs e)
-        {
-
-        }
-
         string kategori, kel,kode;
 
        
@@ -270,11 +229,6 @@ namespace Accounting.Form
             {
                 txtdg.Text = "D";
             }
-        }
-
-        private void BTNEXPORT_Click(object sender, EventArgs e)
-        {
-
         }
 
         private void LEKELOMPOK_EditValueChanged(object sender, EventArgs e)
@@ -309,29 +263,10 @@ namespace Accounting.Form
 
         private void Load_IndukAkun(string kategori, string kel)
         {
-            String selectQuery = "select ACCOUNT " +
-              ", lpad ( ' ', (level - 1) * 3) || PERKIRAAN PERKIRAAN " +
-              ",JENIS,LVL,INDUK,GD,POSISI from master_AKUN where KATEGORI =:p_KAT AND SUBSTR(ACCOUNT, 1, 2) =:p_KEL and GD='G'" +
-              "start  with LVL='3'" +
-              "connect by prior ACCOUNT = INDUK " +
-              "ORDER SIBLINGS BY ACCOUNT";
-            OracleCommand _command = new OracleCommand(selectQuery, conn)
-            {
-                CommandType = CommandType.Text
-            };
-            conn.Open();
-            _command.Parameters.Add(":p_KAT", OracleDbType.Varchar2, 3).Value = kategori;
-            _command.Parameters.Add(":p_KEL", OracleDbType.Varchar2, 2).Value = kel;
-            OracleDataReader dr;
-            dr = _command.ExecuteReader();
-            DataTable _dt = new DataTable();
-            _dt.Load(dr);
-            dr.Close();
-            conn.Close();
+            var _dt = AccountServices.GetIndukAkun(kategori, kel);
             leinduk.Properties.DataSource = _dt;
             leinduk.Properties.ValueMember = "ACCOUNT";
             leinduk.Properties.DisplayMember = "ACCOUNT";
-            //gridView1.BestFitColumns();
         }
     }
 

@@ -18,7 +18,7 @@ namespace Accounting.Form
 {
     public partial class FrmImportJurnalSheet : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
+       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         private SoundPlayer Player = new SoundPlayer();
         public FrmImportJurnalSheet()
         {
@@ -174,7 +174,7 @@ namespace Accounting.Form
                 
                 if (XtraMessageBox.Show("Lanjutkan Proses Import Jurnal ? " +
                     "\n\nPeriode : " + bulan + " " +
-                    "\nLokasi Data :" + CompanyInfo.INIT
+                    "\nLokasi Data :" +CompanyInfo.IDDATA
                     , "Confirm Proses", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                     return;
 
@@ -183,7 +183,7 @@ namespace Accounting.Form
 
                 //jika periode telah dikunci,  batalkan proses import jurnal
                 periodetujuan = pbulan.ToString("0#") + "/" + ptahuntujuan.ToString();
-                Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.INIT, periodetujuan);
+                Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.IDDATA, periodetujuan);
                
                 if (Acct.KunciPeriode == "Y")
                 {
@@ -202,10 +202,10 @@ namespace Accounting.Form
                 }
                 //jika periode belum ada, buat periode
                 string periodedipilih = pbulan.ToString("0#")+"/"+ptahuntujuan.ToString();
-                int pexist = JurnalServices.CekPeriodeExist(CompanyInfo.INIT, periodedipilih);
+                int pexist = JurnalServices.CekPeriodeExist(CompanyInfo.IDDATA, periodedipilih);
                 if (pexist==0)
                 {                   
-                    AccountServices.CreateNextPeriode(CompanyInfo.INIT, pbulan-1, ptahuntujuan);
+                    AccountServices.CreateNextPeriode(CompanyInfo.IDDATA, pbulan-1, ptahuntujuan);
                 }
 
                 Stopwatch watch = new Stopwatch();
@@ -296,7 +296,7 @@ namespace Accounting.Form
                 }
                
                 //Copy data dari table tmp ke table Acct_Jurnal_Dtl
-                var sukses = JurnalServices.ImportJurnalGlobal(CompanyInfo.INIT, pbulan,ptahuntujuan, PeriodeAsal);
+                var sukses = JurnalServices.ImportJurnalGlobal(CompanyInfo.IDDATA, pbulan,ptahuntujuan, PeriodeAsal);
                 if (sukses == 0)
                 {
                     this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_bedaperiode.wav";
@@ -314,7 +314,7 @@ namespace Accounting.Form
                 }
 
                 //analisa kesalahan COA
-                var Errcoa_check = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.INIT, ptahuntujuan);
+                var Errcoa_check = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.IDDATA, ptahuntujuan);
                 if (Errcoa_check.Rows.Count > 0)
                 {
                     COAError error_coa = new()
@@ -325,7 +325,7 @@ namespace Accounting.Form
                     error_coa.ShowDialog();
                     return;
                 }
-                AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, pbulan, ptahuntujuan, LoginInfo.userID);
+                AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, pbulan, ptahuntujuan, LoginInfo.userID);
                 watch.Stop();
 
                 TimeSpan timeSpan = watch.Elapsed;
@@ -351,7 +351,7 @@ namespace Accounting.Form
                 string query = "update ACCT_JURNAL_TMP set IDDATA=:piddata,GLYEAR=:PTAHUN,GLMONTH=:PBULAN,userid=:puserid";
                 conn.Open();
                 OracleCommand cmd = new OracleCommand(query, conn);
-                cmd.Parameters.Add(":piddata", OracleDbType.Varchar2, 20).Value = CompanyInfo.INIT;
+                cmd.Parameters.Add(":piddata", OracleDbType.Varchar2, 20).Value =CompanyInfo.IDDATA;
                 cmd.Parameters.Add(":PTAHUN", OracleDbType.Int16).Value = Convert.ToInt32(setahun.Value);
                 cmd.Parameters.Add(":PBULAN", OracleDbType.Int16).Value = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
                 cmd.Parameters.Add(":puserid", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;

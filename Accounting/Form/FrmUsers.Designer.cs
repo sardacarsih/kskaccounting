@@ -1,4 +1,7 @@
 ﻿
+using System.Drawing;
+using System.Windows.Forms;
+
 namespace Accounting.Form
 {
     partial class FrmUsers
@@ -29,358 +32,498 @@ namespace Accounting.Form
         /// </summary>
         private void InitializeComponent()
         {
-            this.dEPTLabel = new System.Windows.Forms.Label();
-            this.jABATANLabel = new System.Windows.Forms.Label();
-            this.lEVELIDLabel = new System.Windows.Forms.Label();
-            this.nAMALabel = new System.Windows.Forms.Label();
-            this.pASSWORDLabel = new System.Windows.Forms.Label();
-            this.uSERIDLabel = new System.Windows.Forms.Label();
-            this.label1 = new System.Windows.Forms.Label();
-            this.gridControl2 = new DevExpress.XtraGrid.GridControl();
-            this.gridView2 = new DevExpress.XtraGrid.Views.Grid.GridView();
-            this.lookUpEdit1 = new DevExpress.XtraEditors.LookUpEdit();
-            this.btnaddcompany = new DevExpress.XtraEditors.SimpleButton();
-            this.dEPTTextEdit = new DevExpress.XtraEditors.TextEdit();
-            this.jABATANTextEdit = new DevExpress.XtraEditors.TextEdit();
-            this.lEVELIDComboBox = new System.Windows.Forms.ComboBox();
-            this.nAMATextEdit = new DevExpress.XtraEditors.TextEdit();
-            this.pASSWORDTextEdit = new DevExpress.XtraEditors.TextEdit();
-            this.uSERIDTextEdit = new DevExpress.XtraEditors.TextEdit();
-            this.btnsimpan = new DevExpress.XtraEditors.SimpleButton();
-            this.btnhapus = new DevExpress.XtraEditors.SimpleButton();
-            this.confirmasi = new DevExpress.XtraEditors.TextEdit();
-            this.gridControl1 = new DevExpress.XtraGrid.GridControl();
-            this.gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
-            this.simpleButton1 = new DevExpress.XtraEditors.SimpleButton();
-            this.lbllokasi = new DevExpress.XtraEditors.LabelControl();
-            this.lbluser = new DevExpress.XtraEditors.LabelControl();
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl2)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView2)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit1.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dEPTTextEdit.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.jABATANTextEdit.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nAMATextEdit.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pASSWORDTextEdit.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.uSERIDTextEdit.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.confirmasi.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView1)).BeginInit();
-            this.SuspendLayout();
-            // 
-            // dEPTLabel
-            // 
-            this.dEPTLabel.AutoSize = true;
-            this.dEPTLabel.Location = new System.Drawing.Point(8, 66);
-            this.dEPTLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.dEPTLabel.Name = "dEPTLabel";
-            this.dEPTLabel.Size = new System.Drawing.Size(36, 13);
-            this.dEPTLabel.TabIndex = 15;
-            this.dEPTLabel.Text = "DEPT:";
-            // 
-            // jABATANLabel
-            // 
-            this.jABATANLabel.AutoSize = true;
-            this.jABATANLabel.Location = new System.Drawing.Point(210, 66);
-            this.jABATANLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.jABATANLabel.Name = "jABATANLabel";
-            this.jABATANLabel.Size = new System.Drawing.Size(56, 13);
-            this.jABATANLabel.TabIndex = 17;
-            this.jABATANLabel.Text = "JABATAN:";
-            // 
-            // lEVELIDLabel
-            // 
-            this.lEVELIDLabel.AutoSize = true;
-            this.lEVELIDLabel.Location = new System.Drawing.Point(8, 87);
-            this.lEVELIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lEVELIDLabel.Name = "lEVELIDLabel";
-            this.lEVELIDLabel.Size = new System.Drawing.Size(50, 13);
-            this.lEVELIDLabel.TabIndex = 19;
-            this.lEVELIDLabel.Text = "LEVELID:";
-            // 
-            // nAMALabel
-            // 
-            this.nAMALabel.AutoSize = true;
-            this.nAMALabel.Location = new System.Drawing.Point(8, 44);
-            this.nAMALabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.nAMALabel.Name = "nAMALabel";
-            this.nAMALabel.Size = new System.Drawing.Size(40, 13);
-            this.nAMALabel.TabIndex = 21;
-            this.nAMALabel.Text = "NAMA:";
-            // 
-            // pASSWORDLabel
-            // 
-            this.pASSWORDLabel.AutoSize = true;
-            this.pASSWORDLabel.Location = new System.Drawing.Point(8, 23);
-            this.pASSWORDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.pASSWORDLabel.Name = "pASSWORDLabel";
-            this.pASSWORDLabel.Size = new System.Drawing.Size(68, 13);
-            this.pASSWORDLabel.TabIndex = 23;
-            this.pASSWORDLabel.Text = "PASSWORD:";
-            // 
-            // uSERIDLabel
-            // 
-            this.uSERIDLabel.AutoSize = true;
-            this.uSERIDLabel.Location = new System.Drawing.Point(8, 3);
-            this.uSERIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.uSERIDLabel.Name = "uSERIDLabel";
-            this.uSERIDLabel.Size = new System.Drawing.Size(48, 13);
-            this.uSERIDLabel.TabIndex = 25;
-            this.uSERIDLabel.Text = "USERID:";
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(210, 23);
-            this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(54, 13);
-            this.label1.TabIndex = 23;
-            this.label1.Text = "CONFIRM";
+            components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmUsers));
+            gridControl2 = new DevExpress.XtraGrid.GridControl();
+            gridView2 = new DevExpress.XtraGrid.Views.Grid.GridView();
+            lookUpEdit1 = new DevExpress.XtraEditors.LookUpEdit();
+            layoutControl2 = new DevExpress.XtraLayout.LayoutControl();
+            lbluser = new DevExpress.XtraEditors.LabelControl();
+            lblmodule = new DevExpress.XtraEditors.LabelControl();
+            layoutControlGroup1 = new DevExpress.XtraLayout.LayoutControlGroup();
+            layoutControlItem7 = new DevExpress.XtraLayout.LayoutControlItem();
+            layoutControlItem10 = new DevExpress.XtraLayout.LayoutControlItem();
+            layoutControlItem11 = new DevExpress.XtraLayout.LayoutControlItem();
+            btnaddestate = new DevExpress.XtraEditors.SimpleButton();
+            dEPTTextEdit = new DevExpress.XtraEditors.TextEdit();
+            layoutControl1 = new DevExpress.XtraLayout.LayoutControl();
+            uSERIDTextEdit = new DevExpress.XtraEditors.TextEdit();
+            pASSWORDTextEdit = new DevExpress.XtraEditors.TextEdit();
+            jABATANTextEdit = new DevExpress.XtraEditors.TextEdit();
+            confirmasi = new DevExpress.XtraEditors.TextEdit();
+            nAMATextEdit = new DevExpress.XtraEditors.TextEdit();
+            checkEditaktif = new DevExpress.XtraEditors.CheckEdit();
+            Root = new DevExpress.XtraLayout.LayoutControlGroup();
+            layoutControlItem1 = new DevExpress.XtraLayout.LayoutControlItem();
+            emptySpaceItem1 = new DevExpress.XtraLayout.EmptySpaceItem();
+            layoutControlItem2 = new DevExpress.XtraLayout.LayoutControlItem();
+            layoutControlItem4 = new DevExpress.XtraLayout.LayoutControlItem();
+            layoutControlItem5 = new DevExpress.XtraLayout.LayoutControlItem();
+            layoutControlItem3 = new DevExpress.XtraLayout.LayoutControlItem();
+            layoutControlItem6 = new DevExpress.XtraLayout.LayoutControlItem();
+            layoutControlItem15 = new DevExpress.XtraLayout.LayoutControlItem();
+            btnhapus = new DevExpress.XtraEditors.SimpleButton();
+            btnsimpan = new DevExpress.XtraEditors.SimpleButton();
+            gridControl1 = new DevExpress.XtraGrid.GridControl();
+            gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
+            layoutControlItem12 = new DevExpress.XtraLayout.LayoutControlItem();
+            imageCollection1 = new DevExpress.Utils.ImageCollection(components);
+            sbbaru = new DevExpress.XtraEditors.SimpleButton();
+            btnResetPassword = new DevExpress.XtraEditors.SimpleButton();
+            ((System.ComponentModel.ISupportInitialize)gridControl2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridView2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)lookUpEdit1.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControl2).BeginInit();
+            layoutControl2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)layoutControlGroup1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem7).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem10).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem11).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)dEPTTextEdit.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControl1).BeginInit();
+            layoutControl1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)uSERIDTextEdit.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pASSWORDTextEdit.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)jABATANTextEdit.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)confirmasi.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nAMATextEdit.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)checkEditaktif.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)Root).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)emptySpaceItem1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem4).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem5).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem3).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem6).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem15).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridControl1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridView1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem12).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)imageCollection1).BeginInit();
+            SuspendLayout();
             // 
             // gridControl2
             // 
-            this.gridControl2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.gridControl2.EmbeddedNavigator.Margin = new System.Windows.Forms.Padding(2);
-            this.gridControl2.Location = new System.Drawing.Point(633, 128);
-            this.gridControl2.MainView = this.gridView2;
-            this.gridControl2.Margin = new System.Windows.Forms.Padding(2);
-            this.gridControl2.Name = "gridControl2";
-            this.gridControl2.Size = new System.Drawing.Size(467, 304);
-            this.gridControl2.TabIndex = 19;
-            this.gridControl2.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
-            this.gridView2});
+            gridControl2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            gridControl2.EmbeddedNavigator.Margin = new Padding(2);
+            gridControl2.Location = new Point(633, 273);
+            gridControl2.MainView = gridView2;
+            gridControl2.Margin = new Padding(2);
+            gridControl2.Name = "gridControl2";
+            gridControl2.Size = new Size(562, 253);
+            gridControl2.TabIndex = 19;
+            gridControl2.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView2 });
             // 
             // gridView2
             // 
-            this.gridView2.DetailHeight = 217;
-            this.gridView2.GridControl = this.gridControl2;
-            this.gridView2.Name = "gridView2";
-            this.gridView2.OptionsBehavior.Editable = false;
-            this.gridView2.OptionsView.ShowGroupPanel = false;
+            gridView2.DetailHeight = 217;
+            gridView2.GridControl = gridControl2;
+            gridView2.Name = "gridView2";
+            gridView2.OptionsBehavior.Editable = false;
+            gridView2.OptionsView.ShowGroupPanel = false;
+            gridView2.PopupMenuShowing += gridView2_PopupMenuShowing;
             // 
             // lookUpEdit1
             // 
-            this.lookUpEdit1.Location = new System.Drawing.Point(633, 107);
-            this.lookUpEdit1.Margin = new System.Windows.Forms.Padding(2);
-            this.lookUpEdit1.Name = "lookUpEdit1";
-            this.lookUpEdit1.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
-            this.lookUpEdit1.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.lookUpEdit1.Size = new System.Drawing.Size(162, 20);
-            this.lookUpEdit1.TabIndex = 9;
+            lookUpEdit1.Location = new Point(60, 70);
+            lookUpEdit1.Margin = new Padding(2);
+            lookUpEdit1.Name = "lookUpEdit1";
+            lookUpEdit1.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            lookUpEdit1.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            lookUpEdit1.Size = new Size(339, 20);
+            lookUpEdit1.StyleController = layoutControl2;
+            lookUpEdit1.TabIndex = 0;
             // 
-            // btnaddcompany
+            // layoutControl2
             // 
-            this.btnaddcompany.Location = new System.Drawing.Point(799, 105);
-            this.btnaddcompany.Margin = new System.Windows.Forms.Padding(2);
-            this.btnaddcompany.Name = "btnaddcompany";
-            this.btnaddcompany.Size = new System.Drawing.Size(62, 21);
-            this.btnaddcompany.TabIndex = 10;
-            this.btnaddcompany.Text = "Add";
-            this.btnaddcompany.Click += new System.EventHandler(this.btnaddcompany_Click);
-            // 
-            // dEPTTextEdit
-            // 
-            this.dEPTTextEdit.Location = new System.Drawing.Point(104, 64);
-            this.dEPTTextEdit.Margin = new System.Windows.Forms.Padding(2);
-            this.dEPTTextEdit.Name = "dEPTTextEdit";
-            this.dEPTTextEdit.Size = new System.Drawing.Size(100, 20);
-            this.dEPTTextEdit.TabIndex = 4;
-            this.dEPTTextEdit.KeyDown += new System.Windows.Forms.KeyEventHandler(this.dEPTTextEdit_KeyDown);
-            // 
-            // jABATANTextEdit
-            // 
-            this.jABATANTextEdit.Location = new System.Drawing.Point(279, 64);
-            this.jABATANTextEdit.Margin = new System.Windows.Forms.Padding(2);
-            this.jABATANTextEdit.Name = "jABATANTextEdit";
-            this.jABATANTextEdit.Size = new System.Drawing.Size(100, 20);
-            this.jABATANTextEdit.TabIndex = 5;
-            this.jABATANTextEdit.KeyDown += new System.Windows.Forms.KeyEventHandler(this.jABATANTextEdit_KeyDown);
-            // 
-            // lEVELIDComboBox
-            // 
-            this.lEVELIDComboBox.FormattingEnabled = true;
-            this.lEVELIDComboBox.Location = new System.Drawing.Point(104, 85);
-            this.lEVELIDComboBox.Margin = new System.Windows.Forms.Padding(2);
-            this.lEVELIDComboBox.Name = "lEVELIDComboBox";
-            this.lEVELIDComboBox.Size = new System.Drawing.Size(101, 21);
-            this.lEVELIDComboBox.TabIndex = 6;
-            this.lEVELIDComboBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lEVELIDComboBox_KeyDown);
-            // 
-            // nAMATextEdit
-            // 
-            this.nAMATextEdit.Location = new System.Drawing.Point(104, 42);
-            this.nAMATextEdit.Margin = new System.Windows.Forms.Padding(2);
-            this.nAMATextEdit.Name = "nAMATextEdit";
-            this.nAMATextEdit.Size = new System.Drawing.Size(275, 20);
-            this.nAMATextEdit.TabIndex = 3;
-            this.nAMATextEdit.KeyDown += new System.Windows.Forms.KeyEventHandler(this.nAMATextEdit_KeyDown);
-            // 
-            // pASSWORDTextEdit
-            // 
-            this.pASSWORDTextEdit.Location = new System.Drawing.Point(104, 22);
-            this.pASSWORDTextEdit.Margin = new System.Windows.Forms.Padding(2);
-            this.pASSWORDTextEdit.Name = "pASSWORDTextEdit";
-            this.pASSWORDTextEdit.Properties.PasswordChar = '*';
-            this.pASSWORDTextEdit.Size = new System.Drawing.Size(100, 20);
-            this.pASSWORDTextEdit.TabIndex = 1;
-            this.pASSWORDTextEdit.KeyDown += new System.Windows.Forms.KeyEventHandler(this.pASSWORDTextEdit_KeyDown);
-            // 
-            // uSERIDTextEdit
-            // 
-            this.uSERIDTextEdit.Location = new System.Drawing.Point(104, 1);
-            this.uSERIDTextEdit.Margin = new System.Windows.Forms.Padding(2);
-            this.uSERIDTextEdit.Name = "uSERIDTextEdit";
-            this.uSERIDTextEdit.Size = new System.Drawing.Size(100, 20);
-            this.uSERIDTextEdit.TabIndex = 0;
-            this.uSERIDTextEdit.KeyDown += new System.Windows.Forms.KeyEventHandler(this.uSERIDTextEdit_KeyDown);
-            // 
-            // btnsimpan
-            // 
-            this.btnsimpan.Location = new System.Drawing.Point(407, 36);
-            this.btnsimpan.Margin = new System.Windows.Forms.Padding(2);
-            this.btnsimpan.Name = "btnsimpan";
-            this.btnsimpan.Size = new System.Drawing.Size(75, 21);
-            this.btnsimpan.TabIndex = 7;
-            this.btnsimpan.Text = "Simpan";
-            this.btnsimpan.Click += new System.EventHandler(this.btnsimpan_Click);
-            // 
-            // btnhapus
-            // 
-            this.btnhapus.Location = new System.Drawing.Point(407, 66);
-            this.btnhapus.Margin = new System.Windows.Forms.Padding(2);
-            this.btnhapus.Name = "btnhapus";
-            this.btnhapus.Size = new System.Drawing.Size(75, 21);
-            this.btnhapus.TabIndex = 8;
-            this.btnhapus.Text = "Hapus";
-            this.btnhapus.Click += new System.EventHandler(this.btnhapus_Click);
-            // 
-            // confirmasi
-            // 
-            this.confirmasi.Location = new System.Drawing.Point(279, 22);
-            this.confirmasi.Margin = new System.Windows.Forms.Padding(2);
-            this.confirmasi.Name = "confirmasi";
-            this.confirmasi.Properties.PasswordChar = '*';
-            this.confirmasi.Size = new System.Drawing.Size(100, 20);
-            this.confirmasi.TabIndex = 2;
-            this.confirmasi.KeyDown += new System.Windows.Forms.KeyEventHandler(this.confirmasi_KeyDown);
-            // 
-            // gridControl1
-            // 
-            this.gridControl1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.gridControl1.EmbeddedNavigator.Margin = new System.Windows.Forms.Padding(2);
-            this.gridControl1.Location = new System.Drawing.Point(11, 109);
-            this.gridControl1.MainView = this.gridView1;
-            this.gridControl1.Margin = new System.Windows.Forms.Padding(2);
-            this.gridControl1.Name = "gridControl1";
-            this.gridControl1.Size = new System.Drawing.Size(618, 323);
-            this.gridControl1.TabIndex = 26;
-            this.gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
-            this.gridView1});
-            // 
-            // gridView1
-            // 
-            this.gridView1.DetailHeight = 217;
-            this.gridView1.GridControl = this.gridControl1;
-            this.gridView1.Name = "gridView1";
-            this.gridView1.OptionsBehavior.Editable = false;
-            this.gridView1.OptionsFind.AlwaysVisible = true;
-            this.gridView1.OptionsFind.ShowFindButton = false;
-            this.gridView1.OptionsView.ShowGroupPanel = false;
-            this.gridView1.Click += new System.EventHandler(this.gridView1_Click);
-            this.gridView1.DoubleClick += new System.EventHandler(this.gridView1_DoubleClick);
-            // 
-            // simpleButton1
-            // 
-            this.simpleButton1.Location = new System.Drawing.Point(877, 105);
-            this.simpleButton1.Margin = new System.Windows.Forms.Padding(2);
-            this.simpleButton1.Name = "simpleButton1";
-            this.simpleButton1.Size = new System.Drawing.Size(54, 21);
-            this.simpleButton1.TabIndex = 10;
-            this.simpleButton1.Text = "Del";
-            this.simpleButton1.Click += new System.EventHandler(this.simpleButton1_Click);
-            // 
-            // lbllokasi
-            // 
-            this.lbllokasi.Appearance.Font = new System.Drawing.Font("Tahoma", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lbllokasi.Appearance.Options.UseFont = true;
-            this.lbllokasi.Location = new System.Drawing.Point(633, 74);
-            this.lbllokasi.Margin = new System.Windows.Forms.Padding(2);
-            this.lbllokasi.Name = "lbllokasi";
-            this.lbllokasi.Size = new System.Drawing.Size(308, 25);
-            this.lbllokasi.TabIndex = 27;
-            this.lbllokasi.Text = "Akses Lokasi Data untuk userID :";
+            layoutControl2.Controls.Add(lookUpEdit1);
+            layoutControl2.Controls.Add(lbluser);
+            layoutControl2.Controls.Add(lblmodule);
+            layoutControl2.Location = new Point(623, 156);
+            layoutControl2.Name = "layoutControl2";
+            layoutControl2.OptionsCustomizationForm.DesignTimeCustomizationFormPositionAndSize = new Rectangle(435, 301, 650, 400);
+            layoutControl2.Root = layoutControlGroup1;
+            layoutControl2.Size = new Size(411, 112);
+            layoutControl2.TabIndex = 29;
+            layoutControl2.Text = "layoutControl2";
             // 
             // lbluser
             // 
-            this.lbluser.Appearance.Font = new System.Drawing.Font("Tahoma", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lbluser.Appearance.Options.UseFont = true;
-            this.lbluser.Location = new System.Drawing.Point(959, 74);
-            this.lbluser.Margin = new System.Windows.Forms.Padding(2);
-            this.lbluser.Name = "lbluser";
-            this.lbluser.Size = new System.Drawing.Size(45, 25);
-            this.lbluser.TabIndex = 27;
-            this.lbluser.Text = "user";
+            lbluser.Appearance.Font = new Font("Tahoma", 15.75F, FontStyle.Bold, GraphicsUnit.Point);
+            lbluser.Appearance.Options.UseFont = true;
+            lbluser.Location = new Point(60, 12);
+            lbluser.Margin = new Padding(2);
+            lbluser.Name = "lbluser";
+            lbluser.Size = new Size(45, 25);
+            lbluser.StyleController = layoutControl2;
+            lbluser.TabIndex = 1;
+            lbluser.Text = "user";
             // 
+            // lblmodule
+            // 
+            lblmodule.Appearance.Font = new Font("Tahoma", 15.75F, FontStyle.Bold, GraphicsUnit.Point);
+            lblmodule.Appearance.Options.UseFont = true;
+            lblmodule.Location = new Point(60, 41);
+            lblmodule.Margin = new Padding(2);
+            lblmodule.Name = "lblmodule";
+            lblmodule.Size = new Size(76, 25);
+            lblmodule.StyleController = layoutControl2;
+            lblmodule.TabIndex = 1;
+            lblmodule.Text = "Module";
+            // 
+            // layoutControlGroup1
+            // 
+            layoutControlGroup1.EnableIndentsWithoutBorders = DevExpress.Utils.DefaultBoolean.True;
+            layoutControlGroup1.GroupBordersVisible = false;
+            layoutControlGroup1.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] { layoutControlItem7, layoutControlItem10, layoutControlItem11 });
+            layoutControlGroup1.Name = "Root";
+            layoutControlGroup1.Size = new Size(411, 112);
+            layoutControlGroup1.TextVisible = false;
+            // 
+            // layoutControlItem7
+            // 
+            layoutControlItem7.Control = lbluser;
+            layoutControlItem7.Location = new Point(0, 0);
+            layoutControlItem7.Name = "layoutControlItem7";
+            layoutControlItem7.Size = new Size(391, 29);
+            layoutControlItem7.Text = "User ID";
+            layoutControlItem7.TextSize = new Size(36, 13);
+            // 
+            // layoutControlItem10
+            // 
+            layoutControlItem10.Control = lblmodule;
+            layoutControlItem10.Location = new Point(0, 29);
+            layoutControlItem10.Name = "layoutControlItem10";
+            layoutControlItem10.Size = new Size(391, 29);
+            layoutControlItem10.Text = "Module";
+            layoutControlItem10.TextSize = new Size(36, 13);
+            // 
+            // layoutControlItem11
+            // 
+            layoutControlItem11.Control = lookUpEdit1;
+            layoutControlItem11.Location = new Point(0, 58);
+            layoutControlItem11.Name = "layoutControlItem11";
+            layoutControlItem11.Size = new Size(391, 34);
+            layoutControlItem11.Text = "Lokasi";
+            layoutControlItem11.TextSize = new Size(36, 13);
+            // 
+            // btnaddestate
+            // 
+            btnaddestate.Location = new Point(1039, 218);
+            btnaddestate.Margin = new Padding(2);
+            btnaddestate.Name = "btnaddestate";
+            btnaddestate.Size = new Size(67, 36);
+            btnaddestate.TabIndex = 3;
+            btnaddestate.Text = "Add";
+            btnaddestate.Click += btnaddestate_Click;
+            // 
+            // dEPTTextEdit
+            // 
+            dEPTTextEdit.Location = new Point(110, 84);
+            dEPTTextEdit.Margin = new Padding(2);
+            dEPTTextEdit.Name = "dEPTTextEdit";
+            dEPTTextEdit.Size = new Size(84, 20);
+            dEPTTextEdit.StyleController = layoutControl1;
+            dEPTTextEdit.TabIndex = 5;
+            dEPTTextEdit.KeyDown += dEPTTextEdit_KeyDown;
+            // 
+            // layoutControl1
+            // 
+            layoutControl1.Controls.Add(uSERIDTextEdit);
+            layoutControl1.Controls.Add(pASSWORDTextEdit);
+            layoutControl1.Controls.Add(jABATANTextEdit);
+            layoutControl1.Controls.Add(dEPTTextEdit);
+            layoutControl1.Controls.Add(confirmasi);
+            layoutControl1.Controls.Add(nAMATextEdit);
+            layoutControl1.Controls.Add(checkEditaktif);
+            layoutControl1.Location = new Point(22, 2);
+            layoutControl1.Name = "layoutControl1";
+            layoutControl1.OptionsCustomizationForm.DesignTimeCustomizationFormPositionAndSize = new Rectangle(464, 0, 650, 400);
+            layoutControl1.Root = Root;
+            layoutControl1.Size = new Size(394, 155);
+            layoutControl1.TabIndex = 28;
+            layoutControl1.Text = "layoutControl1";
+            // 
+            // uSERIDTextEdit
+            // 
+            uSERIDTextEdit.Location = new Point(110, 12);
+            uSERIDTextEdit.Margin = new Padding(2);
+            uSERIDTextEdit.Name = "uSERIDTextEdit";
+            uSERIDTextEdit.Size = new Size(272, 20);
+            uSERIDTextEdit.StyleController = layoutControl1;
+            uSERIDTextEdit.TabIndex = 0;
+            uSERIDTextEdit.KeyDown += uSERIDTextEdit_KeyDown;
+            // 
+            // pASSWORDTextEdit
+            // 
+            pASSWORDTextEdit.Location = new Point(110, 36);
+            pASSWORDTextEdit.Margin = new Padding(2);
+            pASSWORDTextEdit.Name = "pASSWORDTextEdit";
+            pASSWORDTextEdit.Properties.PasswordChar = '*';
+            pASSWORDTextEdit.Size = new Size(84, 20);
+            pASSWORDTextEdit.StyleController = layoutControl1;
+            pASSWORDTextEdit.TabIndex = 2;
+            pASSWORDTextEdit.KeyDown += pASSWORDTextEdit_KeyDown;
+            // 
+            // jABATANTextEdit
+            // 
+            jABATANTextEdit.Location = new Point(296, 84);
+            jABATANTextEdit.Margin = new Padding(2);
+            jABATANTextEdit.Name = "jABATANTextEdit";
+            jABATANTextEdit.Size = new Size(86, 20);
+            jABATANTextEdit.StyleController = layoutControl1;
+            jABATANTextEdit.TabIndex = 6;
+            jABATANTextEdit.KeyDown += jABATANTextEdit_KeyDown;
+            // 
+            // confirmasi
+            // 
+            confirmasi.Location = new Point(296, 36);
+            confirmasi.Margin = new Padding(2);
+            confirmasi.Name = "confirmasi";
+            confirmasi.Properties.PasswordChar = '*';
+            confirmasi.Size = new Size(86, 20);
+            confirmasi.StyleController = layoutControl1;
+            confirmasi.TabIndex = 3;
+            confirmasi.KeyDown += confirmasi_KeyDown;
+            // 
+            // nAMATextEdit
+            // 
+            nAMATextEdit.Location = new Point(110, 60);
+            nAMATextEdit.Margin = new Padding(2);
+            nAMATextEdit.Name = "nAMATextEdit";
+            nAMATextEdit.Size = new Size(272, 20);
+            nAMATextEdit.StyleController = layoutControl1;
+            nAMATextEdit.TabIndex = 4;
+            nAMATextEdit.KeyDown += nAMATextEdit_KeyDown;
+            // 
+            // checkEditaktif
+            // 
+            checkEditaktif.Location = new Point(12, 108);
+            checkEditaktif.Name = "checkEditaktif";
+            checkEditaktif.Properties.Caption = "Aktif";
+            checkEditaktif.Size = new Size(370, 20);
+            checkEditaktif.StyleController = layoutControl1;
+            checkEditaktif.TabIndex = 7;
+            checkEditaktif.Visible = false;
+            // 
+            // Root
+            // 
+            Root.EnableIndentsWithoutBorders = DevExpress.Utils.DefaultBoolean.True;
+            Root.GroupBordersVisible = false;
+            Root.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] { layoutControlItem1, emptySpaceItem1, layoutControlItem2, layoutControlItem4, layoutControlItem5, layoutControlItem3, layoutControlItem6, layoutControlItem15 });
+            Root.Name = "Root";
+            Root.Size = new Size(394, 155);
+            Root.TextVisible = false;
+            // 
+            // layoutControlItem1
+            // 
+            layoutControlItem1.Control = uSERIDTextEdit;
+            layoutControlItem1.Location = new Point(0, 0);
+            layoutControlItem1.Name = "layoutControlItem1";
+            layoutControlItem1.Size = new Size(374, 24);
+            layoutControlItem1.Text = "User ID";
+            layoutControlItem1.TextSize = new Size(86, 13);
+            // 
+            // emptySpaceItem1
+            // 
+            emptySpaceItem1.AllowHotTrack = false;
+            emptySpaceItem1.Location = new Point(0, 120);
+            emptySpaceItem1.Name = "emptySpaceItem1";
+            emptySpaceItem1.Size = new Size(374, 15);
+            emptySpaceItem1.TextSize = new Size(0, 0);
+            // 
+            // layoutControlItem2
+            // 
+            layoutControlItem2.Control = pASSWORDTextEdit;
+            layoutControlItem2.Location = new Point(0, 24);
+            layoutControlItem2.Name = "layoutControlItem2";
+            layoutControlItem2.Size = new Size(186, 24);
+            layoutControlItem2.Text = "Password";
+            layoutControlItem2.TextSize = new Size(86, 13);
+            // 
+            // layoutControlItem4
+            // 
+            layoutControlItem4.Control = nAMATextEdit;
+            layoutControlItem4.Location = new Point(0, 48);
+            layoutControlItem4.Name = "layoutControlItem4";
+            layoutControlItem4.Size = new Size(374, 24);
+            layoutControlItem4.Text = "Nama";
+            layoutControlItem4.TextSize = new Size(86, 13);
+            // 
+            // layoutControlItem5
+            // 
+            layoutControlItem5.Control = dEPTTextEdit;
+            layoutControlItem5.Location = new Point(0, 72);
+            layoutControlItem5.Name = "layoutControlItem5";
+            layoutControlItem5.Size = new Size(186, 24);
+            layoutControlItem5.Text = "Departement";
+            layoutControlItem5.TextSize = new Size(86, 13);
+            // 
+            // layoutControlItem3
+            // 
+            layoutControlItem3.Control = confirmasi;
+            layoutControlItem3.Location = new Point(186, 24);
+            layoutControlItem3.Name = "layoutControlItem3";
+            layoutControlItem3.Size = new Size(188, 24);
+            layoutControlItem3.Text = "Confirm Password";
+            layoutControlItem3.TextSize = new Size(86, 13);
+            // 
+            // layoutControlItem6
+            // 
+            layoutControlItem6.Control = jABATANTextEdit;
+            layoutControlItem6.Location = new Point(186, 72);
+            layoutControlItem6.Name = "layoutControlItem6";
+            layoutControlItem6.Size = new Size(188, 24);
+            layoutControlItem6.Text = "Jabatan";
+            layoutControlItem6.TextSize = new Size(86, 13);
+            // 
+            // layoutControlItem15
+            // 
+            layoutControlItem15.Control = checkEditaktif;
+            layoutControlItem15.Location = new Point(0, 96);
+            layoutControlItem15.Name = "layoutControlItem15";
+            layoutControlItem15.Size = new Size(374, 24);
+            layoutControlItem15.Text = "laktif";
+            layoutControlItem15.TextSize = new Size(0, 0);
+            layoutControlItem15.TextVisible = false;
+            // 
+            // btnhapus
+            // 
+            btnhapus.Location = new Point(434, 92);
+            btnhapus.Margin = new Padding(2);
+            btnhapus.Name = "btnhapus";
+            btnhapus.Size = new Size(90, 36);
+            btnhapus.TabIndex = 8;
+            btnhapus.Text = "Hapus";
+            btnhapus.Visible = false;
+            btnhapus.Click += btnhapus_Click;
+            // 
+            // btnsimpan
+            // 
+            btnsimpan.Location = new Point(434, 54);
+            btnsimpan.Margin = new Padding(2);
+            btnsimpan.Name = "btnsimpan";
+            btnsimpan.Size = new Size(90, 36);
+            btnsimpan.TabIndex = 9;
+            btnsimpan.Text = "Add";
+            btnsimpan.Click += btnsimpan_Click;
+            // 
+            // gridControl1
+            // 
+            gridControl1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            gridControl1.EmbeddedNavigator.Margin = new Padding(2);
+            gridControl1.Location = new Point(22, 162);
+            gridControl1.MainView = gridView1;
+            gridControl1.Margin = new Padding(2);
+            gridControl1.Name = "gridControl1";
+            gridControl1.Size = new Size(551, 364);
+            gridControl1.TabIndex = 26;
+            gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView1 });
+            // 
+            // gridView1
+            // 
+            gridView1.DetailHeight = 217;
+            gridView1.GridControl = gridControl1;
+            gridView1.Name = "gridView1";
+            gridView1.OptionsBehavior.Editable = false;
+            gridView1.OptionsFind.AlwaysVisible = true;
+            gridView1.OptionsFind.ShowFindButton = false;
+            gridView1.OptionsView.ShowGroupPanel = false;
+            gridView1.FocusedRowChanged += gridView1_FocusedRowChanged;
+            // 
+            // layoutControlItem12
+            // 
+            layoutControlItem12.Location = new Point(0, 83);
+            layoutControlItem12.Name = "layoutControlItem12";
+            layoutControlItem12.Size = new Size(168, 25);
+            layoutControlItem12.TextSize = new Size(50, 20);
+            // 
+            // imageCollection1
+            // 
+            imageCollection1.ImageStream = (DevExpress.Utils.ImageCollectionStreamer)resources.GetObject("imageCollection1.ImageStream");
+            imageCollection1.Images.SetKeyName(0, "deletelist_16x16.png");
+            // 
+            // sbbaru
+            // 
+            sbbaru.Location = new Point(434, 17);
+            sbbaru.Margin = new Padding(2);
+            sbbaru.Name = "sbbaru";
+            sbbaru.Size = new Size(90, 36);
+            sbbaru.TabIndex = 8;
+            sbbaru.Text = "Baru";
+            sbbaru.Click += sbbaru_Click;
+            //
+            // btnResetPassword
+            //
+            btnResetPassword.Location = new Point(434, 130);
+            btnResetPassword.Margin = new Padding(2);
+            btnResetPassword.Name = "btnResetPassword";
+            btnResetPassword.Size = new Size(90, 36);
+            btnResetPassword.TabIndex = 30;
+            btnResetPassword.Text = "Reset Pwd";
+            btnResetPassword.Visible = false;
+            btnResetPassword.Click += btnResetPassword_Click;
+            //
             // FrmUsers
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1107, 439);
-            this.Controls.Add(this.lbluser);
-            this.Controls.Add(this.lbllokasi);
-            this.Controls.Add(this.gridControl1);
-            this.Controls.Add(this.btnhapus);
-            this.Controls.Add(this.btnsimpan);
-            this.Controls.Add(this.dEPTLabel);
-            this.Controls.Add(this.dEPTTextEdit);
-            this.Controls.Add(this.jABATANLabel);
-            this.Controls.Add(this.jABATANTextEdit);
-            this.Controls.Add(this.lEVELIDLabel);
-            this.Controls.Add(this.lEVELIDComboBox);
-            this.Controls.Add(this.nAMALabel);
-            this.Controls.Add(this.nAMATextEdit);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.pASSWORDLabel);
-            this.Controls.Add(this.confirmasi);
-            this.Controls.Add(this.pASSWORDTextEdit);
-            this.Controls.Add(this.uSERIDLabel);
-            this.Controls.Add(this.uSERIDTextEdit);
-            this.Controls.Add(this.gridControl2);
-            this.Controls.Add(this.simpleButton1);
-            this.Controls.Add(this.btnaddcompany);
-            this.Controls.Add(this.lookUpEdit1);
-            this.Margin = new System.Windows.Forms.Padding(2);
-            this.Name = "FrmUsers";
-            this.Text = "Daftar User";
-            this.Load += new System.EventHandler(this.FrmUsers_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl2)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView2)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit1.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dEPTTextEdit.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.jABATANTextEdit.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nAMATextEdit.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pASSWORDTextEdit.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.uSERIDTextEdit.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.confirmasi.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView1)).EndInit();
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            ClientSize = new Size(1202, 552);
+            Controls.Add(layoutControl2);
+            Controls.Add(layoutControl1);
+            Controls.Add(gridControl1);
+            Controls.Add(gridControl2);
+            Controls.Add(btnaddestate);
+            Controls.Add(sbbaru);
+            Controls.Add(btnResetPassword);
+            Controls.Add(btnhapus);
+            Controls.Add(btnsimpan);
+            Margin = new Padding(2);
+            Name = "FrmUsers";
+            Text = "Daftar User";
+            Load += FrmUsers_Load;
+            ((System.ComponentModel.ISupportInitialize)gridControl2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridView2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)lookUpEdit1.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControl2).EndInit();
+            layoutControl2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)layoutControlGroup1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem7).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem10).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem11).EndInit();
+            ((System.ComponentModel.ISupportInitialize)dEPTTextEdit.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControl1).EndInit();
+            layoutControl1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)uSERIDTextEdit.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pASSWORDTextEdit.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)jABATANTextEdit.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)confirmasi.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nAMATextEdit.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)checkEditaktif.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)Root).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)emptySpaceItem1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem4).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem5).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem3).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem6).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem15).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridControl1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridView1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem12).EndInit();
+            ((System.ComponentModel.ISupportInitialize)imageCollection1).EndInit();
+            ResumeLayout(false);
         }
 
         #endregion
         private DevExpress.XtraGrid.GridControl gridControl2;
         private DevExpress.XtraGrid.Views.Grid.GridView gridView2;
         private DevExpress.XtraEditors.LookUpEdit lookUpEdit1;
-        private DevExpress.XtraEditors.SimpleButton btnaddcompany;
+        private DevExpress.XtraEditors.SimpleButton btnaddestate;
         private DevExpress.XtraEditors.TextEdit dEPTTextEdit;
         private DevExpress.XtraEditors.TextEdit jABATANTextEdit;
-        private System.Windows.Forms.ComboBox lEVELIDComboBox;
         private DevExpress.XtraEditors.TextEdit nAMATextEdit;
         private DevExpress.XtraEditors.TextEdit pASSWORDTextEdit;
         private DevExpress.XtraEditors.TextEdit uSERIDTextEdit;
@@ -389,15 +532,27 @@ namespace Accounting.Form
         private DevExpress.XtraEditors.TextEdit confirmasi;
         private DevExpress.XtraGrid.GridControl gridControl1;
         private DevExpress.XtraGrid.Views.Grid.GridView gridView1;
-        private DevExpress.XtraEditors.SimpleButton simpleButton1;
-        private DevExpress.XtraEditors.LabelControl lbllokasi;
         private DevExpress.XtraEditors.LabelControl lbluser;
-        private System.Windows.Forms.Label dEPTLabel;
-        private System.Windows.Forms.Label jABATANLabel;
-        private System.Windows.Forms.Label lEVELIDLabel;
-        private System.Windows.Forms.Label nAMALabel;
-        private System.Windows.Forms.Label pASSWORDLabel;
-        private System.Windows.Forms.Label uSERIDLabel;
-        private System.Windows.Forms.Label label1;
+        private DevExpress.XtraLayout.LayoutControl layoutControl1;
+        private DevExpress.XtraLayout.LayoutControlGroup Root;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem1;
+        private DevExpress.XtraLayout.EmptySpaceItem emptySpaceItem1;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem2;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem4;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem5;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem3;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem6;
+        private DevExpress.XtraEditors.LabelControl lblmodule;
+        private DevExpress.XtraLayout.LayoutControl layoutControl2;
+        private DevExpress.XtraLayout.LayoutControlGroup layoutControlGroup1;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem12;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem7;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem10;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem11;
+        private DevExpress.Utils.ImageCollection imageCollection1;
+        private DevExpress.XtraEditors.CheckEdit checkEditaktif;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem15;
+        private DevExpress.XtraEditors.SimpleButton sbbaru;
+        private DevExpress.XtraEditors.SimpleButton btnResetPassword;
     }
 }

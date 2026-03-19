@@ -11,7 +11,6 @@ using DevExpress.XtraPrinting;
 using DevExpress.XtraReports.UI;
 using DevExpress.XtraSplashScreen;
 using OfficeOpenXml;
-using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -33,7 +32,6 @@ namespace Accounting.Form
             InitializeComponent();
         }
         DataSet DSGL;
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
 
         private void UpdateFromNew(object sender, FrmAkunAdd.UpdateEventArgs args)
         {
@@ -47,7 +45,7 @@ namespace Accounting.Form
         {
             try
             {
-                Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.INIT);
+                Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
                 cmbbulan.Properties.Items.AddRange(new[] { "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" });
                 if (Acct.PeriodeMax.ToString().Length > 0)
                 {
@@ -84,7 +82,7 @@ namespace Accounting.Form
             }
             else
             {
-                var p_iddata = CompanyInfo.INIT;
+                var p_iddata =CompanyInfo.IDDATA;
                 var p_tahun = Convert.ToInt32(setahun.Value);
                 var p_bulan = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
                 if (p_tahun != 0 && p_bulan != 0)
@@ -98,7 +96,7 @@ namespace Accounting.Form
 
         private void Dapper_GetQueryable(object sender, GetQueryableEventArgs e)
         {
-            var p_iddata = CompanyInfo.INIT;
+            var p_iddata =CompanyInfo.IDDATA;
             var p_tahun = Convert.ToInt32(setahun.Value);
             var p_bulan = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
             if (p_tahun != 0 && p_bulan != 0)
@@ -129,92 +127,15 @@ namespace Accounting.Form
                     gridView1.ClearColumnsFilter();
                     gridView1.ExpandAllGroups();
                 }
-                else if (TIPE == "01")
+                else
                 {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='01'");
-                }
-                else if (TIPE == "02")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='02'");
-                }
-                else if (TIPE == "03")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='03'");
-                }
-                else if (TIPE == "04")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='04'");
-                }
-                else if (TIPE == "05")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='05'");
-                }
-                else if (TIPE == "06")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='06'");
-                }
-                else if (TIPE == "07")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='07'");
-                }
-                else if (TIPE == "08")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='08'");
-                }
-                else if (TIPE == "09")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='09'");
-                }
-                else if (TIPE == "10")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='10'");
-                }
-                else if (TIPE == "11")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='11'");
-                }
-                else if (TIPE == "12")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='12'");
-                }
-                else if (TIPE == "13")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='13'");
-                }
-                else if (TIPE == "14")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='14'");
-                }
-                else if (TIPE == "15")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='15'");
-                }
-                else if (TIPE == "16")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='16'");
-                }
-                else if (TIPE == "17")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='17'");
-                }
-                else if (TIPE == "18")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='18'");
-                }
-                else if (TIPE == "19")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='19'");
-                }
-                else if (TIPE == "20")
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo("[GRP]='20'");
+                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo($"[GRP]='{TIPE}'");
                 }
             }
             catch (SystemException ex)
             {
                 XtraMessageBox.Show(ex.Message, "Error lookup", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
         }
   
         private void sbexport_Click(object sender, EventArgs e)
@@ -222,18 +143,18 @@ namespace Accounting.Form
             IOverlaySplashScreenHandle handle = null;
             try
             {
-                //2 kode buka kode perkiraan
-                bool akses = LevelAksesServices.CetakExport(2, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID: " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////2 kode buka kode perkiraan
+                //bool akses = LevelAksesServices.CetakExport(2, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID: " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
 
                 handle = SplashScreenManager.ShowOverlayForm(this);
 
                 string tempPath = Path.GetTempPath();
-                string fileName = Path.Combine(tempPath, $"{CompanyInfo.INIT}DaftarPerkiraan_{Guid.NewGuid()}.xlsx");
+                string fileName = Path.Combine(tempPath, $"{CompanyInfo.IDDATA}DaftarPerkiraan_{Guid.NewGuid()}.xlsx");
 
                 if (CompanyInfo.JENIS_AKUNTING == "KEBUN")
                 {
@@ -266,7 +187,7 @@ namespace Accounting.Form
                 }
 
                 // gridView1.BestFitColumns();
-                string sheetname = CompanyInfo.INIT + cmbbulan.Text + setahun.Value;
+                string sheetname =CompanyInfo.IDDATA + cmbbulan.Text + setahun.Value;
 
                 XlsxExportOptionsEx xlsxOptions = new XlsxExportOptionsEx
                 {
@@ -352,15 +273,15 @@ namespace Accounting.Form
 
         private void sbadd_Click(object sender, EventArgs e)
         {
-            try
-            {
-                //2 kode buka kode perkiraan
-                bool akses = LevelAksesServices.BaruImport(2, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+            //try
+            //{
+                ////2 kode buka kode perkiraan
+                //bool akses = LevelAksesServices.BaruImport(2, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                 FrmAkunAdd form = new FrmAkunAdd(this)
                 {
                     //MdiParent = this,
@@ -368,24 +289,24 @@ namespace Accounting.Form
                 };
                 form.UpdateEventHandler += UpdateFromNew;
                 form.ShowDialog();
-            }
-            catch (SystemException ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error Add", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            //}
+            //catch (SystemException ex)
+            //{
+            //    XtraMessageBox.Show(ex.Message, "Error Add", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //}
 
         }
         private void sbubah_Click(object sender, EventArgs e)
         {
             try
             {
-                //2 kode buka kode perkiraan
-                bool akses = LevelAksesServices.Ubah(2, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////2 kode buka kode perkiraan
+                //bool akses = LevelAksesServices.Ubah(2, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                 if (this.gridView1.GetFocusedRowCellValue("ID") == null)
                     return;
                 if (this.gridView1.GetFocusedRowCellValue("LVL").ToString() == "1")
@@ -424,13 +345,13 @@ namespace Accounting.Form
         {
             try
             {
-                //2 kode buka kode perkiraan
-                bool akses = LevelAksesServices.Hapus(2, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////2 kode buka kode perkiraan
+                //bool akses = LevelAksesServices.Hapus(2, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
 
                 var rowhandle = gridView1.FocusedRowHandle;
                 var ID = gridView1.GetRowCellValue(rowhandle, "ID").ToString();
@@ -462,19 +383,7 @@ namespace Accounting.Form
         {
             try
             {
-                using (OracleCommand _command = new("DELETE FROM ACCT_COA WHERE ACCTCOAID=:p_id", conn)
-                {
-                    CommandType = CommandType.Text
-                })
-                {
-                    if (conn.State != ConnectionState.Open)
-                    {
-                        conn.Open();
-                    }
-                    _command.Parameters.Add(":p_id", OracleDbType.Varchar2, 40).Value = iD;
-                    _command.ExecuteNonQuery();
-                    conn.Close();
-                }
+                AccountServices.DeleteCOA(iD);
                 Load_COA();
                 XtraMessageBox.Show("Account Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -740,12 +649,12 @@ namespace Accounting.Form
             try
             {
                 if (this.gridView1.GetFocusedRowCellValue("GD") == null) return;
-                bool akses = LevelAksesServices.CetakExport(4, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.CetakExport(4, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                 string[] bulanbi = { "Bulan", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" };
 
                 var rowhandle = gridView1.FocusedRowHandle;
@@ -761,7 +670,7 @@ namespace Accounting.Form
                 ptahun = (int)setahun.Value;
                 var bulan = bulanbi[pbulan].ToString() + "-" + ptahun.ToString();
                 var periode = pbulan.ToString("00") + "/" + ptahun.ToString();
-                var iddata = CompanyInfo.INIT;
+                var iddata =CompanyInfo.IDDATA;
                 var userid = LoginInfo.userID;
 
                 if (debet == 0 && kredit == 0)

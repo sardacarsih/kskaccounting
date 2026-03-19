@@ -159,6 +159,30 @@ namespace Accounting.BusinessLayer
         {
             return repository.ValidateColumnNames(dataTable, NamaKolom);
         }
+        public static DataTable GetMasterAkun(string kategori, string kelompok)
+        {
+            return repository.GetMasterAkun(kategori, kelompok);
+        }
+        public static DataTable GetIndukAkun(string kategori, string kelompok)
+        {
+            return repository.GetIndukAkun(kategori, kelompok);
+        }
+        public static void UpdateCOA(string coaId, string kodeAcc, string grp, string parentAcc, string namaAcc, char isAktif, string lvl)
+        {
+            repository.UpdateCOA(coaId, kodeAcc, grp, parentAcc, namaAcc, isAktif, lvl);
+        }
+        public static void DeleteCOA(string coaId)
+        {
+            repository.DeleteCOA(coaId);
+        }
+        public static void UpdateCOATmpIdData(string iddata, int tahun, string userid)
+        {
+            repository.UpdateCOATmpIdData(iddata, tahun, userid);
+        }
+        public static void TruncateCOATmp()
+        {
+            repository.TruncateCOATmp();
+        }
         public static DataTable Akun_Agronomy(string p_iddata, int p_tahun, string p_kelompok)
         {
             return repository.Akun_Agronomy( p_iddata,  p_tahun, p_kelompok);

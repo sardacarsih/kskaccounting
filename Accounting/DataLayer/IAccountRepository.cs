@@ -46,5 +46,11 @@ namespace Accounting.DataLayer
         IEnumerable<coaHIA> GetPerkiraanSaldo_TreeView(string p_iddata, int p_tahun, int p_bulan);
         bool ValidateColumnNames(DataTable dataTable, string[] NamaKolom);
         DataTable Akun_Agronomy(string p_iddata, int p_tahun,string p_kelompok);
+        DataTable GetMasterAkun(string kategori, string kelompok);
+        DataTable GetIndukAkun(string kategori, string kelompok);
+        void UpdateCOA(string coaId, string kodeAcc, string grp, string parentAcc, string namaAcc, char isAktif, string lvl);
+        void DeleteCOA(string coaId);
+        void UpdateCOATmpIdData(string iddata, int tahun, string userid);
+        void TruncateCOATmp();
     }
 }

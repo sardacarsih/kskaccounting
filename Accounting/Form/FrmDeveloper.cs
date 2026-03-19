@@ -11,7 +11,7 @@ namespace Accounting.Form
 {
     public partial class FrmDeveloper : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
+       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         private SoundPlayer Player = new SoundPlayer();
         public FrmDeveloper()
         {

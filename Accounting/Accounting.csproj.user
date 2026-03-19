@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <_LastSelectedProfileId>D:\Project\DotNet\GL_MVC_Repository\Accounting\Properties\PublishProfiles\FolderProfile1.pubxml</_LastSelectedProfileId>
+    <_LastSelectedProfileId>E:\Project\GL_MVC_Repository\Accounting\Properties\PublishProfiles\X64.pubxml</_LastSelectedProfileId>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="Form\About.cs">
@@ -49,6 +49,9 @@
     <Compile Update="Form\FrmCompanyProfile.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Form\FrmDaftarCOA.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Form\FrmDaftarJurnal.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -67,7 +70,43 @@
     <Compile Update="Form\FrmImportJurnal_Parsial.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Form\FrmJurnal.Core.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Form\FrmJurnal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.DaftarCari.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.EntryGridInteractions.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.EntryHeaderActions.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.EntryInput.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.ImportAisExtras.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.ImportAisHris.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.ImportHrisPayroll.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.ImportInventory.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.ImportKasir.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.ImportShared.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.Init.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Form\Frmlogin.cs">
@@ -202,6 +241,12 @@
     <Compile Update="Laporan\Report1.cs">
       <SubType>XtraReport</SubType>
     </Compile>
+    <Compile Update="Laporan\Report2.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Laporan\Report3.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
     <Compile Update="Laporan\rsub_rl_DetailD.cs">
       <SubType>XtraReport</SubType>
     </Compile>
@@ -231,6 +276,15 @@
     </Compile>
     <Compile Update="Partition.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UC\Jurnal\UcJurnalTabHostBase.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UC\Jurnal\UcJurnalTabs.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UC\uc_Level_Akses.cs">
+      <SubType>UserControl</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>

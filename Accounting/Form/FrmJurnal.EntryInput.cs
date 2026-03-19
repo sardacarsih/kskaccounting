@@ -128,19 +128,34 @@ namespace Accounting.Form
                     UserId = LoginInfo.userID
                 };
 
-                JurnalSaveResult saveResult = jurnalInputOperationService.Save(request);
-                if (!saveResult.IsSuccess)
-                {
-                    XtraMessageBox.Show(saveResult.Message, "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    HandleSaveFocus(saveResult.FocusTarget);
-                    return;
-                }
+                SBSimpan.Enabled = false;
+                var loadingScope = BeginGlobalLoadingScope();
 
-                editjurnal = false;
-                importModule = ImportModule.None;
+                Task.Run(() => jurnalInputOperationService.Save(request))
+                    .ContinueWith(t =>
+                    {
+                        loadingScope?.Dispose();
+                        SBSimpan.Enabled = true;
 
-                PilihanPeriodeAkuntansi();
-                bersih();
+                        if (t.IsFaulted)
+                        {
+                            XtraMessageBox.Show(t.Exception!.InnerException!.Message, "Error on Simpan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+
+                        var saveResult = t.Result;
+                        if (!saveResult.IsSuccess)
+                        {
+                            XtraMessageBox.Show(saveResult.Message, "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            HandleSaveFocus(saveResult.FocusTarget);
+                            return;
+                        }
+
+                        editjurnal = false;
+                        importModule = ImportModule.None;
+                        PilihanPeriodeAkuntansi();
+                        bersih();
+                    }, TaskScheduler.FromCurrentSynchronizationContext());
             }
             catch (SystemException ex)
             {

@@ -11,7 +11,7 @@ namespace Accounting.DataLayer
 {
     public  class ExportRepository:IExportRepository
     {
-    private readonly OracleConnection conn = new(Acct.OracleConnString);
+    private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
 
         public DataTable ExportJurnalMonthly(string piddata, string periode)
         {

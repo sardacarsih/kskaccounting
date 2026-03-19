@@ -38,7 +38,7 @@ namespace Accounting
             setahun.Properties.MinValue = Acct.TahunMin;
             setahun.Properties.MaxValue = Acct.TahunMax;
             setahun.Value = Acct.TahunMax;
-            lbliddata.Text = CompanyInfo.INIT;
+            lbliddata.Text =CompanyInfo.IDDATA;
             Load_TipeAkun();
         }
         private void Load_TipeAkun()
@@ -85,7 +85,7 @@ namespace Accounting
             {
                 var tipe = lookUpEdikat.EditValue.ToString();
 
-                grp = AccountServices.GetParentAccount(CompanyInfo.INIT, ptahun, tipe);
+                grp = AccountServices.GetParentAccount(CompanyInfo.IDDATA, ptahun, tipe);
                 lookUpEditbagiandari.Properties.DataSource = grp;
                 lookUpEditbagiandari.Properties.ValueMember = "KODEACC";
                 lookUpEditbagiandari.Properties.DisplayMember = "KODEACC";
@@ -174,14 +174,9 @@ namespace Accounting
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-
-            }
-            finally
-            {
-                //Cursor.Current = Cursors.Default;
-                //SplashScreenManager.CloseForm();
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             
         }
@@ -196,13 +191,13 @@ namespace Accounting
                 {
                     if (gd.SelectedIndex == 1)
                     {
-                        var jlhkode = AccountServices.CekCountKode(CompanyInfo.INIT, Convert.ToInt32(setahun.Value), lookUpEditbagiandari.EditValue.ToString(), "D");
+                        var jlhkode = AccountServices.CekCountKode(CompanyInfo.IDDATA, Convert.ToInt32(setahun.Value), lookUpEditbagiandari.EditValue.ToString(), "D");
                         txtnoakungroup.Enabled = false;
                         txtnoakundetail.Text = (jlhkode + 1).ToString("000");
                     }
                     else
                     {
-                        var jlhkode = AccountServices.CekCountKode(CompanyInfo.INIT, Convert.ToInt32(setahun.Value), lookUpEditbagiandari.EditValue.ToString(), "G");
+                        var jlhkode = AccountServices.CekCountKode(CompanyInfo.IDDATA, Convert.ToInt32(setahun.Value), lookUpEditbagiandari.EditValue.ToString(), "G");
                         txtnoakungroup.Enabled = true;
                         int jlh = jlhkode * 1000;
                         txtnoakungroup.Text = (jlh + 1000).ToString("00000");
@@ -221,9 +216,9 @@ namespace Accounting
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -242,7 +237,7 @@ namespace Accounting
             if (lookUpEditbagiandari.EditValue != null)
             {
                 txtnoakungroup.Enabled = true;
-                var jlhkode = AccountServices.CekCountKode(CompanyInfo.INIT, Convert.ToInt32(setahun.Value), lookUpEditbagiandari.EditValue.ToString(), "G");
+                var jlhkode = AccountServices.CekCountKode(CompanyInfo.IDDATA, Convert.ToInt32(setahun.Value), lookUpEditbagiandari.EditValue.ToString(), "G");
 
                 int sub = int.Parse(lookUpEditbagiandari.EditValue.ToString().Substring(3, 5));
                 txtnoakungroup.Enabled = true;
@@ -260,7 +255,7 @@ namespace Accounting
                 txtnoakungroup.Enabled = false;
                 var sub = lookUpEditbagiandari.EditValue.ToString().Substring(3, 5);
                 txtnoakungroup.Text = sub;
-                var jlhkode = AccountServices.CekCountKode(CompanyInfo.INIT, Convert.ToInt32(setahun.Value), lookUpEditbagiandari.EditValue.ToString(), "D");
+                var jlhkode = AccountServices.CekCountKode(CompanyInfo.IDDATA, Convert.ToInt32(setahun.Value), lookUpEditbagiandari.EditValue.ToString(), "D");
                 txtnoakundetail.Text = (jlhkode + 1).ToString("000");
             }
         }
@@ -269,7 +264,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -277,20 +272,15 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
-        }
-
-        private void txtnoakun_KeyDown(object sender, KeyEventArgs e)
-        {
-
         }
 
         private void txtnamaakun_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -298,7 +288,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -306,7 +296,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {                
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -314,7 +304,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -322,7 +312,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -332,7 +322,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -342,9 +332,9 @@ namespace Accounting
             Cursor.Current = Cursors.WaitCursor;
             try
             {
-                if (txtkepalaakun.Text.Length!=3 &&
-                txtnoakungroup.Text.Length!=6 &&
-                txtnoakundetail.Text.Length!=3)
+                if (txtkepalaakun.Text.Length != 3 ||
+                txtnoakungroup.Text.Length != 5 ||
+                txtnoakundetail.Text.Length != 3)
                 {
                     XtraMessageBox.Show("Kode Akun wajib diisi lengkap", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
@@ -389,7 +379,7 @@ namespace Accounting
                     pposisi = 'K';
                 }
                 var pnama = txtnamaakun.Text.Trim();
-                var piddata = CompanyInfo.INIT;
+                var piddata =CompanyInfo.IDDATA;
                 var p_tahun = ptahun;
 
                 if(pinduk== pkode)
@@ -446,7 +436,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -454,7 +444,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
     }

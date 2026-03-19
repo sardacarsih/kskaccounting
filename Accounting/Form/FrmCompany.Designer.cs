@@ -29,353 +29,358 @@ namespace Accounting.Form
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.Label lEVELIDLabel;
-            System.Windows.Forms.Label pASSWORDLabel;
-            System.Windows.Forms.Label uSERIDLabel;
-            System.Windows.Forms.Label label4;
-            System.Windows.Forms.Label label5;
-            System.Windows.Forms.Label label7;
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmCompany));
-            this.xtraTabControl1 = new DevExpress.XtraTab.XtraTabControl();
-            this.xtraTabPage1 = new DevExpress.XtraTab.XtraTabPage();
-            this.LEPT = new DevExpress.XtraEditors.LookUpEdit();
-            this.groupControl1 = new DevExpress.XtraEditors.GroupControl();
-            this.radioGroup1 = new DevExpress.XtraEditors.RadioGroup();
-            this.gridControl1 = new DevExpress.XtraGrid.GridControl();
-            this.gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
-            this.btnhapus = new DevExpress.XtraEditors.SimpleButton();
-            this.btnsimpan = new DevExpress.XtraEditors.SimpleButton();
-            this.TXTWILAYAH = new DevExpress.XtraEditors.TextEdit();
-            this.TXTIDDATA = new DevExpress.XtraEditors.TextEdit();
-            this.xtraTabPage2 = new DevExpress.XtraTab.XtraTabPage();
-            this.gridControl2 = new DevExpress.XtraGrid.GridControl();
-            this.gridView2 = new DevExpress.XtraGrid.Views.Grid.GridView();
-            this.SBHAPUS = new DevExpress.XtraEditors.SimpleButton();
-            this.SBSIMPAN = new DevExpress.XtraEditors.SimpleButton();
-            this.CMBGROUP = new System.Windows.Forms.ComboBox();
-            this.TXTNAMAPT = new DevExpress.XtraEditors.TextEdit();
-            this.TXTKODEPT = new DevExpress.XtraEditors.TextEdit();
             lEVELIDLabel = new System.Windows.Forms.Label();
             pASSWORDLabel = new System.Windows.Forms.Label();
             uSERIDLabel = new System.Windows.Forms.Label();
             label4 = new System.Windows.Forms.Label();
             label5 = new System.Windows.Forms.Label();
             label7 = new System.Windows.Forms.Label();
-            ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).BeginInit();
-            this.xtraTabControl1.SuspendLayout();
-            this.xtraTabPage1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.LEPT.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.groupControl1)).BeginInit();
-            this.groupControl1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.radioGroup1.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.TXTWILAYAH.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.TXTIDDATA.Properties)).BeginInit();
-            this.xtraTabPage2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl2)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView2)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.TXTNAMAPT.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.TXTKODEPT.Properties)).BeginInit();
-            this.SuspendLayout();
+            xtraTabControl1 = new DevExpress.XtraTab.XtraTabControl();
+            xtraTabPage1 = new DevExpress.XtraTab.XtraTabPage();
+            LEPT = new DevExpress.XtraEditors.LookUpEdit();
+            groupControl1 = new DevExpress.XtraEditors.GroupControl();
+            radioGroup1 = new DevExpress.XtraEditors.RadioGroup();
+            gridControl1 = new DevExpress.XtraGrid.GridControl();
+            gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
+            btnhapus = new DevExpress.XtraEditors.SimpleButton();
+            btnsimpan = new DevExpress.XtraEditors.SimpleButton();
+            TXTWILAYAH = new DevExpress.XtraEditors.TextEdit();
+            TXTIDDATA = new DevExpress.XtraEditors.TextEdit();
+            xtraTabPage2 = new DevExpress.XtraTab.XtraTabPage();
+            gridControl2 = new DevExpress.XtraGrid.GridControl();
+            gridView2 = new DevExpress.XtraGrid.Views.Grid.GridView();
+            SBHAPUS = new DevExpress.XtraEditors.SimpleButton();
+            SBSIMPAN = new DevExpress.XtraEditors.SimpleButton();
+            CMBGROUP = new System.Windows.Forms.ComboBox();
+            TXTNAMAPT = new DevExpress.XtraEditors.TextEdit();
+            TXTKODEPT = new DevExpress.XtraEditors.TextEdit();
+            ((System.ComponentModel.ISupportInitialize)xtraTabControl1).BeginInit();
+            xtraTabControl1.SuspendLayout();
+            xtraTabPage1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)LEPT.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)groupControl1).BeginInit();
+            groupControl1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)radioGroup1.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridControl1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridView1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)TXTWILAYAH.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)TXTIDDATA.Properties).BeginInit();
+            xtraTabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)gridControl2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridView2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)TXTNAMAPT.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)TXTKODEPT.Properties).BeginInit();
+            SuspendLayout();
             // 
             // lEVELIDLabel
             // 
             lEVELIDLabel.AutoSize = true;
-            lEVELIDLabel.Location = new System.Drawing.Point(204, 82);
+            lEVELIDLabel.Location = new System.Drawing.Point(159, 73);
+            lEVELIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             lEVELIDLabel.Name = "lEVELIDLabel";
-            lEVELIDLabel.Size = new System.Drawing.Size(112, 19);
+            lEVELIDLabel.Size = new System.Drawing.Size(96, 19);
             lEVELIDLabel.TabIndex = 38;
             lEVELIDLabel.Text = "PERUSAHAAN";
             // 
             // pASSWORDLabel
             // 
             pASSWORDLabel.AutoSize = true;
-            pASSWORDLabel.Location = new System.Drawing.Point(204, 49);
+            pASSWORDLabel.Location = new System.Drawing.Point(159, 44);
+            pASSWORDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             pASSWORDLabel.Name = "pASSWORDLabel";
-            pASSWORDLabel.Size = new System.Drawing.Size(80, 19);
+            pASSWORDLabel.Size = new System.Drawing.Size(67, 19);
             pASSWORDLabel.TabIndex = 41;
             pASSWORDLabel.Text = "WILAYAH";
             // 
             // uSERIDLabel
             // 
             uSERIDLabel.AutoSize = true;
-            uSERIDLabel.Location = new System.Drawing.Point(204, 19);
+            uSERIDLabel.Location = new System.Drawing.Point(159, 17);
+            uSERIDLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             uSERIDLabel.Name = "uSERIDLabel";
-            uSERIDLabel.Size = new System.Drawing.Size(69, 19);
+            uSERIDLabel.Size = new System.Drawing.Size(56, 19);
             uSERIDLabel.TabIndex = 42;
             uSERIDLabel.Text = "IDDATA";
             // 
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new System.Drawing.Point(607, 56);
+            label4.Location = new System.Drawing.Point(472, 50);
+            label4.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             label4.Name = "label4";
-            label4.Size = new System.Drawing.Size(62, 19);
+            label4.Size = new System.Drawing.Size(56, 19);
             label4.TabIndex = 54;
             label4.Text = "GROUP";
             // 
             // label5
             // 
             label5.AutoSize = true;
-            label5.Location = new System.Drawing.Point(19, 56);
+            label5.Location = new System.Drawing.Point(15, 50);
+            label5.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             label5.Name = "label5";
-            label5.Size = new System.Drawing.Size(162, 19);
+            label5.Size = new System.Drawing.Size(141, 19);
             label5.TabIndex = 55;
             label5.Text = "NAMA PERUSAHAAN";
             // 
             // label7
             // 
             label7.AutoSize = true;
-            label7.Location = new System.Drawing.Point(19, 25);
+            label7.Location = new System.Drawing.Point(15, 22);
+            label7.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             label7.Name = "label7";
-            label7.Size = new System.Drawing.Size(50, 19);
+            label7.Size = new System.Drawing.Size(44, 19);
             label7.TabIndex = 57;
             label7.Text = "KODE";
             // 
             // xtraTabControl1
             // 
-            this.xtraTabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.xtraTabControl1.Location = new System.Drawing.Point(0, 0);
-            this.xtraTabControl1.Name = "xtraTabControl1";
-            this.xtraTabControl1.SelectedTabPage = this.xtraTabPage1;
-            this.xtraTabControl1.Size = new System.Drawing.Size(965, 673);
-            this.xtraTabControl1.TabIndex = 0;
-            this.xtraTabControl1.TabPages.AddRange(new DevExpress.XtraTab.XtraTabPage[] {
-            this.xtraTabPage1,
-            this.xtraTabPage2});
+            xtraTabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            xtraTabControl1.Location = new System.Drawing.Point(0, 0);
+            xtraTabControl1.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            xtraTabControl1.Name = "xtraTabControl1";
+            xtraTabControl1.SelectedTabPage = xtraTabPage1;
+            xtraTabControl1.Size = new System.Drawing.Size(751, 602);
+            xtraTabControl1.TabIndex = 0;
+            xtraTabControl1.TabPages.AddRange(new DevExpress.XtraTab.XtraTabPage[] { xtraTabPage1, xtraTabPage2 });
             // 
             // xtraTabPage1
             // 
-            this.xtraTabPage1.Controls.Add(this.LEPT);
-            this.xtraTabPage1.Controls.Add(this.groupControl1);
-            this.xtraTabPage1.Controls.Add(this.gridControl1);
-            this.xtraTabPage1.Controls.Add(this.btnhapus);
-            this.xtraTabPage1.Controls.Add(this.btnsimpan);
-            this.xtraTabPage1.Controls.Add(lEVELIDLabel);
-            this.xtraTabPage1.Controls.Add(pASSWORDLabel);
-            this.xtraTabPage1.Controls.Add(this.TXTWILAYAH);
-            this.xtraTabPage1.Controls.Add(uSERIDLabel);
-            this.xtraTabPage1.Controls.Add(this.TXTIDDATA);
-            this.xtraTabPage1.Name = "xtraTabPage1";
-            this.xtraTabPage1.Size = new System.Drawing.Size(959, 639);
-            this.xtraTabPage1.Text = "IDDATA";
+            xtraTabPage1.Controls.Add(LEPT);
+            xtraTabPage1.Controls.Add(groupControl1);
+            xtraTabPage1.Controls.Add(gridControl1);
+            xtraTabPage1.Controls.Add(btnhapus);
+            xtraTabPage1.Controls.Add(btnsimpan);
+            xtraTabPage1.Controls.Add(lEVELIDLabel);
+            xtraTabPage1.Controls.Add(pASSWORDLabel);
+            xtraTabPage1.Controls.Add(TXTWILAYAH);
+            xtraTabPage1.Controls.Add(uSERIDLabel);
+            xtraTabPage1.Controls.Add(TXTIDDATA);
+            xtraTabPage1.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            xtraTabPage1.Name = "xtraTabPage1";
+            xtraTabPage1.Size = new System.Drawing.Size(749, 573);
+            xtraTabPage1.Text = "IDDATA";
             // 
             // LEPT
             // 
-            this.LEPT.Location = new System.Drawing.Point(322, 79);
-            this.LEPT.Name = "LEPT";
-            this.LEPT.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
-            this.LEPT.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.LEPT.Size = new System.Drawing.Size(393, 26);
-            this.LEPT.TabIndex = 2;
-            this.LEPT.ToolTip = "Nama Perusahaan";
-            this.LEPT.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
-            this.LEPT.KeyDown += new System.Windows.Forms.KeyEventHandler(this.LEPT_KeyDown);
+            LEPT.Location = new System.Drawing.Point(259, 70);
+            LEPT.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            LEPT.Name = "LEPT";
+            LEPT.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            LEPT.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            LEPT.Size = new System.Drawing.Size(306, 24);
+            LEPT.TabIndex = 2;
+            LEPT.ToolTip = "Nama Perusahaan";
+            LEPT.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
+            LEPT.KeyDown += LEPT_KeyDown;
             // 
             // groupControl1
             // 
-            this.groupControl1.Controls.Add(this.radioGroup1);
-            this.groupControl1.Location = new System.Drawing.Point(22, 4);
-            this.groupControl1.Name = "groupControl1";
-            this.groupControl1.Size = new System.Drawing.Size(157, 193);
-            this.groupControl1.TabIndex = 45;
-            this.groupControl1.Text = "Jenis Pembukuan";
+            groupControl1.Controls.Add(radioGroup1);
+            groupControl1.Location = new System.Drawing.Point(17, 4);
+            groupControl1.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            groupControl1.Name = "groupControl1";
+            groupControl1.Size = new System.Drawing.Size(122, 173);
+            groupControl1.TabIndex = 45;
+            groupControl1.Text = "Jenis Pembukuan";
             // 
             // radioGroup1
             // 
-            this.radioGroup1.Location = new System.Drawing.Point(19, 33);
-            this.radioGroup1.Name = "radioGroup1";
-            this.radioGroup1.Properties.Items.AddRange(new DevExpress.XtraEditors.Controls.RadioGroupItem[] {
-            new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "PUSAT"),
-            new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "PWK"),
-            new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "KEBUN", true, null, ""),
-            new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "PKS")});
-            this.radioGroup1.Size = new System.Drawing.Size(121, 142);
-            this.radioGroup1.TabIndex = 0;
+            radioGroup1.Location = new System.Drawing.Point(15, 30);
+            radioGroup1.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            radioGroup1.Name = "radioGroup1";
+            radioGroup1.Properties.Items.AddRange(new DevExpress.XtraEditors.Controls.RadioGroupItem[] { new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "PUSAT"), new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "PWK"), new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "KEBUN", true, null, ""), new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "PKS") });
+            radioGroup1.Size = new System.Drawing.Size(94, 127);
+            radioGroup1.TabIndex = 0;
             // 
             // gridControl1
             // 
-            this.gridControl1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.gridControl1.Location = new System.Drawing.Point(22, 203);
-            this.gridControl1.MainView = this.gridView1;
-            this.gridControl1.Name = "gridControl1";
-            this.gridControl1.Size = new System.Drawing.Size(916, 429);
-            this.gridControl1.TabIndex = 4;
-            this.gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
-            this.gridView1});
+            gridControl1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
+            gridControl1.EmbeddedNavigator.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            gridControl1.Location = new System.Drawing.Point(17, 182);
+            gridControl1.MainView = gridView1;
+            gridControl1.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            gridControl1.Name = "gridControl1";
+            gridControl1.Size = new System.Drawing.Size(712, 384);
+            gridControl1.TabIndex = 4;
+            gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView1 });
             // 
             // gridView1
             // 
-            this.gridView1.DetailHeight = 317;
-            this.gridView1.GridControl = this.gridControl1;
-            this.gridView1.Name = "gridView1";
-            this.gridView1.OptionsBehavior.Editable = false;
-            this.gridView1.OptionsFind.AlwaysVisible = true;
-            this.gridView1.OptionsFind.ShowFindButton = false;
-            this.gridView1.OptionsView.ShowGroupPanel = false;
+            gridView1.DetailHeight = 284;
+            gridView1.GridControl = gridControl1;
+            gridView1.Name = "gridView1";
+            gridView1.OptionsBehavior.Editable = false;
+            gridView1.OptionsEditForm.PopupEditFormWidth = 622;
+            gridView1.OptionsFind.AlwaysVisible = true;
+            gridView1.OptionsFind.ShowFindButton = false;
+            gridView1.OptionsView.ShowGroupPanel = false;
             // 
             // btnhapus
             // 
-            this.btnhapus.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnhapus.ImageOptions.Image")));
-            this.btnhapus.Location = new System.Drawing.Point(326, 128);
-            this.btnhapus.Name = "btnhapus";
-            this.btnhapus.Size = new System.Drawing.Size(112, 31);
-            this.btnhapus.TabIndex = 35;
-            this.btnhapus.Text = "Hapus";
-            this.btnhapus.Click += new System.EventHandler(this.btnhapus_Click);
+            btnhapus.Location = new System.Drawing.Point(254, 115);
+            btnhapus.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            btnhapus.Name = "btnhapus";
+            btnhapus.Size = new System.Drawing.Size(87, 28);
+            btnhapus.TabIndex = 35;
+            btnhapus.Text = "Hapus";
+            btnhapus.Click += btnhapus_Click;
             // 
             // btnsimpan
             // 
-            this.btnsimpan.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnsimpan.ImageOptions.Image")));
-            this.btnsimpan.Location = new System.Drawing.Point(208, 128);
-            this.btnsimpan.Name = "btnsimpan";
-            this.btnsimpan.Size = new System.Drawing.Size(112, 31);
-            this.btnsimpan.TabIndex = 3;
-            this.btnsimpan.Text = "Simpan";
-            this.btnsimpan.Click += new System.EventHandler(this.btnsimpan_Click_1);
+            btnsimpan.Location = new System.Drawing.Point(162, 115);
+            btnsimpan.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            btnsimpan.Name = "btnsimpan";
+            btnsimpan.Size = new System.Drawing.Size(87, 28);
+            btnsimpan.TabIndex = 3;
+            btnsimpan.Text = "Simpan";
+            btnsimpan.Click += btnsimpan_Click_1;
             // 
             // TXTWILAYAH
             // 
-            this.TXTWILAYAH.Location = new System.Drawing.Point(322, 46);
-            this.TXTWILAYAH.Name = "TXTWILAYAH";
-            this.TXTWILAYAH.Properties.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
-            this.TXTWILAYAH.Size = new System.Drawing.Size(264, 26);
-            this.TXTWILAYAH.TabIndex = 1;
-            this.TXTWILAYAH.ToolTip = "Wilayah";
-            this.TXTWILAYAH.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
-            this.TXTWILAYAH.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TXTWILAYAH_KeyDown);
+            TXTWILAYAH.Location = new System.Drawing.Point(259, 40);
+            TXTWILAYAH.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            TXTWILAYAH.Name = "TXTWILAYAH";
+            TXTWILAYAH.Properties.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
+            TXTWILAYAH.Size = new System.Drawing.Size(205, 24);
+            TXTWILAYAH.TabIndex = 1;
+            TXTWILAYAH.ToolTip = "Wilayah";
+            TXTWILAYAH.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
+            TXTWILAYAH.KeyDown += TXTWILAYAH_KeyDown;
             // 
             // TXTIDDATA
             // 
-            this.TXTIDDATA.Location = new System.Drawing.Point(322, 15);
-            this.TXTIDDATA.Name = "TXTIDDATA";
-            this.TXTIDDATA.Properties.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
-            this.TXTIDDATA.Size = new System.Drawing.Size(150, 26);
-            this.TXTIDDATA.TabIndex = 0;
-            this.TXTIDDATA.ToolTip = "ID Data";
-            this.TXTIDDATA.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
-            this.TXTIDDATA.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TXTIDDATA_KeyDown);
+            TXTIDDATA.Location = new System.Drawing.Point(259, 12);
+            TXTIDDATA.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            TXTIDDATA.Name = "TXTIDDATA";
+            TXTIDDATA.Properties.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
+            TXTIDDATA.Size = new System.Drawing.Size(117, 24);
+            TXTIDDATA.TabIndex = 0;
+            TXTIDDATA.ToolTip = "ID Data";
+            TXTIDDATA.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
+            TXTIDDATA.KeyDown += TXTIDDATA_KeyDown;
             // 
             // xtraTabPage2
             // 
-            this.xtraTabPage2.Controls.Add(this.gridControl2);
-            this.xtraTabPage2.Controls.Add(this.SBHAPUS);
-            this.xtraTabPage2.Controls.Add(this.SBSIMPAN);
-            this.xtraTabPage2.Controls.Add(label4);
-            this.xtraTabPage2.Controls.Add(this.CMBGROUP);
-            this.xtraTabPage2.Controls.Add(label5);
-            this.xtraTabPage2.Controls.Add(this.TXTNAMAPT);
-            this.xtraTabPage2.Controls.Add(label7);
-            this.xtraTabPage2.Controls.Add(this.TXTKODEPT);
-            this.xtraTabPage2.Name = "xtraTabPage2";
-            this.xtraTabPage2.Size = new System.Drawing.Size(959, 639);
-            this.xtraTabPage2.Text = "PERUSAHAAN";
+            xtraTabPage2.Controls.Add(gridControl2);
+            xtraTabPage2.Controls.Add(SBHAPUS);
+            xtraTabPage2.Controls.Add(SBSIMPAN);
+            xtraTabPage2.Controls.Add(label4);
+            xtraTabPage2.Controls.Add(CMBGROUP);
+            xtraTabPage2.Controls.Add(label5);
+            xtraTabPage2.Controls.Add(TXTNAMAPT);
+            xtraTabPage2.Controls.Add(label7);
+            xtraTabPage2.Controls.Add(TXTKODEPT);
+            xtraTabPage2.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            xtraTabPage2.Name = "xtraTabPage2";
+            xtraTabPage2.Size = new System.Drawing.Size(749, 573);
+            xtraTabPage2.Text = "PERUSAHAAN";
             // 
             // gridControl2
             // 
-            this.gridControl2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.gridControl2.Location = new System.Drawing.Point(23, 121);
-            this.gridControl2.MainView = this.gridView2;
-            this.gridControl2.Name = "gridControl2";
-            this.gridControl2.Size = new System.Drawing.Size(916, 511);
-            this.gridControl2.TabIndex = 4;
-            this.gridControl2.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
-            this.gridView2});
+            gridControl2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
+            gridControl2.EmbeddedNavigator.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            gridControl2.Location = new System.Drawing.Point(18, 108);
+            gridControl2.MainView = gridView2;
+            gridControl2.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            gridControl2.Name = "gridControl2";
+            gridControl2.Size = new System.Drawing.Size(712, 457);
+            gridControl2.TabIndex = 4;
+            gridControl2.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView2 });
             // 
             // gridView2
             // 
-            this.gridView2.DetailHeight = 317;
-            this.gridView2.GridControl = this.gridControl2;
-            this.gridView2.Name = "gridView2";
-            this.gridView2.OptionsBehavior.Editable = false;
-            this.gridView2.OptionsView.ShowGroupPanel = false;
+            gridView2.DetailHeight = 284;
+            gridView2.GridControl = gridControl2;
+            gridView2.Name = "gridView2";
+            gridView2.OptionsBehavior.Editable = false;
+            gridView2.OptionsEditForm.PopupEditFormWidth = 622;
+            gridView2.OptionsView.ShowGroupPanel = false;
             // 
             // SBHAPUS
             // 
-            this.SBHAPUS.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("SBHAPUS.ImageOptions.Image")));
-            this.SBHAPUS.Location = new System.Drawing.Point(306, 85);
-            this.SBHAPUS.Name = "SBHAPUS";
-            this.SBHAPUS.Size = new System.Drawing.Size(112, 31);
-            this.SBHAPUS.TabIndex = 51;
-            this.SBHAPUS.Text = "Hapus";
-            this.SBHAPUS.Click += new System.EventHandler(this.SBHAPUS_Click);
+            SBHAPUS.Location = new System.Drawing.Point(261, 77);
+            SBHAPUS.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            SBHAPUS.Name = "SBHAPUS";
+            SBHAPUS.Size = new System.Drawing.Size(87, 28);
+            SBHAPUS.TabIndex = 51;
+            SBHAPUS.Text = "Hapus";
+            SBHAPUS.Click += SBHAPUS_Click;
             // 
             // SBSIMPAN
             // 
-            this.SBSIMPAN.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("SBSIMPAN.ImageOptions.Image")));
-            this.SBSIMPAN.Location = new System.Drawing.Point(188, 85);
-            this.SBSIMPAN.Name = "SBSIMPAN";
-            this.SBSIMPAN.Size = new System.Drawing.Size(112, 31);
-            this.SBSIMPAN.TabIndex = 3;
-            this.SBSIMPAN.Text = "Simpan";
-            this.SBSIMPAN.Click += new System.EventHandler(this.SBSIMPAN_Click);
+            SBSIMPAN.Location = new System.Drawing.Point(169, 77);
+            SBSIMPAN.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            SBSIMPAN.Name = "SBSIMPAN";
+            SBSIMPAN.Size = new System.Drawing.Size(87, 28);
+            SBSIMPAN.TabIndex = 3;
+            SBSIMPAN.Text = "Simpan";
+            SBSIMPAN.Click += SBSIMPAN_Click;
             // 
             // CMBGROUP
             // 
-            this.CMBGROUP.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.CMBGROUP.FormattingEnabled = true;
-            this.CMBGROUP.Location = new System.Drawing.Point(675, 52);
-            this.CMBGROUP.Name = "CMBGROUP";
-            this.CMBGROUP.Size = new System.Drawing.Size(150, 27);
-            this.CMBGROUP.TabIndex = 2;
-            this.CMBGROUP.KeyDown += new System.Windows.Forms.KeyEventHandler(this.CMBGROUP_KeyDown);
+            CMBGROUP.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            CMBGROUP.FormattingEnabled = true;
+            CMBGROUP.Location = new System.Drawing.Point(532, 46);
+            CMBGROUP.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            CMBGROUP.Name = "CMBGROUP";
+            CMBGROUP.Size = new System.Drawing.Size(118, 25);
+            CMBGROUP.TabIndex = 2;
+            CMBGROUP.KeyDown += CMBGROUP_KeyDown;
             // 
             // TXTNAMAPT
             // 
-            this.TXTNAMAPT.Location = new System.Drawing.Point(188, 53);
-            this.TXTNAMAPT.Name = "TXTNAMAPT";
-            this.TXTNAMAPT.Properties.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
-            this.TXTNAMAPT.Size = new System.Drawing.Size(413, 26);
-            this.TXTNAMAPT.TabIndex = 1;
-            this.TXTNAMAPT.ToolTip = "Nama Perusahaan";
-            this.TXTNAMAPT.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
-            this.TXTNAMAPT.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TXTNAMAPT_KeyDown);
+            TXTNAMAPT.Location = new System.Drawing.Point(170, 47);
+            TXTNAMAPT.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            TXTNAMAPT.Name = "TXTNAMAPT";
+            TXTNAMAPT.Properties.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
+            TXTNAMAPT.Size = new System.Drawing.Size(298, 24);
+            TXTNAMAPT.TabIndex = 1;
+            TXTNAMAPT.ToolTip = "Nama Perusahaan";
+            TXTNAMAPT.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
+            TXTNAMAPT.KeyDown += TXTNAMAPT_KeyDown;
             // 
             // TXTKODEPT
             // 
-            this.TXTKODEPT.Location = new System.Drawing.Point(188, 23);
-            this.TXTKODEPT.Name = "TXTKODEPT";
-            this.TXTKODEPT.Properties.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
-            this.TXTKODEPT.Size = new System.Drawing.Size(150, 26);
-            this.TXTKODEPT.TabIndex = 0;
-            this.TXTKODEPT.ToolTip = "Kode Perusahaan";
-            this.TXTKODEPT.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
-            this.TXTKODEPT.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TXTKODEPT_KeyDown);
+            TXTKODEPT.Location = new System.Drawing.Point(170, 19);
+            TXTKODEPT.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            TXTKODEPT.Name = "TXTKODEPT";
+            TXTKODEPT.Properties.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
+            TXTKODEPT.Size = new System.Drawing.Size(117, 24);
+            TXTKODEPT.TabIndex = 0;
+            TXTKODEPT.ToolTip = "Kode Perusahaan";
+            TXTKODEPT.ToolTipIconType = DevExpress.Utils.ToolTipIconType.Information;
+            TXTKODEPT.KeyDown += TXTKODEPT_KeyDown;
             // 
             // FrmCompany
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 19F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(965, 673);
-            this.Controls.Add(this.xtraTabControl1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
-            this.Name = "FrmCompany";
-            this.Text = "DAFTAR PERUSAHAAN";
-            this.Load += new System.EventHandler(this.FrmCompany_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).EndInit();
-            this.xtraTabControl1.ResumeLayout(false);
-            this.xtraTabPage1.ResumeLayout(false);
-            this.xtraTabPage1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.LEPT.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.groupControl1)).EndInit();
-            this.groupControl1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.radioGroup1.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.TXTWILAYAH.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.TXTIDDATA.Properties)).EndInit();
-            this.xtraTabPage2.ResumeLayout(false);
-            this.xtraTabPage2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl2)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView2)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.TXTNAMAPT.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.TXTKODEPT.Properties)).EndInit();
-            this.ResumeLayout(false);
-
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            ClientSize = new System.Drawing.Size(751, 602);
+            Controls.Add(xtraTabControl1);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
+            Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            Name = "FrmCompany";
+            Text = "DAFTAR PERUSAHAAN";
+            Load += FrmCompany_Load;
+            ((System.ComponentModel.ISupportInitialize)xtraTabControl1).EndInit();
+            xtraTabControl1.ResumeLayout(false);
+            xtraTabPage1.ResumeLayout(false);
+            xtraTabPage1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)LEPT.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)groupControl1).EndInit();
+            groupControl1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)radioGroup1.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridControl1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridView1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)TXTWILAYAH.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)TXTIDDATA.Properties).EndInit();
+            xtraTabPage2.ResumeLayout(false);
+            xtraTabPage2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)gridControl2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridView2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)TXTNAMAPT.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)TXTKODEPT.Properties).EndInit();
+            ResumeLayout(false);
         }
 
         #endregion
@@ -399,5 +404,11 @@ namespace Accounting.Form
         private DevExpress.XtraEditors.TextEdit TXTNAMAPT;
         private DevExpress.XtraEditors.TextEdit TXTKODEPT;
         private DevExpress.XtraEditors.LookUpEdit LEPT;
+        private System.Windows.Forms.Label lEVELIDLabel;
+        private System.Windows.Forms.Label pASSWORDLabel;
+        private System.Windows.Forms.Label uSERIDLabel;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Label label7;
     }
 }

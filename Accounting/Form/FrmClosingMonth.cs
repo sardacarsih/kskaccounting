@@ -51,7 +51,7 @@ namespace Accounting.Form
             periodedipilih = p_tahun.ToString() + p_bulan.ToString("0#");
 
             lblnamapt.Text = CompanyInfo.NAMAPT;
-            lbldata.Text = CompanyInfo.INIT;
+            lbldata.Text =CompanyInfo.IDDATA;
             lblwilayah.Text = CompanyInfo.WILAYAH;
             //Cursor.Current = Cursors.Default;
             //SplashScreenManager.CloseForm();
@@ -65,21 +65,21 @@ namespace Accounting.Form
         private void simpleButton1_Click(object sender, EventArgs e)
         {
             using var handle = SplashScreenManager.ShowOverlayForm(this);
-            try
-            {
+            //try
+            //{
                 Stopwatch watch = new Stopwatch();
                 watch.Start();
 
                 //cek apakah periode yg dipilih ada, jika ada tombol proses aktif, jika tidak tombol proses disable
-                var ada = AccountServices.CekPeriodeExist(CompanyInfo.INIT, p_bulan, p_tahun);
+                var ada = AccountServices.CekPeriodeExist(CompanyInfo.IDDATA, p_bulan, p_tahun);
                 if (ada == 0)
                 {
-                    AccountServices.CreateNextPeriode(CompanyInfo.INIT, p_bulan - 1, p_tahun);
+                    AccountServices.CreateNextPeriode(CompanyInfo.IDDATA, p_bulan - 1, p_tahun);
                 }
 
                 //jika periode telah dikunci,  batalkan proses import jurnal            
                 periode = p_bulan.ToString("0#") + "/" + p_tahun.ToString();
-                Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.INIT, periode);
+                Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.IDDATA, periode);
                 bulan = cmbbulan.Text + " - " + setahun.Value.ToString();
                 if (Acct.KunciPeriode == "Y")
                 {
@@ -90,7 +90,7 @@ namespace Accounting.Form
                     return;
                 }
 
-                var coaexist = AccountServices.CekCOAExist(CompanyInfo.INIT, p_tahun);
+                var coaexist = AccountServices.CekCOAExist(CompanyInfo.IDDATA, p_tahun);
                 if (coaexist == 1) //1 tidak ada coa, buat coa 
                 {
                     XtraMessageBox.Show("Daftar Perkiraan Belum tersedia", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -98,7 +98,7 @@ namespace Accounting.Form
                 }
 
                 //analisa kesalahan COA
-                var Errcoa_check = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.INIT, p_tahun);
+                var Errcoa_check = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.IDDATA, p_tahun);
                 if (Errcoa_check.Rows.Count > 0)
                 {
                     COAError error_coa = new ()
@@ -112,7 +112,7 @@ namespace Accounting.Form
                 }
                 //cek kode perkiraan detail yang tidak memiliki induk akun
                 //cek apakah parentacc valid 2?
-                //var isvalidparent2 = AccountServices.CekParentNotExist3(CompanyInfo.INIT, p_tahun);
+                //var isvalidparent2 = AccountServices.CekParentNotExist3(CompanyInfo.IDDATA, p_tahun);
                 //if (isvalidparent2.Rows.Count > 0)
                 //{
                 //    List<string> list = isvalidparent2.AsEnumerable()
@@ -127,61 +127,61 @@ namespace Accounting.Form
 
 
                 //update level account
-                AccountServices.UpdateLevelAccount(CompanyInfo.INIT, p_tahun);
+                AccountServices.UpdateLevelAccount(CompanyInfo.IDDATA, p_tahun);
 
 
                 //create jurnal reverse
-                JurnalServices.JurnalRE(CompanyInfo.INIT, periode, LoginInfo.userID);
+                JurnalServices.JurnalRE(CompanyInfo.IDDATA, periode, LoginInfo.userID);
 
                 //mulai rekalkulasi saldo berdasarkan periode
                 if (p_bulan == 1)
                 {
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 1, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 1, p_tahun, LoginInfo.userID);
 
                 }
                 else if (p_bulan == 2)
                 {
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 2, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 2, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 3)
                 {                   
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 3, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 3, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 4)
                 {
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 4, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 4, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 5)
                 {
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 5, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 5, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 6)
                 {                
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 6, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 6, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 7)
                 {                
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 7, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 7, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 8)
                 {                   
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 8, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 8, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 9)
                 {                    
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 9, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 9, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 10)
                 {                    
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 10, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 10, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 11)
                 {                 
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 11, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 11, p_tahun, LoginInfo.userID);
                 }
                 else if (p_bulan == 12)
                 {
-                    AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 12, p_tahun, LoginInfo.userID);
+                    AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 12, p_tahun, LoginInfo.userID);
                 }
                 else
                 {
@@ -195,56 +195,56 @@ namespace Accounting.Form
                     {
                         if (p_bulan == 1)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 1, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 1, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 2)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 2, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 2, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 3)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 3, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 3, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 4)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 4, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 4, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 5)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 5, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 5, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 6)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 6, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 6, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 7)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 7, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 7, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 8)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 8, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 8, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 9)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 9, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 9, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 10)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 10, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 10, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 11)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 11, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 11, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                         else if (p_bulan == 12)
                         {
-                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 12, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                            LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 12, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                         }
                     }
 
                     //cek neraca
-                    var selisih = LaporanServices.Balanced_Check(CompanyInfo.INIT, p_bulan, p_tahun);
+                    var selisih = LaporanServices.Balanced_Check(CompanyInfo.IDDATA, p_bulan, p_tahun);
                     if (selisih != 0)
                     {
                         this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\neraca_error.wav";
@@ -267,13 +267,13 @@ namespace Accounting.Form
                 this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\closing_month.wav";
                 this.Player.Play();
                 XtraMessageBox.Show("Proses Tutup buku Bulanan telah Selesai\n\n" +
-                    "Periode Akuntansi : " + bulan + "\nLokasi Data : " + CompanyInfo.INIT + "\n" + waktuproses, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "Periode Akuntansi : " + bulan + "\nLokasi Data : " +CompanyInfo.IDDATA + "\n" + waktuproses, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-            catch (Exception ex)
-            {
-                    XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            //catch (Exception ex)
+            //{
+            //        XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //}
 
-}
+        //}
     }
 }

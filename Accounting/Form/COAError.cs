@@ -17,7 +17,7 @@ namespace Accounting.Form
 {
     public partial class COAError : SplashScreen
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public string Myperiode { get; set; }
         public int ibulan { get; set; }
         public int itahun { get; set; }
@@ -42,7 +42,7 @@ namespace Accounting.Form
         private void COAError_Load(object sender, EventArgs e)
         {
             
-                var errorcoa = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.INIT, itahun);
+                var errorcoa = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.IDDATA, itahun);
 
             gridControl1.DataSource = errorcoa;
                 gridView1.BestFitColumns();

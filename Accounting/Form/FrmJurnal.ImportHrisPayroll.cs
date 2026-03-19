@@ -54,26 +54,48 @@ namespace Accounting.Form
 
 	private void lookUpEditestatehris_EditValueChanged(object sender, EventArgs e)
 	{
-		ExecuteSafeAsync(HandleEditValueChangedOrSelectedIndexChangedHRISAsync(), "loading HRIS data");
+		ScheduleDebounced(
+			ref hrisReloadCts,
+			cancellationToken => HandleEditValueChangedOrSelectedIndexChangedHRISAsync(cancellationToken),
+			"loading HRIS data");
 	}
 
 	private void cmbbulanhris_SelectedIndexChanged(object sender, EventArgs e)
 	{
-		ExecuteSafeAsync(HandleEditValueChangedOrSelectedIndexChangedHRISAsync(), "loading HRIS data");
+		ScheduleDebounced(
+			ref hrisReloadCts,
+			cancellationToken => HandleEditValueChangedOrSelectedIndexChangedHRISAsync(cancellationToken),
+			"loading HRIS data");
 	}
 
 	private void setahunhris_EditValueChanged(object sender, EventArgs e)
 	{
-		ExecuteSafeAsync(HandleEditValueChangedOrSelectedIndexChangedHRISAsync(), "loading HRIS data");
+		ScheduleDebounced(
+			ref hrisReloadCts,
+			cancellationToken => HandleEditValueChangedOrSelectedIndexChangedHRISAsync(cancellationToken),
+			"loading HRIS data");
 	}
 
 	private void leremisehris_EditValueChanged(object sender, EventArgs e)
 	{
-		ExecuteSafeAsync(HandleEditValueChangedOrSelectedIndexChangedHRISAsync(), "loading HRIS data");
+		ScheduleDebounced(
+			ref hrisReloadCts,
+			cancellationToken => HandleEditValueChangedOrSelectedIndexChangedHRISAsync(cancellationToken),
+			"loading HRIS data");
 	}
 
-	private async Task HandleEditValueChangedOrSelectedIndexChangedHRISAsync()
+	private async Task HandleEditValueChangedOrSelectedIndexChangedHRISAsync(System.Threading.CancellationToken cancellationToken)
 	{
+		int resultRows = 0;
+		string estateSnapshot = lookUpEditestatehris.EditValue?.ToString() ?? string.Empty;
+		int yearSnapshot = (int)setahunhris.Value;
+		int monthSnapshot = cmbbulanhris.SelectedIndex + 1;
+		using var perf = BeginPerfMeasurement(
+			"FrmJurnal.HRIS.Reload",
+			() => $"estate={estateSnapshot};year={yearSnapshot};month={monthSnapshot};resultRows={resultRows}");
+
+		using var loadingScope = BeginGlobalLoadingScope();
+
 		decimal? tahunValue = setahunhris.Value;
 		if (!tahunValue.HasValue || tahunValue.Value <= 0m)
 		{
@@ -91,10 +113,23 @@ namespace Accounting.Form
 			DateTime TanggalJurnal = new DateTime(ptahun, pbulan, 1).AddMonths(1).AddDays(-1.0);
 			if (!string.IsNullOrEmpty(p_estate) && !string.IsNullOrEmpty(p_iddata))
 			{
-				List<SlipGaji_DTO> gaji = await jurnalRepository.viewDaftarGajidanTunjangan_BulananAsync(p_iddata, p_estate, p_periode_int);
-				List<FIN_POTONGAN_KANTOR> pot_kantor = await jurnalRepository.viewPotonganKantorAsync(p_iddata, p_estate, p_periode_int);
-				List<ALOKASI_JURNAL_DTO> alokasijurnal = await jurnalRepository.AlokasiJurnalAsync(p_iddata);
-				jurnalfinalHRIS = await jurnalRepository.HitungLampiranKASAsync(gaji, pot_kantor, alokasijurnal, ListCoaAktif, p_periodeket, p_periode_str, p_estate, TanggalJurnal);
+				Task<List<SlipGaji_DTO>> gajiTask = jurnalRepository.viewDaftarGajidanTunjangan_BulananAsync(p_iddata, p_estate, p_periode_int);
+				Task<List<FIN_POTONGAN_KANTOR>> potonganTask = jurnalRepository.viewPotonganKantorAsync(p_iddata, p_estate, p_periode_int);
+				Task<List<ALOKASI_JURNAL_DTO>> alokasiTask = jurnalRepository.AlokasiJurnalAsync(p_iddata);
+				await Task.WhenAll(gajiTask, potonganTask, alokasiTask);
+				cancellationToken.ThrowIfCancellationRequested();
+
+				jurnalfinalHRIS = await jurnalRepository.HitungLampiranKASAsync(
+					gajiTask.Result,
+					potonganTask.Result,
+					alokasiTask.Result,
+					ListCoaAktif,
+					p_periodeket,
+					p_periode_str,
+					p_estate,
+					TanggalJurnal);
+				cancellationToken.ThrowIfCancellationRequested();
+				resultRows = jurnalfinalHRIS?.Count() ?? 0;
 				SetJurnalPayroll(jurnalfinalHRIS);
 			}
 		}
@@ -184,26 +219,57 @@ namespace Accounting.Form
 
 	private void leallperiode_EditValueChanged(object sender, EventArgs e)
 	{
-		PilihanPeriodeAkuntansi();
+		if (isInitializing)
+		{
+			return;
+		}
+
+		ScheduleDebounced(
+			ref periodeReloadCts,
+			cancellationToken =>
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+				PilihanPeriodeAkuntansi();
+				return Task.CompletedTask;
+			},
+			"loading jurnal periode");
 	}
 
 	private void cmbbulanumum_SelectedIndexChanged(object sender, EventArgs e)
 	{
-		Load_GajianUmum();
+		ScheduleLoadGajianUmum();
 	}
 
 	private void setahunumum_EditValueChanged(object sender, EventArgs e)
 	{
-		Load_GajianUmum();
+		ScheduleLoadGajianUmum();
 	}
 
 	private void leremiseumum_EditValueChanged(object sender, EventArgs e)
 	{
-		Load_GajianUmum();
+		ScheduleLoadGajianUmum();
 	}
 
-	private async void Load_GajianUmum()
+	private void ScheduleLoadGajianUmum()
 	{
+		ScheduleDebounced(
+			ref payrollUmumReloadCts,
+			cancellationToken => Load_GajianUmumAsync(cancellationToken),
+			"loading payroll umum");
+	}
+
+	private async Task Load_GajianUmumAsync(System.Threading.CancellationToken cancellationToken)
+	{
+		int resultRows = 0;
+		int yearSnapshot = (int)setahunumum.Value;
+		int monthSnapshot = cmbbulanumum.SelectedIndex + 1;
+		string remiseSnapshot = leremiseumum.EditValue?.ToString() ?? string.Empty;
+		using var perf = BeginPerfMeasurement(
+			"FrmJurnal.PayrollUmum.Reload",
+			() => $"year={yearSnapshot};month={monthSnapshot};remise={remiseSnapshot};resultRows={resultRows}");
+
+		using var loadingScope = BeginGlobalLoadingScope();
+
 		try
 		{
 			decimal? tahunValue = setahunumum.Value;
@@ -225,6 +291,8 @@ namespace Accounting.Form
 					BulanText = cmbbulanumum.Text
 				};
 				payrollumum = await jurnalPayrollUmumService.BuildPayrollUmumAsync(jurnalRepository, request);
+				cancellationToken.ThrowIfCancellationRequested();
+				resultRows = payrollumum?.Count ?? 0;
 				if (payrollumum == null || payrollumum.Count == 0)
 				{
 					gridControlUmum.DataSource = null;

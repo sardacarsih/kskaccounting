@@ -9,7 +9,7 @@ namespace Accounting.Form
 {
     public partial class FrmAksesLevel : DevExpress.XtraEditors.XtraForm
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmAksesLevel()
         {
             InitializeComponent();

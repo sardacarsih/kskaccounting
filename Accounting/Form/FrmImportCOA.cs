@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using Oracle.ManagedDataAccess.Client;
 using System.Xml;
 using System.Xml.Serialization;
 using DevExpress.XtraSplashScreen;
@@ -20,7 +19,6 @@ namespace Accounting.Form
 {
     public partial class FrmImportCOA : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
         public FrmImportCOA()
         {
             InitializeComponent();
@@ -87,7 +85,7 @@ namespace Accounting.Form
             var p_tahun = (int)setahun.Value;
             if (XtraMessageBox.Show("Lanjutkan Proses Import Daftar Perkiraan ? " +
                 "\n\nTahun : " + p_tahun + " " +
-                "\nLokasi Data :" + CompanyInfo.INIT
+                "\nLokasi Data :" +CompanyInfo.IDDATA
                 , "Confirm Proses", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
@@ -108,7 +106,7 @@ namespace Accounting.Form
 
                 if (xeparsial.Checked == true)
                 {
-                    AccountServices.ImportCOAbyMerge(CompanyInfo.INIT, p_tahun);
+                    AccountServices.ImportCOAbyMerge(CompanyInfo.IDDATA, p_tahun);
                 }
                 else
                 {
@@ -158,26 +156,26 @@ namespace Accounting.Form
 
                     //Copy data dari table ACC_COA_TMP ke table ACCT_COA                
                     //proses import
-                    //AccountServices.ImportCOA(CompanyInfo.INIT, Tahun);
-                    AccountServices.ImportCOAbyMerge(CompanyInfo.INIT, p_tahun);
+                    //AccountServices.ImportCOA(CompanyInfo.IDDATA, Tahun);
+                    AccountServices.ImportCOAbyMerge(CompanyInfo.IDDATA, p_tahun);
 
 
                     //create periode akuntansi jika belum ada
                     //jika periode belum ada, buat periode
                     string periodedipilih = "01/" + setahun.Value.ToString();
-                    int pexist = JurnalServices.CekPeriodeExist(CompanyInfo.INIT, periodedipilih);
+                    int pexist = JurnalServices.CekPeriodeExist(CompanyInfo.IDDATA, periodedipilih);
                     if (pexist == 0)
                     {
-                        AccountServices.CreateNextPeriode(CompanyInfo.INIT, 0, p_tahun);
+                        AccountServices.CreateNextPeriode(CompanyInfo.IDDATA, 0, p_tahun);
                     }
                    
-                    Acct.TahunMin = AccountServices.MinTahunCOA(CompanyInfo.INIT);
-                    Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.INIT);
-                    Acct.PeriodeMin = AccountServices.GetMinPeriode(CompanyInfo.INIT);
-                    Acct.PeriodeMax = AccountServices.GetMaxPeriode(CompanyInfo.INIT);
+                    Acct.TahunMin = AccountServices.MinTahunCOA(CompanyInfo.IDDATA);
+                    Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
+                    Acct.PeriodeMin = AccountServices.GetMinPeriode(CompanyInfo.IDDATA);
+                    Acct.PeriodeMax = AccountServices.GetMaxPeriode(CompanyInfo.IDDATA);
                 }
 
-                AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 1, p_tahun, LoginInfo.userID);
+                AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 1, p_tahun, LoginInfo.userID);
                 watch.Stop();
 
                 TimeSpan timeSpan = watch.Elapsed;
@@ -194,14 +192,7 @@ namespace Accounting.Form
 
         private void Update_IDData_Userid()
         {
-            string query = "update ACC_COA_TMP set IDDATA=:iddata,tahun=:ptahun,userid=:userid";
-            conn.Open();
-            OracleCommand cmd = new OracleCommand(query, conn);
-            cmd.Parameters.Add(":iddata", OracleDbType.Varchar2, 20).Value = CompanyInfo.INIT;
-            cmd.Parameters.Add(":tahun", OracleDbType.Int16).Value = setahun.EditValue;
-            cmd.Parameters.Add(":userid", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;
-            cmd.ExecuteNonQuery();
-            conn.Close();
+            AccountServices.UpdateCOATmpIdData(CompanyInfo.IDDATA, (int)setahun.Value, LoginInfo.userID);
         }
         readonly string[] KolomWajibKEBUN = { "Account", "Nama Perkiraan", "Jenis", "Level", "Induk", "Gen", "Saldo Normal", "Awal Tahun", "Saldo Awal","Debet","Kredit","Mutasi","Saldo Akhir", "Divisi", "Blok",  "TahunTanam" };
         readonly string[] KolomWajib = { "Account", "Nama Perkiraan", "Jenis", "Level", "Induk", "Gen", "Saldo Normal", "Awal Tahun", "Saldo Awal", "Debet", "Kredit", "Mutasi", "Saldo Akhir" };
@@ -255,12 +246,8 @@ namespace Accounting.Form
         }
 
         private void Hapus_Data_Table_Tmp()
-        {            
-            string query = "TRUNCATE TABLE ACC_COA_TMP";
-            conn.Open();
-            OracleCommand cmd = new OracleCommand(query, conn);
-            cmd.ExecuteNonQuery();
-            conn.Close();
+        {
+            AccountServices.TruncateCOATmp();
         }
 
         private static List<COA_Import> ConvertDataTableToList(DataTable table)

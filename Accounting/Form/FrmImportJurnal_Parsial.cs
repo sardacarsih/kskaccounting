@@ -18,7 +18,7 @@ namespace Accounting.Form
 {
     public partial class FrmImportJurnal_Parsial : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
+       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         private SoundPlayer Player = new SoundPlayer();
         public FrmImportJurnal_Parsial()
         {
@@ -103,7 +103,7 @@ namespace Accounting.Form
 
                 //jika periode telah dikunci,  batalkan proses import jurnal
                 periodetujuan = pbulan.ToString("0#") + "/" + ptahun.ToString();
-                Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.INIT, periodetujuan);
+                Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.IDDATA, periodetujuan);
                 var Periode = cmbbulan.Text + " - " + setahun.Value.ToString();
                 if (Acct.KunciPeriode == "Y")
                 {
@@ -121,7 +121,7 @@ namespace Accounting.Form
                 var Bulan = cmbbulan.Text + " - " + setahun.Value.ToString();
                 if (XtraMessageBox.Show("Lanjutkan Proses Import Jurnal ? " +
                     "\n\nPeriode : " + Bulan + " " +
-                    "\nLokasi Data :" + CompanyInfo.INIT
+                    "\nLokasi Data :" +CompanyInfo.IDDATA
                     , "Confirm Proses", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                     return;
                 using var handle = SplashScreenManager.ShowOverlayForm(this);
@@ -158,10 +158,10 @@ namespace Accounting.Form
                 }
                 //jika periode belum ada, buat periode
                 string periodedipilih = pbulan.ToString("0#") + "/" + ptahun.ToString();
-                int pexist = JurnalServices.CekPeriodeExist(CompanyInfo.INIT, periodedipilih);
+                int pexist = JurnalServices.CekPeriodeExist(CompanyInfo.IDDATA, periodedipilih);
                 if (pexist == 0)
                 {
-                    AccountServices.CreateNextPeriode(CompanyInfo.INIT, pbulan - 1, ptahun);
+                    AccountServices.CreateNextPeriode(CompanyInfo.IDDATA, pbulan - 1, ptahun);
                 }
 
 
@@ -242,7 +242,7 @@ namespace Accounting.Form
 
 
                 //Copy data dari table tmp ke table Acct_Jurnal_Dtl
-                var sukses = JurnalServices.ImportJurnalParsial(CompanyInfo.INIT, pbulan, ptahun, PeriodeAsal);
+                var sukses = JurnalServices.ImportJurnalParsial(CompanyInfo.IDDATA, pbulan, ptahun, PeriodeAsal);
                 if (sukses == 0)
                 {
                     this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_bedaperiode.wav";
@@ -259,7 +259,7 @@ namespace Accounting.Form
                     f.ShowDialog();
                     return;
                 }
-                AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, pbulan, ptahun, LoginInfo.userID);
+                AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, pbulan, ptahun, LoginInfo.userID);
                 watch.Stop();
 
                 TimeSpan timeSpan = watch.Elapsed;
@@ -282,7 +282,7 @@ namespace Accounting.Form
                 string query = "update ACCT_JURNAL_TMP set IDDATA=:piddata,GLYEAR=:PTAHUN,GLMONTH=:PBULAN,userid=:puserid";
                 conn.Open();
                 OracleCommand cmd = new OracleCommand(query, conn);
-                cmd.Parameters.Add(":piddata", OracleDbType.Varchar2, 20).Value = CompanyInfo.INIT;
+                cmd.Parameters.Add(":piddata", OracleDbType.Varchar2, 20).Value =CompanyInfo.IDDATA;
                 cmd.Parameters.Add(":PTAHUN", OracleDbType.Int16).Value = Convert.ToInt32(setahun.Value);
                 cmd.Parameters.Add(":PBULAN", OracleDbType.Int16).Value = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
                 cmd.Parameters.Add(":puserid", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;

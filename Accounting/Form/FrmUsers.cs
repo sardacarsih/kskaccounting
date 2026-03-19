@@ -1,55 +1,85 @@
-﻿using Accounting.BusinessLayer;
-using System;
-using System.Configuration;
-using System.Data;
-using System.Windows.Forms;
-using Oracle.ManagedDataAccess.Client;
+﻿using DevExpress.Utils.Menu;
 using DevExpress.XtraEditors;
-using DevExpress.Utils;
+using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Views.Grid;
-using DevExpress.XtraGrid.Views.Grid.ViewInfo;
-using DevExpress.XtraSplashScreen;
+using System;
+using Accounting.Services;
+using System.Windows.Forms;
+using Accounting._3.Services;
 
 namespace Accounting.Form
 {
     public partial class FrmUsers : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
-        string p_userid;
+       
         public FrmUsers()
         {
-            InitializeComponent();   
+            InitializeComponent();
         }
         private void FrmUsers_Load(object sender, EventArgs e)
         {
-          
-            Load_UserList();     
-            Load_level();
-            Load_IDData();
+            Load_Lokasi_Akses();
+            load_user();
+            lblmodule.Text = LoginInfo.MODULE;
+            lbluser.Text = LoginInfo.userID;
+
+            if (LoginInfo.MODULE == "FINANCE")
+            {
+                Load_Akses_Estate(LoginInfo.userID);
+            }
+            else if (LoginInfo.MODULE == "ACCOUNTING")
+            {
+                Load_Akses_IDDATA(LoginInfo.userID);
+            }
+
+            layoutControlItem15.ContentVisible = false;
+
         }
 
-        
-        private void Load_IDData()
+        private void load_user()
         {
-            String selectQuery = "select d.iddata,d.wilayah,  p.namapt from master_pt_hdr p "+
-                                    "join master_pt_dtl d on d.idpt = p.idpt ";
-            OracleCommand _command = new OracleCommand(selectQuery, conn)
+            gridControl1.DataSource = UserManager_Services.GetAllUsers();
+            gridView1.Columns["PASSWORD"].Visible = false;
+            gridView1.Columns["AKTIF"].Width = 30;
+
+            GridFormatRule gridFormatRule = new();
+            FormatConditionRuleExpression formatConditionRuleExpression = new FormatConditionRuleExpression();
+
+
+            gridFormatRule.Column = gridView1.Columns["AKTIF"]; // Assuming "Stock" is the correct column name
+            gridFormatRule.ApplyToRow = true;
+
+            formatConditionRuleExpression.PredefinedName = "Red Fill, Red Text";
+            formatConditionRuleExpression.Expression = "[AKTIF] =='T'";  // Update the condition to check if "Stock" is less than 0
+
+            gridFormatRule.Rule = formatConditionRuleExpression;
+            gridView1.FormatRules.Add(gridFormatRule);
+        }
+
+        private void Load_Lokasi_Akses()
+        {
+            if (LoginInfo.MODULE == "FINANCE")
             {
-                CommandType = CommandType.Text
-            };
-            conn.Open();
-            OracleDataReader dr;
-            dr = _command.ExecuteReader();
-            DataTable _dt = new DataTable();
-            _dt.Load(dr);
-            dr.Close();
-            conn.Close();
-            lookUpEdit1.Properties.DataSource = _dt;
-            lookUpEdit1.Properties.ValueMember = "IDDATA";
-            lookUpEdit1.Properties.DisplayMember = "WILAYAH";
-            lookUpEdit1.Properties.ForceInitialize();
-            lookUpEdit1.Properties.PopulateColumns();
-            lookUpEdit1.Properties.BestFit();
+                lookUpEdit1.Properties.DataSource = UserManager_Services.GetWilayahEstate();
+                lookUpEdit1.Properties.ValueMember = "ID";
+                lookUpEdit1.Properties.DisplayMember = "ESTATE";
+                lookUpEdit1.Properties.ForceInitialize();
+                lookUpEdit1.Properties.PopulateColumns();
+                lookUpEdit1.Properties.Columns[0].Visible = false;
+                lookUpEdit1.Properties.BestFit();
+            }
+            else if (LoginInfo.MODULE == "ACCOUNTING")
+            {
+                lookUpEdit1.Properties.DataSource = UserManager_Services.GetListIDDATA();
+                lookUpEdit1.Properties.ValueMember = "IDDATA";
+                lookUpEdit1.Properties.DisplayMember = "IDDATA";
+                lookUpEdit1.Properties.ForceInitialize();
+                lookUpEdit1.Properties.PopulateColumns();
+                // lookUpEdit1.Properties.Columns[0].Visible = false;
+                lookUpEdit1.Properties.BestFit();
+
+            }
+
         }
 
 
@@ -58,40 +88,70 @@ namespace Accounting.Form
             try
             {
                 string pwd = pASSWORDTextEdit.Text;
-                if (string.IsNullOrEmpty(uSERIDTextEdit.Text)|| string.IsNullOrEmpty(pASSWORDTextEdit.Text))
+                string savePasswordHash = null;
+                if (!string.IsNullOrEmpty(pwd))
                 {
-                    XtraMessageBox.Show("UserID dan Password harus diisi", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    uSERIDTextEdit.Focus();
-                    return;
+                    var p = new PasswordCryptographyPbkdf2();
+                    savePasswordHash = p.GetHashPassword(pwd);
                 }
-                if(pASSWORDTextEdit.Text != confirmasi.Text)
+                string p_aktive = "T";
+                if (checkEditaktif.Checked == true)
                 {
-                    XtraMessageBox.Show("Konfirmasi Password tidak cocok", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    confirmasi.Focus();
-                    return;
+                    p_aktive = "Y";
                 }
-                var p = new PasswordCryptographyPbkdf2();
-                string savePasswordHash = p.GetHashPassword(pwd);
-                OracleCommand _command = new OracleCommand("ACCT_TOOLS.AddUserLogin", conn)
+
+                // Assuming you have instances of USERID_DTO and USERID_DETAIL_DTO
+                USERID_DTO user = new()
                 {
-                    CommandType = CommandType.StoredProcedure
+                    USERID = uSERIDTextEdit.Text,
+                    NAMA = nAMATextEdit.Text,
+                    DEPT = dEPTTextEdit.Text,
+                    PASSWORD = savePasswordHash,
+                    JABATAN = jABATANTextEdit.Text,
+                    AKTIF = p_aktive,
                 };
-                if (conn.State != ConnectionState.Open)
+                if (btnsimpan.Text == "Add")
                 {
-                    conn.Open();
+
+                    if (string.IsNullOrEmpty(uSERIDTextEdit.Text) || string.IsNullOrEmpty(pASSWORDTextEdit.Text))
+                    {
+                        XtraMessageBox.Show("UserID dan Password harus diisi", "Info", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        uSERIDTextEdit.Focus();
+                        return;
+                    }
+                    if (pASSWORDTextEdit.Text != confirmasi.Text)
+                    {
+                        XtraMessageBox.Show("Konfirmasi Password tidak cocok", "Info", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        confirmasi.Focus();
+                        return;
+                    }
+                    int moduleid = Permission_Services.GetModuleId(LoginInfo.MODULE);
+                    // Call the AddUser method
+                    UserManager_Services.AddUser(user);
+                    UserManager_Services.AddUserRole(uSERIDTextEdit.Text, 6, moduleid);
                 }
-                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 30).Value = CompanyInfo.INIT;
-                _command.Parameters.Add(":apps", OracleDbType.Varchar2, 30).Value = "GL";
-                _command.Parameters.Add(":userid", OracleDbType.Varchar2, 30).Value = uSERIDTextEdit.Text.ToLower();
-                _command.Parameters.Add(":nama", OracleDbType.Varchar2, 30).Value = nAMATextEdit.Text;
-                _command.Parameters.Add(":dept", OracleDbType.Varchar2, 30).Value = dEPTTextEdit.Text;
-                _command.Parameters.Add(":pass", OracleDbType.Varchar2, 100).Value = savePasswordHash;
-                _command.Parameters.Add(":roleid", OracleDbType.Int16).Value = Convert.ToInt32(lEVELIDComboBox.SelectedValue);
-                _command.Parameters.Add(":jabatan", OracleDbType.Varchar2,30).Value = jABATANTextEdit.Text;
-                _command.ExecuteReader();               
-                conn.Close();
-                Load_UserList();
+                else
+                {
+                    if (p_aktive == "Y")
+                    {
+                        if (string.IsNullOrEmpty(uSERIDTextEdit.Text) || string.IsNullOrEmpty(pASSWORDTextEdit.Text))
+                        {
+                            XtraMessageBox.Show("UserID dan Password harus diisi", "Info", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            uSERIDTextEdit.Focus();
+                            return;
+                        }
+                        if (pASSWORDTextEdit.Text != confirmasi.Text)
+                        {
+                            XtraMessageBox.Show("Konfirmasi Password tidak cocok", "Info", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            confirmasi.Focus();
+                            return;
+                        }
+                    }
+                    UserManager_Services.UpdateUser(user);
+                }
+
                 Bersihkan();
+                load_user();
                 XtraMessageBox.Show("UserID Saved", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             }
@@ -106,9 +166,6 @@ namespace Accounting.Form
                 {
                     XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-                //Cursor.Current = Cursors.Default;
-                //SplashScreenManager.CloseForm();
-
             }
         }
 
@@ -120,83 +177,16 @@ namespace Accounting.Form
             nAMATextEdit.Text = "";
             dEPTTextEdit.Text = "";
             jABATANTextEdit.Text = "";
+            layoutControlItem15.ContentVisible = false;
+            checkEditaktif.Visible = false;
+            btnsimpan.Text = "Add";
+            uSERIDTextEdit.ReadOnly = false;
+            btnhapus.Visible = false;
+            btnResetPassword.Visible = false;
+            lbluser.Text = "";
 
         }
-        private void Load_UserList()
-        {
-           var data = ToolsServices.UserLogin();
-            gridControl1.DataSource = data;
-            gridView1.Columns[3].Visible = false;
-            gridView1.Columns[4].Visible = false;
-            gridView1.BestFitColumns();
-        }
 
-        private void Load_level()
-        {
-            String selectQuery = "select LevelID ID,Nama from master_login_level order by LevelID asc";
-            OracleCommand _command = new OracleCommand(selectQuery, conn)
-            {
-                CommandType = CommandType.Text
-            };
-            conn.Open();
-            OracleDataReader dr;
-            dr = _command.ExecuteReader();
-            DataTable _dt = new DataTable();
-            _dt.Load(dr);
-            dr.Close();
-            conn.Close();
-            lEVELIDComboBox.DataSource = _dt;
-            lEVELIDComboBox.ValueMember = "ID";
-            lEVELIDComboBox.DisplayMember = "NAMA";
-           
-        }
-        string userid;
-        private void btnaddcompany_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (this.gridView1.GetFocusedRowCellValue("USERID") == null)
-                {
-                    XtraMessageBox.Show("Pilih UserID pada Grid", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-                userid = gridView1.GetFocusedRowCellValue("USERID").ToString();
-
-                OracleCommand _command = new OracleCommand("ACCT_TOOLS.AddIDDATA", conn)
-                {
-                    CommandType = CommandType.StoredProcedure
-                };
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
-                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 30).Value = lookUpEdit1.EditValue;
-                _command.Parameters.Add(":apps", OracleDbType.Varchar2, 30).Value = "GL";
-                _command.Parameters.Add(":userid", OracleDbType.Varchar2, 30).Value = userid;                
-                _command.ExecuteReader();
-                conn.Close();
-                Bersihkan();
-                LoadUsersAkses();
-                XtraMessageBox.Show(lookUpEdit1.EditValue.ToString()+" Saved", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.Contains("ORA-00001"))
-                {
-                    XtraMessageBox.Show("Duplicate IDDATA : " +
-                         lookUpEdit1.EditValue.ToString() + "", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                else
-                {
-                    XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                //Cursor.Current = Cursors.Default;
-                //SplashScreenManager.CloseForm();
-
-            }
-
-        }
         private void gridView1_Click(object sender, EventArgs e)
         {
             LoadUsersAkses();
@@ -204,13 +194,52 @@ namespace Accounting.Form
 
         private void LoadUsersAkses()
         {
-            if (this.gridView1.GetFocusedRowCellValue("USERID") == null)
-                return;
-            var rowhandle = gridView1.FocusedRowHandle;
-            p_userid = gridView1.GetRowCellValue(rowhandle, "USERID").ToString();
-            var data = ToolsServices.GetAksesLocations(p_userid);
-            gridControl2.DataSource = data;
-            lbluser.Text = p_userid;
+            if (gridView1.SelectedRowsCount > 0)
+            {
+                int selectedIndex = gridView1.GetSelectedRows()[0];
+                int selectedHandle = gridView1.GetVisibleRowHandle(selectedIndex);
+                USERID_DTO selectedItem = gridView1.GetRow(selectedHandle) as USERID_DTO;
+                uSERIDTextEdit.Text = selectedItem.USERID;
+                nAMATextEdit.Text = selectedItem.NAMA;
+                dEPTTextEdit.Text = selectedItem.DEPT;
+                jABATANTextEdit.Text = selectedItem.JABATAN;
+                pASSWORDTextEdit.Text = "";
+                confirmasi.Text = "";
+                layoutControlItem15.ContentVisible = true;
+                if (selectedItem.AKTIF == "Y")
+                {
+                    checkEditaktif.Checked = true;
+                }
+                else
+                {
+                    checkEditaktif.Checked = false;
+                }
+
+                if (LoginInfo.MODULE == "FINANCE")
+                {
+                    Load_Akses_Estate(selectedItem.USERID);
+                }
+                else if (LoginInfo.MODULE == "ACCOUNTING")
+                {
+                    Load_Akses_IDDATA(selectedItem.USERID);
+                }
+
+
+               
+                btnsimpan.Text = "Update";
+                uSERIDTextEdit.ReadOnly = true;
+                btnhapus.Visible = true;
+                btnResetPassword.Visible = true;
+            }
+
+        }
+
+        private void Load_Akses_IDDATA(string uSERID)
+        {
+            gridControl2.DataSource = UserManager_Services.GetAksesIDDATAbyUserID(uSERID, LoginInfo.MODULE);
+
+            gridView2.Columns["ROLE_ID"].Visible = false;
+            gridView2.BestFitColumns();
         }
 
         private void btnhapus_Click(object sender, EventArgs e)
@@ -218,21 +247,11 @@ namespace Accounting.Form
             if (this.gridView1.GetFocusedRowCellValue("USERID") == null)
                 return;
 
-            if (XtraMessageBox.Show("Hapus UserID ? : " + p_userid , "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+            if (XtraMessageBox.Show("Hapus UserID ? : " + lbluser.Text, "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
-            OracleCommand _command = new OracleCommand("delete from master_login where userid=:p_userid", conn)
-            {
-                CommandType = CommandType.Text
-            };
-            if (conn.State != ConnectionState.Open)
-            {
-                conn.Open();
-            }
-            _command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 30).Value = p_userid;
-            _command.ExecuteReader();
-            conn.Close();
-            XtraMessageBox.Show(p_userid + " Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            LoadUsersAkses();
+            UserManager_Services.DeleteUser(lbluser.Text);
+            XtraMessageBox.Show(lbluser.Text + " Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            gridControl1.DataSource = UserManager_Services.GetAllUsers();
         }
 
         private void uSERIDTextEdit_KeyDown(object sender, KeyEventArgs e)
@@ -300,39 +319,195 @@ namespace Accounting.Form
 
             if (XtraMessageBox.Show("Hapus Akses ke Lokasi Data ? : " + P_IDDATA, "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
-            OracleCommand _command = new OracleCommand("delete from master_apps_detail where userid=:p_userid and iddata=:p_iddata and appid='GL'", conn)
-            {
-                CommandType = CommandType.Text
-            };
-            if (conn.State != ConnectionState.Open)
-            {
-                conn.Open();
-            }
-            _command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 30).Value = p_userid;
-            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 30).Value = P_IDDATA;
-            _command.ExecuteReader();
-            conn.Close();
-            XtraMessageBox.Show("Akses ke lokasi pembukuan "+P_IDDATA + " Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            XtraMessageBox.Show("Akses ke lokasi pembukuan " + P_IDDATA + " Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             LoadUsersAkses();
         }
+      
 
-        private void gridView1_DoubleClick(object sender, EventArgs e)
+
+        private void Load_Akses_Estate(string? p_userid)
         {
-            DXMouseEventArgs ea = e as DXMouseEventArgs;
-            GridView view = sender as GridView;
-            GridHitInfo info = view.CalcHitInfo(ea.Location);
-            if (info.HitTest == GridHitTest.RowIndicator)
+            gridControl2.DataSource = UserManager_Services.GetAksesEstatebyUserID(p_userid, LoginInfo.MODULE);
+            gridView2.Columns["ESTATE_ID"].Visible = false;
+            gridView2.Columns["ROLE_ID"].Visible = false;
+            gridView2.BestFitColumns();
+        }
+
+
+
+        private void gridView2_PopupMenuShowing(object sender, DevExpress.XtraGrid.Views.Grid.PopupMenuShowingEventArgs e)
+        {
+            try
             {
-                MessageBox.Show(string.Format("DoubleClick on row indicator, row #{0}", info.RowHandle));
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+                GridView view = sender as GridView;
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+                if (e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.Row)
+                {
+                    int rowHandle = e.HitInfo.RowHandle;
+                    //hapus menu jika ada
+                    e.Menu.Items.Clear();
+
+                    DXMenuItem hapus = CreateMenuItemHapus(view, rowHandle);
+
+
+                    hapus.BeginGroup = true;
+                    e.Menu.Items.Add(hapus);
+                }
             }
-            if (this.gridView1.GetFocusedRowCellValue("USERID") == null)
+            catch (SystemException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error on Popup Menu", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private DXMenuItem CreateMenuItemHapus(GridView? view, int rowHandle)
+        {
+            DXMenuItem checkItem = new("Hapus", new EventHandler(OnHapusClick));
+            checkItem.ImageOptions.Image = imageCollection1.Images[0];
+            return checkItem;
+        }
+
+        private void OnHapusClick(object? sender, EventArgs e)
+        {
+            var rowhandle = gridView2.FocusedRowHandle;
+
+            if (LoginInfo.MODULE == "FINANCE")
+            {
+                var estateid = Convert.ToInt16(gridView2.GetRowCellValue(rowhandle, "ESTATE_ID").ToString());
+
+                var lokasi = gridView2.GetRowCellValue(rowhandle, "ESTATEID").ToString();
+                // Show a confirmation dialog before deleting
+                DialogResult result = MessageBox.Show("Anda yakin akan menghapus Akses ke ? : " + lokasi + "\n" +
+                    "atas nama :" + lbluser.Text + " ", "Hapus Akses", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    // Remove the item from the list
+                    UserManager_Services.DeleteAksesEstate(lbluser.Text, estateid);
+                    Load_Akses_Estate(lbluser.Text);
+
+                }
+            }
+            else if (LoginInfo.MODULE == "ACCOUNTING")
+            {
+
+                var iddata = gridView2.GetRowCellValue(rowhandle, "IDDATA").ToString();
+                // Show a confirmation dialog before deleting
+                DialogResult result = MessageBox.Show("Anda yakin akan menghapus Akses ke ? : " + iddata + "\n" +
+                    "atas nama :" + lbluser.Text + " ", "Hapus Akses", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    // Remove the item from the list
+                    UserManager_Services.DeleteIDData(lbluser.Text, iddata);
+                    Load_Akses_IDDATA(lbluser.Text);
+
+                }
+            }
+
+        }
+
+        private void sbbaru_Click(object sender, EventArgs e)
+        {
+            Bersihkan();
+        }
+
+        private void btnResetPassword_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(lbluser.Text))
+            {
+                XtraMessageBox.Show("Pilih user terlebih dahulu.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
-            var rowhandle = gridView1.FocusedRowHandle;
-            uSERIDTextEdit.Text = gridView1.GetRowCellValue(rowhandle, "USERID").ToString();
-            nAMATextEdit.Text = gridView1.GetRowCellValue(rowhandle, "NAMA").ToString();
-            dEPTTextEdit.Text = gridView1.GetRowCellValue(rowhandle, "DEPT").ToString();
-            jABATANTextEdit.Text = gridView1.GetRowCellValue(rowhandle, "JABATAN").ToString();
-            lEVELIDComboBox.Text = gridView1.GetRowCellValue(rowhandle, "ROLE").ToString();
+            }
+
+            string userId = lbluser.Text;
+            string newPassword = XtraInputBox.Show("Masukkan password baru:", "Reset Password", "");
+
+            if (string.IsNullOrEmpty(newPassword))
+                return;
+
+            if (XtraMessageBox.Show($"Reset password untuk user '{userId}'?", "Konfirmasi",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            try
+            {
+                UserManager_Services.ResetPassword(userId, newPassword);
+                XtraMessageBox.Show($"Password user '{userId}' berhasil direset.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+
+        private void btnaddestate_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (LoginInfo.MODULE == "FINANCE")
+                {
+                    int p_estateid = (int)lookUpEdit1.EditValue;
+
+                    UserManager_Services.AddUserRole_Estate(lbluser.Text, p_estateid);
+                }
+                else if (LoginInfo.MODULE == "ACCOUNTING")
+                {
+                    string iddata = lookUpEdit1.EditValue.ToString();
+                    UserManager_Services.AddUserRole_IDDATA(lbluser.Text, iddata);
+                }
+
+                LoadUsersAkses();
+                XtraMessageBox.Show(lookUpEdit1.Text + " Saved", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("MASTER_USER_ROLES_EST_PK"))
+                {
+                    XtraMessageBox.Show("Duplikasi Akses ke Estate : " +
+                         lookUpEdit1.Text.ToString() + "", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else if (ex.Message.Contains("MASTER_USER_ROLES_LOC_PK"))
+                {
+
+                    XtraMessageBox.Show("Duplikasi Akses ke IDDATA : " +
+                         lookUpEdit1.Text.ToString() + "", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                }
+                else
+                {
+                    XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+
+        }
+
+        private void gridView1_FocusedRowChanged(object sender, DevExpress.XtraGrid.Views.Base.FocusedRowChangedEventArgs e)
+        {
+           
+            if (e.FocusedRowHandle >= 0)
+            {
+                 var p_userid = gridView1.GetRowCellValue(e.FocusedRowHandle, "USERID").ToString();
+                lbluser.Text = p_userid;
+
+
+            }
+            // Load_Akses_Estate(p_userid);
+            if (LoginInfo.MODULE == "FINANCE")
+            {
+                Load_Akses_Estate(lbluser.Text);
+            }
+            else if (LoginInfo.MODULE == "ACCOUNTING")
+            {
+                Load_Akses_IDDATA(lbluser.Text);
+            }
+            LoadUsersAkses();
         }
     }
 }

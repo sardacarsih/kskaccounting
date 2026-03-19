@@ -25,7 +25,7 @@ namespace Accounting.Form
 {
     public partial class FrmReportParam : DevExpress.XtraEditors.XtraForm
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmReportParam()
         {
             InitializeComponent();
@@ -63,8 +63,8 @@ namespace Accounting.Form
 
         private void Load_Perkiraan()
         {
-            int ptahun = AccountServices.MaxTahunCOA(CompanyInfo.INIT);
-            string p_iddata = CompanyInfo.INIT;
+            int ptahun = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
+            string p_iddata =CompanyInfo.IDDATA;
             string sql = @"select kodeacc KODE,namaacc PERKIRAAN,POSISI,GRP from acct_coa 
                             where iddata=:iddata and tahun=:ptahun AND ISHEADER = 'D' order by kodeacc asc";
             using (OracleCommand _command = new(sql, conn)
@@ -149,7 +149,7 @@ namespace Accounting.Form
                 var bulanneraca = lastDayOfMonth + " " + cmbbulan.Text + "-" + daritahun.Value.ToString();
                 var periode = pbulan.ToString("00") + "/" + p_daritahun.ToString();
 
-                var iddata = CompanyInfo.INIT;
+                var iddata =CompanyInfo.IDDATA;
                 var jenis = CompanyInfo.JENIS_AKUNTING;
                 var userid = LoginInfo.userID;
                 var adacoa = AccountServices.CekCOAExist(iddata, p_daritahun);
@@ -712,7 +712,7 @@ namespace Accounting.Form
             var bulan = "Periode : " + cmbbulan.Text + "-" + daritahun.Value.ToString();
             periode = pbulan.ToString("00") + "/" + ptahun.ToString();
 
-            iddata = CompanyInfo.INIT;
+            iddata =CompanyInfo.IDDATA;
             var iskebun = CompanyInfo.JENIS_AKUNTING;
             var userid = LoginInfo.userID;
             //get data for report
@@ -858,7 +858,7 @@ namespace Accounting.Form
                 var bulanneraca =  lastDayOfMonth+" " + cmbbulan.Text + "-" + daritahun.Value.ToString();
                 var periode = pbulan.ToString("00") + "/" + p_daritahun.ToString();
 
-                var iddata = CompanyInfo.INIT;
+                var iddata =CompanyInfo.IDDATA;
                 var jenis = CompanyInfo.JENIS_AKUNTING;
                 var userid = LoginInfo.userID;
 
@@ -875,14 +875,14 @@ namespace Accounting.Form
 
                 if (radioGroup1.SelectedIndex == 0)
                 {
-                    bool akses = LevelAksesServices.CetakExport(34, LoginInfo.userID);
-                    if (akses == false)
-                    {
-                        this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                        this.Player.Play();
-                        XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
+                    //bool akses = LevelAksesServices.CetakExport(34, LoginInfo.userID);
+                    //if (akses == false)
+                    //{
+                    //    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
+                    //    this.Player.Play();
+                    //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //    return;
+                    //}
 
                     //cek record jurnal exist ?
                     var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
@@ -917,14 +917,14 @@ namespace Accounting.Form
                 }
                 if (radioGroup1.SelectedIndex == 1)
                 {
-                    bool akses = LevelAksesServices.CetakExport(33, LoginInfo.userID);
-                    if (akses == false)
-                    {
-                        this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                        this.Player.Play();
-                        XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
+                    //bool akses = LevelAksesServices.CetakExport(33, LoginInfo.userID);
+                    //if (akses == false)
+                    //{
+                    //    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
+                    //    this.Player.Play();
+                    //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //    return;
+                    //}
                     ////cek record jurnal exist ?
 
                     //var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
@@ -935,7 +935,7 @@ namespace Accounting.Form
                     //DSNeraca.WriteXmlSchema("Neraca.xsd");
 
 
-                    BalanceSheet laporan = new BalanceSheet
+                    BalanceSheet laporan = new()
                     {
                         DataSource = DSNeraca
                     };
@@ -948,21 +948,21 @@ namespace Accounting.Form
                     laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
                     laporan.Parameters["USERID"].Value = userid;
                     laporan.RequestParameters = true;
-                    ReportPrintTool tool = new ReportPrintTool(laporan);
+                    ReportPrintTool tool = new(laporan);
                     tool.ShowPreview();
                     
 
                 }
                 if (radioGroup1.SelectedIndex == 2)
                 {
-                    bool akses = LevelAksesServices.CetakExport(33, LoginInfo.userID);
-                    if (akses == false)
-                    {
-                        this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                        this.Player.Play();
-                        XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
+                    //bool akses = LevelAksesServices.CetakExport(33, LoginInfo.userID);
+                    //if (akses == false)
+                    //{
+                    //    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
+                    //    this.Player.Play();
+                    //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //    return;
+                    //}
                     ////cek record jurnal exist ?
 
                     //var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
@@ -997,14 +997,14 @@ namespace Accounting.Form
                 if (radioGroup1.SelectedIndex == 3)
                 {
                     XtraMessageBox.Show("Module Belum Aktif", "info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    bool akses = LevelAksesServices.CetakExport(33, LoginInfo.userID);
-                    if (akses == false)
-                    {
-                        this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                        this.Player.Play();
-                        XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
+                    //bool akses = LevelAksesServices.CetakExport(33, LoginInfo.userID);
+                    //if (akses == false)
+                    //{
+                    //    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
+                    //    this.Player.Play();
+                    //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //    return;
+                    //}
                     ////get data for report
                     //var neracasaldo = LaporanServices.NeracaSaldoTahun(iddata, p_daritahun);
                     //// DSNeraca.WriteXmlSchema("NeracaH1.xsd");
@@ -1031,13 +1031,13 @@ namespace Accounting.Form
                 if (radioGroup1.SelectedIndex == 4)
                 {
                     bool akses = LevelAksesServices.CetakExport(33, LoginInfo.userID);
-                    if (akses == false)
-                    {
-                        this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                        this.Player.Play();
-                        XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
+                    //if (akses == false)
+                    //{
+                    //    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
+                    //    this.Player.Play();
+                    //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //    return;
+                    //}
                     //get data for report
                     DSNeraca = LaporanServices.ViewLap_NeracaHalfYear(iddata, p_daritahun, userid, 2);
                    // DSNeraca.WriteXmlSchema("NeracaH2.xsd");
@@ -1070,14 +1070,14 @@ namespace Accounting.Form
                 }
                 if (radioGroup1.SelectedIndex == 6)
                 {
-                    bool akses = LevelAksesServices.CetakExport(31, LoginInfo.userID);
-                    if (akses == false)
-                    {
-                        this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                        this.Player.Play();
-                        XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
+                    //bool akses = LevelAksesServices.CetakExport(31, LoginInfo.userID);
+                    //if (akses == false)
+                    //{
+                    //    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
+                    //    this.Player.Play();
+                    //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //    return;
+                    //}
                     if (searchLookUpEdit1.EditValue==null || searchLookUpEdit2.EditValue == null)
                     {
                         XtraMessageBox.Show("Silahkan pilih kode Akun", "info", MessageBoxButtons.OK, MessageBoxIcon.Information);

@@ -23,7 +23,7 @@ namespace Accounting.Form
 {
     public partial class FrmUpdateSaldoAwal : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
+       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmUpdateSaldoAwal()
         {
             InitializeComponent();
@@ -89,7 +89,7 @@ namespace Accounting.Form
             var p_tahun = (int)setahun.Value;
             if (XtraMessageBox.Show("Lanjutkan Proses Update Saldo Awal Daftar Perkiraan ? " +
                 "\n\nTahun : " + p_tahun + " " +
-                "\nLokasi Data :" + CompanyInfo.INIT
+                "\nLokasi Data :" +CompanyInfo.IDDATA
                 , "Confirm Proses", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
@@ -101,7 +101,7 @@ namespace Accounting.Form
             {
                 Stopwatch watch = new ();
                 watch.Start();
-            var p_iddata = CompanyInfo.INIT;
+            var p_iddata =CompanyInfo.IDDATA;
             var p_tahuncoa = Convert.ToInt16(setahun.Value);
            
 
@@ -134,13 +134,13 @@ namespace Accounting.Form
 
                 UpdateSaldoAwalTahun_FromList(p_iddata, p_tahuncoa, accountList_Source);
 
-            Acct.TahunMin = AccountServices.MinTahunCOA(CompanyInfo.INIT);
-                    Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.INIT);
-                    Acct.PeriodeMin = AccountServices.GetMinPeriode(CompanyInfo.INIT);
-                    Acct.PeriodeMax = AccountServices.GetMaxPeriode(CompanyInfo.INIT);
+            Acct.TahunMin = AccountServices.MinTahunCOA(CompanyInfo.IDDATA);
+                    Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
+                    Acct.PeriodeMin = AccountServices.GetMinPeriode(CompanyInfo.IDDATA);
+                    Acct.PeriodeMax = AccountServices.GetMaxPeriode(CompanyInfo.IDDATA);
               
 
-                AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 1, p_tahun, LoginInfo.userID);
+                AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 1, p_tahun, LoginInfo.userID);
                 watch.Stop();
 
                 TimeSpan timeSpan = watch.Elapsed;
@@ -157,7 +157,7 @@ namespace Accounting.Form
 
         private void UpdateSaldoAwalTahun_FromList(string p_iddata, short p_tahuncoa, IEnumerable<COA_SaldoAwal> accountList_Source)
         {
-            using OracleConnection connection = new OracleConnection(Acct.OracleConnString);
+            using OracleConnection connection = new OracleConnection( LoginInfo.OracleConnString);
             connection.Open();
 
             foreach (var akun in accountList_Source)
@@ -176,7 +176,7 @@ namespace Accounting.Form
 
         private void UpdateSaldoAwalTahun_Nol(string p_iddata, short p_tahuncoa)
         {
-            using (OracleConnection connection = new(Acct.OracleConnString))
+            using (OracleConnection connection = new( LoginInfo.OracleConnString))
             {
                 connection.Open();
 
@@ -195,7 +195,7 @@ namespace Accounting.Form
         {
             List<COA_SaldoAwal> accountList = new();
 
-            using (OracleConnection connection = new(Acct.OracleConnString))
+            using (OracleConnection connection = new( LoginInfo.OracleConnString))
             {
                 connection.Open();
 

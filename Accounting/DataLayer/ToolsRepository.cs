@@ -12,7 +12,7 @@ namespace Accounting.DataLayer
 {
     public class ToolsRepository : IToolsRepository
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
 
         public DataTable Analisa_kesalahan_COA(string p_IDDATA, int p_tahun)
         {

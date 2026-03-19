@@ -17,7 +17,7 @@ namespace Accounting.Form
 {
     public partial class Jurnal_NotBalanced : SplashScreen
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public string Myperiode { get; set; }
         public int ibulan { get; set; }
         public int itahun { get; set; }

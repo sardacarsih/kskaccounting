@@ -137,7 +137,8 @@ namespace Accounting.Laporan
             // th
             // 
             this.th.Borders = ((DevExpress.XtraPrinting.BorderSide)((DevExpress.XtraPrinting.BorderSide.Top | DevExpress.XtraPrinting.BorderSide.Bottom)));
-            this.th.Font = new DevExpress.Drawing.DXFont("Verdana", 9F, DevExpress.Drawing.DXFontStyle.Bold, DevExpress.Drawing.DXGraphicsUnit.Point, new DevExpress.Drawing.DXFontAdditionalProperty[] {new DevExpress.Drawing.DXFontAdditionalProperty("GdiCharSet", ((byte)(0)))});
+            this.th.Font = new DevExpress.Drawing.DXFont("Verdana", 9F, DevExpress.Drawing.DXFontStyle.Bold, DevExpress.Drawing.DXGraphicsUnit.Point, new DevExpress.Drawing.DXFontAdditionalProperty[] {
+            new DevExpress.Drawing.DXFontAdditionalProperty("GdiCharSet", ((byte)(0)))});
             this.th.Name = "th";
             // 
             // BULAN
@@ -597,7 +598,7 @@ namespace Accounting.Laporan
             // xrLabel9
             // 
             this.xrLabel9.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "Iif([][[KAT]==\'AKTIVA\'].Sum([BULANINI]) <>[][[KAT]==\'PASIVA\'].Sum([BULANINI])\n\n,\'" +
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "Iif([][[KAT]==\'AKTIVA\'].Sum([BULANINI]) !=[][[KAT]==\'PASIVA\'].Sum([BULANINI])\n\n,\'" +
                     "NERACA BELUM SEIMBANG\' ,? )")});
             this.xrLabel9.Font = new DevExpress.Drawing.DXFont("Arial", 9.75F, DevExpress.Drawing.DXFontStyle.Bold);
             this.xrLabel9.ForeColor = System.Drawing.Color.Red;
@@ -974,7 +975,7 @@ namespace Accounting.Laporan
             this.DataMember = "Neraca";
             this.DataSource = this.sqlDataSource1;
             this.Font = new DevExpress.Drawing.DXFont("Arial", 9.75F);
-            this.Margins = new DevExpress.Drawing.DXMargins(50, 50, 28, 33);
+            this.Margins = new DevExpress.Drawing.DXMargins(50F, 50F, 28.45139F, 32.90749F);
             this.PageHeight = 1169;
             this.PageWidth = 827;
             this.PaperKind = DevExpress.Drawing.Printing.DXPaperKind.A4;
@@ -1001,7 +1002,7 @@ namespace Accounting.Laporan
             this.GrandTotalData1,
             this.GrandTotalBackground1,
             this.PageInfo});
-            this.Version = "22.1";
+            this.Version = "23.2";
             ((System.ComponentModel.ISupportInitialize)(this.table1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.table2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.table3)).EndInit();

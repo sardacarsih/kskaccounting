@@ -142,8 +142,7 @@ namespace Accounting.Form
             this.gridView1.OptionsFind.AlwaysVisible = true;
             this.gridView1.OptionsFind.ShowFindButton = false;
             this.gridView1.OptionsView.ShowGroupPanel = false;
-            this.gridView1.Click += new System.EventHandler(this.gridView1_Click);
-            // 
+            //
             // groupControl2
             // 
             this.groupControl2.Controls.Add(this.radioGroup);
@@ -225,8 +224,7 @@ namespace Accounting.Form
             this.BTNEXPORT.Size = new System.Drawing.Size(64, 23);
             this.BTNEXPORT.TabIndex = 1;
             this.BTNEXPORT.Text = "Export";
-            this.BTNEXPORT.Click += new System.EventHandler(this.BTNEXPORT_Click);
-            // 
+            //
             // btnbaru
             // 
             this.btnbaru.Location = new System.Drawing.Point(81, 204);
@@ -298,6 +296,7 @@ namespace Accounting.Form
             this.txtkodeakhir.Properties.MaskSettings.Set("MaskManagerType", typeof(DevExpress.Data.Mask.SimpleMaskManager));
             this.txtkodeakhir.Properties.MaskSettings.Set("MaskManagerSignature", "ignoreMaskBlank=True");
             this.txtkodeakhir.Properties.MaskSettings.Set("mask", "000");
+            this.txtkodeakhir.Properties.MaxLength = 12;
             this.txtkodeakhir.Size = new System.Drawing.Size(31, 20);
             this.txtkodeakhir.TabIndex = 0;
             this.txtkodeakhir.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtkodeblok_KeyDown);
@@ -320,6 +319,7 @@ namespace Accounting.Form
             this.txtkode.Location = new System.Drawing.Point(80, 144);
             this.txtkode.Margin = new System.Windows.Forms.Padding(2);
             this.txtkode.Name = "txtkode";
+            this.txtkode.Properties.MaxLength = 12;
             this.txtkode.Properties.ReadOnly = true;
             this.txtkode.Size = new System.Drawing.Size(56, 20);
             this.txtkode.TabIndex = 0;

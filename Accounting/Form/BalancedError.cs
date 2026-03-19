@@ -12,7 +12,7 @@ namespace Accounting.Form
 {
     public partial class BalancedError : SplashScreen
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public string Myperiode { get; set; }
         public int ibulan { get; set; }
         public int itahun { get; set; }
@@ -66,7 +66,7 @@ namespace Accounting.Form
                         conn.Open();
                     }
                     _command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-                    _command.Parameters.Add("piddata", OracleDbType.Varchar2, 30).Value = CompanyInfo.INIT;
+                    _command.Parameters.Add("piddata", OracleDbType.Varchar2, 30).Value =CompanyInfo.IDDATA;
                     _command.Parameters.Add("pperiode", OracleDbType.Varchar2, 7).Value = this.Myperiode;
                     OracleDataReader dr;
                     dr = _command.ExecuteReader();
@@ -113,7 +113,7 @@ namespace Accounting.Form
                     conn.Open();
                 }
                 _command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-                _command.Parameters.Add("piddata", OracleDbType.Varchar2,30).Value = CompanyInfo.INIT;
+                _command.Parameters.Add("piddata", OracleDbType.Varchar2,30).Value =CompanyInfo.IDDATA;
                 _command.Parameters.Add("pperiode", OracleDbType.Varchar2,7).Value = this.Myperiode;
                 OracleDataReader dr;
                 dr = _command.ExecuteReader();
@@ -137,7 +137,7 @@ namespace Accounting.Form
                     conn.Open();
                 }
                 _command.Parameters.Add("record", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-                _command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 30).Value = CompanyInfo.INIT;
+                _command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 30).Value =CompanyInfo.IDDATA;
                 _command.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = this.ibulan;
                 _command.Parameters.Add("p_tahun", OracleDbType.Int16).Value = this.itahun;
                 OracleDataReader dr;
@@ -162,7 +162,7 @@ namespace Accounting.Form
                     conn.Open();
                 }
                 _command.Parameters.Add("JUMLAH", OracleDbType.Decimal).Direction = ParameterDirection.ReturnValue;
-                _command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 30).Value = CompanyInfo.INIT;
+                _command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 30).Value =CompanyInfo.IDDATA;
                 _command.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = this.ibulan;
                 _command.Parameters.Add("p_tahun", OracleDbType.Int16).Value = this.itahun;
                 _command.ExecuteScalar();

@@ -1,20 +1,19 @@
 ﻿using Accounting.BusinessLayer;
+using Accounting.Utilities;
 using DevExpress.Utils.Menu;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
-using DevExpress.XtraSplashScreen;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Data;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace Accounting.Form
 {
     public partial class FrmPeriode : DevExpress.XtraEditors.XtraForm
     {
-        readonly OracleConnection conn = new(Acct.OracleConnString);
+        readonly OracleConnection conn = new(ConnectionManager.GetOracleConnection());
         DataSet DSperiode;
         OracleDataAdapter sqlAdapter;
         public FrmPeriode()
@@ -43,7 +42,7 @@ namespace Accounting.Form
         }
         private void LoadList_Periode()
         {
-            PeriodeAkuntansi(CompanyInfo.INIT, (int)setahun.Value);
+            PeriodeAkuntansi(CompanyInfo.IDDATA, (int)setahun.Value);
             gridControl1.DataSource = DSperiode;
             gridControl1.DataMember = "Periode";
             gridView1.Focus();
@@ -57,7 +56,7 @@ namespace Accounting.Form
             {
                 CommandType = CommandType.Text
             };
-            _command.Parameters.Add(":iddata", OracleDbType.Varchar2, 10).Value = piddata;
+            _command.Parameters.Add(":iddata", OracleDbType.Varchar2, 20).Value = piddata;
                 _command.Parameters.Add(":tahun", OracleDbType.Int16).Value = ptahun;
                 OracleCommandBuilder sqlcmdbuilder = new OracleCommandBuilder();
                 sqlAdapter = new OracleDataAdapter();
@@ -101,7 +100,7 @@ namespace Accounting.Form
 
         private DXMenuItem CreateMenuItemHapus(GridView view, int rowHandle)
         {
-            DXMenuItem checkItem = new DXMenuItem("Hapus", new EventHandler(OnHapusClick));
+            DXMenuItem checkItem = new("Hapus", new EventHandler(OnHapusClick));
             checkItem.ImageOptions.Image = imageCollection1.Images[0];
             return checkItem;
         }
@@ -112,7 +111,7 @@ namespace Accounting.Form
             var rowhandle = gridView1.FocusedRowHandle;
             var PERIODE = gridView1.GetRowCellValue(rowhandle, "PERIODE").ToString();
             var LblPeriode = gridView1.GetRowCellValue(rowhandle, "BULAN").ToString()+'-'+setahun.Value.ToString();
-            var adarecordjurnal = JurnalServices.CekRecordJurnalExist(CompanyInfo.INIT, PERIODE);
+            var adarecordjurnal = JurnalServices.CekRecordJurnalExist(CompanyInfo.IDDATA, PERIODE);
             if (adarecordjurnal >0)
             {
                 XtraMessageBox.Show("Periode Akuntansi : " + LblPeriode + 
@@ -121,9 +120,9 @@ namespace Accounting.Form
                 return;
             }
 
-            Hapus_Periode(CompanyInfo.INIT, PERIODE);
+            Hapus_Periode(CompanyInfo.IDDATA, PERIODE);
             
-            string SetValueForPeriode = "Periode Akuntansi : " + AccountServices.GetNamaPeriode(CompanyInfo.INIT).ToString();
+            string SetValueForPeriode = "Periode Akuntansi : " + AccountServices.GetNamaPeriode(CompanyInfo.IDDATA).ToString();
             WriteToParent(SetValueForPeriode);
             LoadList_Periode();
         }
@@ -132,7 +131,7 @@ namespace Accounting.Form
         {
            
             string deletecmd = "delete from ACCT_PERIODE WHERE IDDATA=:p_IDDATA AND PERIODE=:p_periode";
-            using (OracleCommand cmd = new OracleCommand(deletecmd, conn)
+            using (OracleCommand cmd = new(deletecmd, conn)
             {
                 CommandType = CommandType.Text
             })

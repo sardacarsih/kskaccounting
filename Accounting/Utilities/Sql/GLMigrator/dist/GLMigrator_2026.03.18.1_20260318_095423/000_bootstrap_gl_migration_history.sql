@@ -1,0 +1,47 @@
+-- Purpose: Bootstrap table to track applied GL database migrations.
+-- Safe to re-run.
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_table_count NUMBER := 0;
+    v_index_count NUMBER := 0;
+BEGIN
+    SELECT COUNT(1)
+      INTO v_table_count
+      FROM USER_TABLES
+     WHERE TABLE_NAME = 'GL_MIGRATION_HISTORY';
+
+    IF v_table_count = 0 THEN
+        EXECUTE IMMEDIATE q'[
+            CREATE TABLE GL_MIGRATION_HISTORY
+            (
+                MIGRATION_ID    VARCHAR2(128)   NOT NULL,
+                CHECKSUM_SHA256 VARCHAR2(64)    NOT NULL,
+                DESCRIPTION     VARCHAR2(500),
+                SCRIPT_PATH     VARCHAR2(500)   NOT NULL,
+                STATUS          VARCHAR2(20)    DEFAULT 'SUCCESS' NOT NULL,
+                EXECUTION_MS    NUMBER,
+                APPLIED_AT      TIMESTAMP       DEFAULT SYSTIMESTAMP NOT NULL,
+                APPLIED_BY      VARCHAR2(128)   DEFAULT USER NOT NULL,
+                CONSTRAINT PK_GL_MIGRATION_HISTORY PRIMARY KEY (MIGRATION_ID)
+            )
+        ]';
+        DBMS_OUTPUT.PUT_LINE('CREATED TABLE: GL_MIGRATION_HISTORY');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('TABLE EXISTS: GL_MIGRATION_HISTORY');
+    END IF;
+
+    SELECT COUNT(1)
+      INTO v_index_count
+      FROM USER_INDEXES
+     WHERE INDEX_NAME = 'IDX_GL_MIGRATION_APPLIED_AT';
+
+    IF v_index_count = 0 THEN
+        EXECUTE IMMEDIATE 'CREATE INDEX IDX_GL_MIGRATION_APPLIED_AT ON GL_MIGRATION_HISTORY (APPLIED_AT)';
+        DBMS_OUTPUT.PUT_LINE('CREATED INDEX: IDX_GL_MIGRATION_APPLIED_AT');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('INDEX EXISTS: IDX_GL_MIGRATION_APPLIED_AT');
+    END IF;
+END;
+/

@@ -6,7 +6,7 @@ namespace Accounting.DataLayer
 {
     public class LevelAksesRepository : ILevelAksesRepository
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
 
         public bool BaruImport(int aksiid, string userid)
         {
@@ -38,7 +38,7 @@ namespace Accounting.DataLayer
         {
             try
             {
-                using OracleConnection conn = new(Acct.OracleConnString);
+                using OracleConnection conn = new( LoginInfo.OracleConnString);
                 conn.Open();
 
                 using OracleCommand cmd = new("SELECT CETAK FROM vaksesgl WHERE aksiid = :aksiid AND userid = :userid", conn);
@@ -74,7 +74,7 @@ namespace Accounting.DataLayer
             try
             {
 
-                using OracleConnection conn = new(Acct.OracleConnString);
+                using OracleConnection conn = new( LoginInfo.OracleConnString);
                 conn.Open();
 
                 string sql = "SELECT HAPUS FROM vaksesgl WHERE AKSIID = :aksiid AND USERID = :userid";
@@ -109,7 +109,7 @@ namespace Accounting.DataLayer
         {
             try
             {
-                using OracleConnection conn = new OracleConnection(Acct.OracleConnString);
+                using OracleConnection conn = new OracleConnection( LoginInfo.OracleConnString);
                 conn.Open();
                 using (OracleCommand cmd = new OracleCommand("SELECT buka FROM vaksesgl WHERE aksiid = :aksiid AND userid = :userid", conn))
                 {
@@ -146,7 +146,7 @@ namespace Accounting.DataLayer
         {
             try
             {
-                using OracleConnection conn = new(Acct.OracleConnString);
+                using OracleConnection conn = new( LoginInfo.OracleConnString);
                 conn.Open();
                 using OracleCommand cmd = new("SELECT simpan FROM vaksesgl WHERE aksiid = :aksiid AND userid = :userid", conn);
                 cmd.CommandType = CommandType.Text;
@@ -177,7 +177,7 @@ namespace Accounting.DataLayer
         {
             try
             {
-                using OracleConnection conn = new(Acct.OracleConnString);
+                using OracleConnection conn = new( LoginInfo.OracleConnString);
                 {
                     conn.Open();
                     using OracleCommand cmd = new("SELECT ubah FROM vaksesgl WHERE aksiid = :aksiid AND userid = :userid", conn);

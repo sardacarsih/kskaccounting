@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(grep -n \"consolidat\\\\|Consolidat\" FrmJurnal.*.cs)",
+      "Bash(find D:VSCODEProjectGL_MVC_RepositoryAccounting -name *JurnalInputOperationService* -o -name *JurnalPayrollUmumService* -o -name *JurnalDaftarCariService* -o -name *JurnalExcelExportService* -o -name *JurnalImportSelectionService*)",
+      "Bash(find D:VSCODEProjectGL_MVC_RepositoryAccounting -name *JurnalUseCase* -o -name IJurnalRepository*)",
+      "Bash(grep -n \"HandleBehaviorDragDropEvents\\\\|Load_Kode_AIS\\\\|Load_Kode_Inv\\\\|Load_Kode_HRIS\\\\|PopulatePeriode\" D:VSCODEProjectGL_MVC_RepositoryAccountingFormFrmJurnal*.cs)",
+      "Bash(find D:/VSCODE/Project/GL_MVC_Repository/Accounting/1.Interface D:/VSCODE/Project/GL_MVC_Repository/Accounting/2.DataAcces D:/VSCODE/Project/GL_MVC_Repository/Accounting/3.Services D:/VSCODE/Project/GL_MVC_Repository/Accounting/Helper -name *.cs)",
+      "Bash(grep -n \"\\\\.CREATED\\\\|\\\\.MODIFIED\\\\|new.*JurnalHeaderAdd\" /d/VSCODE/Project/GL_MVC_Repository/Accounting/Form/*.cs)",
+      "Bash(xargs ls:*)"
+    ]
+  }
+}
