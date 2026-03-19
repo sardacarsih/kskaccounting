@@ -32,7 +32,7 @@ namespace Accounting.Form
             setahun.Value = Acct.TahunMax;
             cmbbulan.SelectedIndex =0;
             lblpt.Text = CompanyInfo.NAMAPT;
-            lbldata.Text = CompanyInfo.INIT;
+            lbldata.Text =CompanyInfo.IDDATA;
             lblwilayah.Text = CompanyInfo.WILAYAH;
         }
 
@@ -47,7 +47,7 @@ namespace Accounting.Form
                 p_tahun = Convert.ToInt32(setahun.Value);
                 //jika periode telah dikunci,  batalkan proses import jurnal            
                 periode = 12.ToString("0#") + "/" + p_tahun.ToString();
-                Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.INIT, periode);
+                Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.IDDATA, periode);
                 bulan = cmbbulan.Text + " - " + setahun.Value.ToString();
                 if (Acct.KunciPeriode == "Y")
                 {
@@ -58,17 +58,17 @@ namespace Accounting.Form
                     return;
                 }
                 
-                var record = JurnalServices.CekRecordJurnalExist(CompanyInfo.INIT, periode);
+                //var record = JurnalServices.CekRecordJurnalExist(CompanyInfo.IDDATA, periode);
                
-                if (record == 0) {
-                    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\akhir_tahun_jurnal.wav";
-                    this.Player.Play();
-                    XtraMessageBox.Show("Belum ada transaksi jurnal", "info", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+                //if (record == 0) {
+                //    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\akhir_tahun_jurnal.wav";
+                //    this.Player.Play();
+                //    XtraMessageBox.Show("Belum ada transaksi jurnal", "info", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
 
                 
 
                 //analisa kesalahan COA
-                var Errcoa_check = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.INIT, p_tahun);
+                var Errcoa_check = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.IDDATA, p_tahun);
                 if (Errcoa_check.Rows.Count > 0)
                 {
                     COAError error_coa = new()
@@ -82,20 +82,20 @@ namespace Accounting.Form
                 }
 
                 //update level account
-                AccountServices.UpdateLevelAccount(CompanyInfo.INIT, p_tahun);
+                AccountServices.UpdateLevelAccount(CompanyInfo.IDDATA, p_tahun);
 
                 //rekalkulasi bulan desember
-                AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 12, p_tahun, LoginInfo.userID);
+                AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 12, p_tahun, LoginInfo.userID);
 
                 //generate data laba rugi dan jurnal closing
                 if (CompanyInfo.JENIS_AKUNTING != "LAIN")
                 {
                     if (checkEditjurnalclosing.Checked == true)
                     {
-                        LaporanServices.Generate_Jurnal_Closing(CompanyInfo.INIT, 12, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
+                        LaporanServices.Generate_Jurnal_Closing(CompanyInfo.IDDATA, 12, p_tahun, LoginInfo.userID, CompanyInfo.JENIS_AKUNTING);
                     }
                     //CAK APAKAH NECARA SUDAH BALACE
-                    var selisih = LaporanServices.Balanced_Check(CompanyInfo.INIT, 12, p_tahun);
+                    var selisih = LaporanServices.Balanced_Check(CompanyInfo.IDDATA, 12, p_tahun);
                     if (selisih != 0)
                     {
                         this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\neraca_error.wav";
@@ -114,23 +114,23 @@ namespace Accounting.Form
                     {
                         //cek coa next year 
                         nextyear = p_tahun + 1;
-                        var coa_nextyear = AccountServices.CekCOAExist(CompanyInfo.INIT, nextyear);
+                        var coa_nextyear = AccountServices.CekCOAExist(CompanyInfo.IDDATA, nextyear);
                         if (coa_nextyear == 1) //1 tidak ada coa, buat coa 
                         {
                             //buat c0a baru untuk tahun depan
-                            AccountServices.ClosingEndYear(CompanyInfo.INIT, p_tahun, LoginInfo.userID);
+                            AccountServices.ClosingEndYear(CompanyInfo.IDDATA, p_tahun, LoginInfo.userID);
 
                         }
                         else
                         {
                             //hanya update saldo akhir tahun ke saldo awal tahun  berikutnya
-                            AccountServices.ClosingEndYearUpdateOnly(CompanyInfo.INIT, p_tahun, LoginInfo.userID);
+                            AccountServices.ClosingEndYearUpdateOnly(CompanyInfo.IDDATA, p_tahun, LoginInfo.userID);
                         }
 
                         if (checkEditjurnalclosing.Checked == true)
                         {
                             //reclass saldo LR tahun berjalan ke laba ditahan
-                            AccountServices.ReclassLabaRugi(CompanyInfo.INIT, p_tahun, LoginInfo.userID);
+                            AccountServices.ReclassLabaRugi(CompanyInfo.IDDATA, p_tahun, LoginInfo.userID);
                         }
                     }
                 }
@@ -138,28 +138,28 @@ namespace Accounting.Form
                 {
                     //cek coa next year 
                     nextyear = p_tahun + 1;
-                    var coa_nextyear = AccountServices.CekCOAExist(CompanyInfo.INIT, nextyear);
+                    var coa_nextyear = AccountServices.CekCOAExist(CompanyInfo.IDDATA, nextyear);
                     if (coa_nextyear == 1) //1 tidak ada coa, buat coa 
                     {
                         //buat c0a baru untuk tahun depan
-                        AccountServices.ClosingEndYear(CompanyInfo.INIT, p_tahun, LoginInfo.userID);
+                        AccountServices.ClosingEndYear(CompanyInfo.IDDATA, p_tahun, LoginInfo.userID);
 
                     }
                     else
                     {
                         //hanya update saldo akhir tahun ke saldo awal tahun  berikutnya
-                        AccountServices.ClosingEndYearUpdateOnly(CompanyInfo.INIT, p_tahun, LoginInfo.userID);
+                        AccountServices.ClosingEndYearUpdateOnly(CompanyInfo.IDDATA, p_tahun, LoginInfo.userID);
                     }
 
                 }               
                
 
                 //create jurnal reverse
-                JurnalServices.JurnalRE(CompanyInfo.INIT, periode, LoginInfo.userID);
+                JurnalServices.JurnalRE(CompanyInfo.IDDATA, periode, LoginInfo.userID);
                 nextyear = p_tahun + 1;
                 //ANTISIPASI jika sudah ada jurnal hitung ulang saldo
-                AccountServices.RekalkulasiSaldo(CompanyInfo.INIT, 1, nextyear, LoginInfo.userID);
-                Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.INIT);
+                AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, 1, nextyear, LoginInfo.userID);
+                Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
 
                 watch.Stop();
                 TimeSpan timeSpan = watch.Elapsed;
@@ -170,8 +170,8 @@ namespace Accounting.Form
                 this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\akhir_tahun.wav";
                 this.Player.Play();
                 XtraMessageBox.Show("Proses Tutup Tahun Selesai\n\n" +
-                    "Periode Akuntansi : " + bulan + "\nLokasi Data : " + CompanyInfo.INIT + "\n" + waktuproses, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.INIT);
+                    "Periode Akuntansi : " + bulan + "\nLokasi Data : " +CompanyInfo.IDDATA + "\n" + waktuproses, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
             }
             catch (Exception ex)
             {

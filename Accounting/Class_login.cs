@@ -10,6 +10,8 @@
         public static string ASST;
         public static string KABAG;
         public static string MANAGER;
+        public static string MODULE= "ACCOUNTING";
+        public static string OracleConnString;
     }
 
     public static class CompanyInfo
@@ -21,6 +23,8 @@
         public static string NAMAPT;
         public static string WILAYAH;
         public static string ESTATE;
+        public static string ESTATENAMA;
+        public static string IDDATA;
 
     }
 

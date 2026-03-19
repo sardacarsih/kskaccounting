@@ -1,15 +1,12 @@
 ﻿using Accounting.BusinessLayer;
 using DevExpress.XtraEditors;
-using Oracle.ManagedDataAccess.Client;
 using System;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace Accounting.Form
 {
     public partial class FrmPeriodeNew : DevExpress.XtraEditors.XtraForm
     {
-        OracleConnection con = new OracleConnection(Acct.OracleConnString);
         public FrmPeriodeNew()
         {
             InitializeComponent();
@@ -22,7 +19,7 @@ namespace Accounting.Form
             setahun.Value = DateTime.Today.Year;
 
             lblpt.Text = CompanyInfo.NAMAPT;
-            lbldata.Text = CompanyInfo.INIT;
+            lbldata.Text =CompanyInfo.IDDATA;
             lblwilayah.Text = CompanyInfo.WILAYAH;
 
         }
@@ -31,16 +28,19 @@ namespace Accounting.Form
         {
             try
             {
-                var p_bulan = cmbbulan.SelectedIndex;
-                var p_tahun = (int)setahun.Value;
-                AccountServices.CreateNextPeriode(CompanyInfo.INIT, p_bulan, p_tahun);
-                Acct.PeriodeMin = Convert.ToInt32(AccountServices.GetMinPeriode(CompanyInfo.INIT).ToString());
-                Acct.PeriodeMax = Convert.ToInt32(AccountServices.GetMaxPeriode(CompanyInfo.INIT).ToString());
-                //create default perkiraan closing
-                AccountServices.CreateClosingAcct(CompanyInfo.INIT);
+                if (LoginInfo.userID != "admin")
+                {
+                    var p_bulan = cmbbulan.SelectedIndex;
+                    var p_tahun = (int)setahun.Value;
+                    AccountServices.CreateNextPeriode(CompanyInfo.IDDATA, p_bulan, p_tahun);
+                    Acct.PeriodeMin = Convert.ToInt32(AccountServices.GetMinPeriode(CompanyInfo.IDDATA).ToString());
+                    Acct.PeriodeMax = Convert.ToInt32(AccountServices.GetMaxPeriode(CompanyInfo.IDDATA).ToString());
+                    //create default perkiraan closing
+                    AccountServices.CreateClosingAcct(CompanyInfo.IDDATA);
 
-                XtraMessageBox.Show("Periode Akuntansi Baru Telah dibuat.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.Close();
+                    XtraMessageBox.Show("Periode Akuntansi Baru Telah dibuat.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    this.Close();
+                }
             }
             catch (Exception ex)
             {
@@ -53,9 +53,6 @@ namespace Accounting.Form
                 {
                     XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-                //Cursor.Current = Cursors.Default;
-                //SplashScreenManager.CloseForm();
-
             }
         }
     }

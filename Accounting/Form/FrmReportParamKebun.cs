@@ -15,7 +15,7 @@ namespace Accounting.Form
 {
     public partial class FrmReportParamKebun : DevExpress.XtraEditors.XtraForm
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmReportParamKebun()
         {
             InitializeComponent();
@@ -50,7 +50,7 @@ namespace Accounting.Form
                 var bulanneraca = lastDayOfMonth + " " + cmbbulan.Text + "-" + setahun.Value.ToString();
                 var periode = pbulan.ToString("00") + "/" + ptahun.ToString();
 
-                var iddata = CompanyInfo.INIT;
+                var iddata =CompanyInfo.IDDATA;
                 var jenis = CompanyInfo.JENIS_AKUNTING;
                 var userid = LoginInfo.userID;
                 SplashScreenManager.ShowForm(typeof(WaitForm_Load));
@@ -162,7 +162,7 @@ namespace Accounting.Form
                 var bulanneraca = lastDayOfMonth + " " + cmbbulan.Text + "-" + setahun.Value.ToString();
                 var periode = pbulan.ToString("00") + "/" + ptahun.ToString();
 
-                var iddata = CompanyInfo.INIT;
+                var iddata =CompanyInfo.IDDATA;
                 var jenis = CompanyInfo.JENIS_AKUNTING;
                 var userid = LoginInfo.userID;
                 SplashScreenManager.ShowForm(typeof(WaitForm_Load));

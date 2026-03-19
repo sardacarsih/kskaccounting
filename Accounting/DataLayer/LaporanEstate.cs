@@ -11,7 +11,7 @@ namespace Accounting.DataLayer
 {
     public class LaporanEstate : ILaporanEstate
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
 
         public DataTable Divisi(string p_iddata, int p_tahun)
         {

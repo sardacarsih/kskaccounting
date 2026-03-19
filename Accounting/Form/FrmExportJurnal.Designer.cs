@@ -29,250 +29,255 @@ namespace Accounting.Form
         /// </summary>
         private void InitializeComponent()
         {
-            this.btnexport = new DevExpress.XtraEditors.SimpleButton();
-            this.setahun = new DevExpress.XtraEditors.SpinEdit();
-            this.cmbbulan = new DevExpress.XtraEditors.ComboBoxEdit();
-            this.labelControl3 = new DevExpress.XtraEditors.LabelControl();
-            this.gridControl1 = new DevExpress.XtraGrid.GridControl();
-            this.gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
-            this.NoJurnal = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.Tanggal = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.Kode = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.Rekening = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.Debet = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.Kredit = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.Keterangan = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.Posted = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.Periode = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.DID = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.RowNo = new DevExpress.XtraGrid.Columns.GridColumn();
-            ((System.ComponentModel.ISupportInitialize)(this.setahun.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cmbbulan.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView1)).BeginInit();
-            this.SuspendLayout();
+            btnexport = new DevExpress.XtraEditors.SimpleButton();
+            setahun = new DevExpress.XtraEditors.SpinEdit();
+            cmbbulandari = new DevExpress.XtraEditors.ComboBoxEdit();
+            labelControl3 = new DevExpress.XtraEditors.LabelControl();
+            gridControl1 = new DevExpress.XtraGrid.GridControl();
+            gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
+            NoJurnal = new DevExpress.XtraGrid.Columns.GridColumn();
+            Tanggal = new DevExpress.XtraGrid.Columns.GridColumn();
+            Kode = new DevExpress.XtraGrid.Columns.GridColumn();
+            Rekening = new DevExpress.XtraGrid.Columns.GridColumn();
+            Debet = new DevExpress.XtraGrid.Columns.GridColumn();
+            Kredit = new DevExpress.XtraGrid.Columns.GridColumn();
+            Keterangan = new DevExpress.XtraGrid.Columns.GridColumn();
+            Posted = new DevExpress.XtraGrid.Columns.GridColumn();
+            Periode = new DevExpress.XtraGrid.Columns.GridColumn();
+            DID = new DevExpress.XtraGrid.Columns.GridColumn();
+            RowNo = new DevExpress.XtraGrid.Columns.GridColumn();
+            labelControl1 = new DevExpress.XtraEditors.LabelControl();
+            cmbbulansampai = new DevExpress.XtraEditors.ComboBoxEdit();
+            ((System.ComponentModel.ISupportInitialize)setahun.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)cmbbulandari.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridControl1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridView1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)cmbbulansampai.Properties).BeginInit();
+            SuspendLayout();
             // 
             // btnexport
             // 
-            this.btnexport.ImageOptions.Image = global::Accounting.Properties.Resources.exporttoxls_16x16;
-            this.btnexport.Location = new System.Drawing.Point(228, 5);
-            this.btnexport.Margin = new System.Windows.Forms.Padding(2);
-            this.btnexport.Name = "btnexport";
-            this.btnexport.Size = new System.Drawing.Size(75, 21);
-            this.btnexport.TabIndex = 10;
-            this.btnexport.Text = "Export";
-            this.btnexport.Click += new System.EventHandler(this.btnexport_Click);
+            btnexport.ImageOptions.Image = Properties.Resources.exporttoxls_16x16;
+            btnexport.Location = new System.Drawing.Point(369, 2);
+            btnexport.Margin = new System.Windows.Forms.Padding(2);
+            btnexport.Name = "btnexport";
+            btnexport.Size = new System.Drawing.Size(75, 21);
+            btnexport.TabIndex = 10;
+            btnexport.Text = "Export";
+            btnexport.Click += btnexport_Click;
             // 
             // setahun
             // 
-            this.setahun.EditValue = new decimal(new int[] {
-            0,
-            0,
-            0,
-            0});
-            this.setahun.Location = new System.Drawing.Point(169, 8);
-            this.setahun.Margin = new System.Windows.Forms.Padding(2);
-            this.setahun.Name = "setahun";
-            this.setahun.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.setahun.Properties.DisplayFormat.FormatString = "d";
-            this.setahun.Properties.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            this.setahun.Properties.EditFormat.FormatString = "d";
-            this.setahun.Properties.EditFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            this.setahun.Properties.MaskSettings.Set("mask", "d");
-            this.setahun.Size = new System.Drawing.Size(55, 20);
-            this.setahun.TabIndex = 9;
-            this.setahun.EditValueChanged += new System.EventHandler(this.setahun_EditValueChanged);
+            setahun.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
+            setahun.Location = new System.Drawing.Point(310, 3);
+            setahun.Margin = new System.Windows.Forms.Padding(2);
+            setahun.Name = "setahun";
+            setahun.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            setahun.Properties.DisplayFormat.FormatString = "d";
+            setahun.Properties.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+            setahun.Properties.EditFormat.FormatString = "d";
+            setahun.Properties.EditFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+            setahun.Properties.MaskSettings.Set("mask", "d");
+            setahun.Size = new System.Drawing.Size(55, 20);
+            setahun.TabIndex = 9;
+            setahun.EditValueChanged += setahun_EditValueChanged;
             // 
-            // cmbbulan
+            // cmbbulandari
             // 
-            this.cmbbulan.Location = new System.Drawing.Point(57, 8);
-            this.cmbbulan.Margin = new System.Windows.Forms.Padding(2);
-            this.cmbbulan.Name = "cmbbulan";
-            this.cmbbulan.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.cmbbulan.Properties.ImmediatePopup = true;
-            this.cmbbulan.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
-            this.cmbbulan.Size = new System.Drawing.Size(100, 20);
-            this.cmbbulan.TabIndex = 8;
-            this.cmbbulan.SelectedIndexChanged += new System.EventHandler(this.cmbbulan_SelectedIndexChanged);
+            cmbbulandari.Location = new System.Drawing.Point(57, 3);
+            cmbbulandari.Margin = new System.Windows.Forms.Padding(2);
+            cmbbulandari.Name = "cmbbulandari";
+            cmbbulandari.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            cmbbulandari.Properties.ImmediatePopup = true;
+            cmbbulandari.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
+            cmbbulandari.Size = new System.Drawing.Size(100, 20);
+            cmbbulandari.TabIndex = 8;
+            cmbbulandari.SelectedIndexChanged += cmbbulan_SelectedIndexChanged;
             // 
             // labelControl3
             // 
-            this.labelControl3.Location = new System.Drawing.Point(10, 12);
-            this.labelControl3.Margin = new System.Windows.Forms.Padding(2);
-            this.labelControl3.Name = "labelControl3";
-            this.labelControl3.Size = new System.Drawing.Size(36, 13);
-            this.labelControl3.TabIndex = 7;
-            this.labelControl3.Text = "Periode";
+            labelControl3.Location = new System.Drawing.Point(10, 10);
+            labelControl3.Margin = new System.Windows.Forms.Padding(2);
+            labelControl3.Name = "labelControl3";
+            labelControl3.Size = new System.Drawing.Size(36, 13);
+            labelControl3.TabIndex = 7;
+            labelControl3.Text = "Periode";
             // 
             // gridControl1
             // 
-            this.gridControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.gridControl1.EmbeddedNavigator.Margin = new System.Windows.Forms.Padding(2);
-            this.gridControl1.Location = new System.Drawing.Point(10, 29);
-            this.gridControl1.MainView = this.gridView1;
-            this.gridControl1.Margin = new System.Windows.Forms.Padding(2);
-            this.gridControl1.Name = "gridControl1";
-            this.gridControl1.Size = new System.Drawing.Size(803, 363);
-            this.gridControl1.TabIndex = 11;
-            this.gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
-            this.gridView1});
+            gridControl1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            gridControl1.EmbeddedNavigator.Margin = new System.Windows.Forms.Padding(2);
+            gridControl1.Location = new System.Drawing.Point(10, 29);
+            gridControl1.MainView = gridView1;
+            gridControl1.Margin = new System.Windows.Forms.Padding(2);
+            gridControl1.Name = "gridControl1";
+            gridControl1.Size = new System.Drawing.Size(803, 363);
+            gridControl1.TabIndex = 11;
+            gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView1 });
             // 
             // gridView1
             // 
-            this.gridView1.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
-            this.NoJurnal,
-            this.Tanggal,
-            this.Kode,
-            this.Rekening,
-            this.Debet,
-            this.Kredit,
-            this.Keterangan,
-            this.Posted,
-            this.Periode,
-            this.DID});
-            this.gridView1.DetailHeight = 217;
-            this.gridView1.GridControl = this.gridControl1;
-            this.gridView1.Name = "gridView1";
-            this.gridView1.OptionsBehavior.Editable = false;
-            this.gridView1.OptionsFind.AlwaysVisible = true;
-            this.gridView1.OptionsFind.ShowFindButton = false;
-            this.gridView1.OptionsView.ShowGroupPanel = false;
-            this.gridView1.SortInfo.AddRange(new DevExpress.XtraGrid.Columns.GridColumnSortInfo[] {
-            new DevExpress.XtraGrid.Columns.GridColumnSortInfo(this.NoJurnal, DevExpress.Data.ColumnSortOrder.Ascending),
-            new DevExpress.XtraGrid.Columns.GridColumnSortInfo(this.Tanggal, DevExpress.Data.ColumnSortOrder.Ascending)});
+            gridView1.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] { NoJurnal, Tanggal, Kode, Rekening, Debet, Kredit, Keterangan, Posted, Periode, DID });
+            gridView1.DetailHeight = 217;
+            gridView1.GridControl = gridControl1;
+            gridView1.Name = "gridView1";
+            gridView1.OptionsBehavior.Editable = false;
+            gridView1.OptionsFind.AlwaysVisible = true;
+            gridView1.OptionsFind.ShowFindButton = false;
+            gridView1.OptionsView.ShowGroupPanel = false;
+            gridView1.SortInfo.AddRange(new DevExpress.XtraGrid.Columns.GridColumnSortInfo[] { new DevExpress.XtraGrid.Columns.GridColumnSortInfo(NoJurnal, DevExpress.Data.ColumnSortOrder.Ascending), new DevExpress.XtraGrid.Columns.GridColumnSortInfo(Tanggal, DevExpress.Data.ColumnSortOrder.Ascending) });
             // 
             // NoJurnal
             // 
-            this.NoJurnal.Caption = "NoJurnal";
-            this.NoJurnal.FieldName = "NoJurnal";
-            this.NoJurnal.Name = "NoJurnal";
-            this.NoJurnal.OptionsColumn.FixedWidth = true;
-            this.NoJurnal.Visible = true;
-            this.NoJurnal.VisibleIndex = 0;
-            this.NoJurnal.Width = 80;
+            NoJurnal.Caption = "NoJurnal";
+            NoJurnal.FieldName = "NoJurnal";
+            NoJurnal.Name = "NoJurnal";
+            NoJurnal.OptionsColumn.FixedWidth = true;
+            NoJurnal.Visible = true;
+            NoJurnal.VisibleIndex = 0;
+            NoJurnal.Width = 80;
             // 
             // Tanggal
             // 
-            this.Tanggal.Caption = "Tanggal";
-            this.Tanggal.FieldName = "Tanggal";
-            this.Tanggal.Name = "Tanggal";
-            this.Tanggal.OptionsColumn.FixedWidth = true;
-            this.Tanggal.Visible = true;
-            this.Tanggal.VisibleIndex = 1;
-            this.Tanggal.Width = 67;
+            Tanggal.Caption = "Tanggal";
+            Tanggal.FieldName = "Tanggal";
+            Tanggal.Name = "Tanggal";
+            Tanggal.OptionsColumn.FixedWidth = true;
+            Tanggal.Visible = true;
+            Tanggal.VisibleIndex = 1;
+            Tanggal.Width = 67;
             // 
             // Kode
             // 
-            this.Kode.Caption = "Kode";
-            this.Kode.FieldName = "Kode";
-            this.Kode.Name = "Kode";
-            this.Kode.OptionsColumn.FixedWidth = true;
-            this.Kode.Visible = true;
-            this.Kode.VisibleIndex = 2;
-            this.Kode.Width = 80;
+            Kode.Caption = "Kode";
+            Kode.FieldName = "Kode";
+            Kode.Name = "Kode";
+            Kode.OptionsColumn.FixedWidth = true;
+            Kode.Visible = true;
+            Kode.VisibleIndex = 2;
+            Kode.Width = 120;
             // 
             // Rekening
             // 
-            this.Rekening.Caption = "Rekening";
-            this.Rekening.FieldName = "Rekening";
-            this.Rekening.Name = "Rekening";
-            this.Rekening.Visible = true;
-            this.Rekening.VisibleIndex = 3;
+            Rekening.Caption = "Rekening";
+            Rekening.FieldName = "Rekening";
+            Rekening.Name = "Rekening";
+            Rekening.Visible = true;
+            Rekening.VisibleIndex = 3;
             // 
             // Debet
             // 
-            this.Debet.Caption = "Debet";
-            this.Debet.DisplayFormat.FormatString = "{0:n2}";
-            this.Debet.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            this.Debet.FieldName = "Debet";
-            this.Debet.Name = "Debet";
-            this.Debet.OptionsColumn.FixedWidth = true;
-            this.Debet.Visible = true;
-            this.Debet.VisibleIndex = 4;
-            this.Debet.Width = 87;
+            Debet.Caption = "Debet";
+            Debet.DisplayFormat.FormatString = "{0:n2}";
+            Debet.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+            Debet.FieldName = "Debet";
+            Debet.Name = "Debet";
+            Debet.OptionsColumn.FixedWidth = true;
+            Debet.Visible = true;
+            Debet.VisibleIndex = 4;
+            Debet.Width = 87;
             // 
             // Kredit
             // 
-            this.Kredit.Caption = "Kredit";
-            this.Kredit.DisplayFormat.FormatString = "{0:n2}";
-            this.Kredit.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            this.Kredit.FieldName = "Kredit";
-            this.Kredit.Name = "Kredit";
-            this.Kredit.OptionsColumn.FixedWidth = true;
-            this.Kredit.Visible = true;
-            this.Kredit.VisibleIndex = 5;
-            this.Kredit.Width = 87;
+            Kredit.Caption = "Kredit";
+            Kredit.DisplayFormat.FormatString = "{0:n2}";
+            Kredit.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+            Kredit.FieldName = "Kredit";
+            Kredit.Name = "Kredit";
+            Kredit.OptionsColumn.FixedWidth = true;
+            Kredit.Visible = true;
+            Kredit.VisibleIndex = 5;
+            Kredit.Width = 87;
             // 
             // Keterangan
             // 
-            this.Keterangan.Caption = "Keterangan";
-            this.Keterangan.FieldName = "Keterangan";
-            this.Keterangan.Name = "Keterangan";
-            this.Keterangan.Visible = true;
-            this.Keterangan.VisibleIndex = 6;
+            Keterangan.Caption = "Keterangan";
+            Keterangan.FieldName = "Keterangan";
+            Keterangan.Name = "Keterangan";
+            Keterangan.Visible = true;
+            Keterangan.VisibleIndex = 6;
             // 
             // Posted
             // 
-            this.Posted.Caption = "Posted";
-            this.Posted.FieldName = "Posted";
-            this.Posted.Name = "Posted";
-            this.Posted.OptionsColumn.FixedWidth = true;
-            this.Posted.Visible = true;
-            this.Posted.VisibleIndex = 7;
-            this.Posted.Width = 40;
+            Posted.Caption = "Posted";
+            Posted.FieldName = "Posted";
+            Posted.Name = "Posted";
+            Posted.OptionsColumn.FixedWidth = true;
+            Posted.Visible = true;
+            Posted.VisibleIndex = 7;
+            Posted.Width = 40;
             // 
             // Periode
             // 
-            this.Periode.Caption = "Periode";
-            this.Periode.FieldName = "Periode";
-            this.Periode.Name = "Periode";
-            this.Periode.OptionsColumn.FixedWidth = true;
-            this.Periode.Visible = true;
-            this.Periode.VisibleIndex = 8;
-            this.Periode.Width = 47;
+            Periode.Caption = "Periode";
+            Periode.FieldName = "Periode";
+            Periode.Name = "Periode";
+            Periode.OptionsColumn.FixedWidth = true;
+            Periode.Visible = true;
+            Periode.VisibleIndex = 8;
+            Periode.Width = 47;
             // 
             // DID
             // 
-            this.DID.Caption = "DID";
-            this.DID.FieldName = "DID";
-            this.DID.Name = "DID";
+            DID.Caption = "DID";
+            DID.FieldName = "DID";
+            DID.Name = "DID";
             // 
             // RowNo
             // 
-            this.RowNo.Name = "RowNo";
+            RowNo.Name = "RowNo";
+            // 
+            // labelControl1
+            // 
+            labelControl1.Location = new System.Drawing.Point(165, 10);
+            labelControl1.Margin = new System.Windows.Forms.Padding(2);
+            labelControl1.Name = "labelControl1";
+            labelControl1.Size = new System.Drawing.Size(34, 13);
+            labelControl1.TabIndex = 7;
+            labelControl1.Text = "Sampai";
+            // 
+            // cmbbulansampai
+            // 
+            cmbbulansampai.Location = new System.Drawing.Point(203, 3);
+            cmbbulansampai.Margin = new System.Windows.Forms.Padding(2);
+            cmbbulansampai.Name = "cmbbulansampai";
+            cmbbulansampai.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            cmbbulansampai.Properties.ImmediatePopup = true;
+            cmbbulansampai.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
+            cmbbulansampai.Size = new System.Drawing.Size(100, 20);
+            cmbbulansampai.TabIndex = 8;
+            cmbbulansampai.SelectedIndexChanged += cmbbulan_SelectedIndexChanged;
             // 
             // FrmExportJurnal
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(821, 400);
-            this.Controls.Add(this.gridControl1);
-            this.Controls.Add(this.btnexport);
-            this.Controls.Add(this.setahun);
-            this.Controls.Add(this.cmbbulan);
-            this.Controls.Add(this.labelControl3);
-            this.Margin = new System.Windows.Forms.Padding(2);
-            this.Name = "FrmExportJurnal";
-            this.Text = "Export Jurnal";
-            this.Load += new System.EventHandler(this.FrmExportJurnal_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.setahun.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cmbbulan.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridView1)).EndInit();
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
+            AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            ClientSize = new System.Drawing.Size(821, 400);
+            Controls.Add(gridControl1);
+            Controls.Add(btnexport);
+            Controls.Add(setahun);
+            Controls.Add(cmbbulansampai);
+            Controls.Add(labelControl1);
+            Controls.Add(cmbbulandari);
+            Controls.Add(labelControl3);
+            Margin = new System.Windows.Forms.Padding(2);
+            Name = "FrmExportJurnal";
+            Text = "Export Jurnal";
+            Load += FrmExportJurnal_Load;
+            ((System.ComponentModel.ISupportInitialize)setahun.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)cmbbulandari.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridControl1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridView1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)cmbbulansampai.Properties).EndInit();
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
 
         private DevExpress.XtraEditors.SimpleButton btnexport;
         private DevExpress.XtraEditors.SpinEdit setahun;
-        private DevExpress.XtraEditors.ComboBoxEdit cmbbulan;
+        private DevExpress.XtraEditors.ComboBoxEdit cmbbulandari;
         private DevExpress.XtraEditors.LabelControl labelControl3;
         private DevExpress.XtraGrid.GridControl gridControl1;
         private DevExpress.XtraGrid.Views.Grid.GridView gridView1;
@@ -287,5 +292,7 @@ namespace Accounting.Form
         private DevExpress.XtraGrid.Columns.GridColumn Posted;
         private DevExpress.XtraGrid.Columns.GridColumn Periode;
         private DevExpress.XtraGrid.Columns.GridColumn DID;
+        private DevExpress.XtraEditors.LabelControl labelControl1;
+        private DevExpress.XtraEditors.ComboBoxEdit cmbbulansampai;
     }
 }

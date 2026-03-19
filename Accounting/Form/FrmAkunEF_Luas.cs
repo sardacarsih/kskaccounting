@@ -13,7 +13,6 @@ using DevExpress.XtraPrinting;
 using DevExpress.XtraReports.UI;
 using DevExpress.XtraSplashScreen;
 using OfficeOpenXml;
-using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -36,7 +35,6 @@ namespace Accounting.Form
             InitializeComponent();
         }
         DataSet DSGL;
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
 
         private void UpdateFromNew(object sender, FrmAkunAdd.UpdateEventArgs args)
         {
@@ -73,7 +71,7 @@ namespace Accounting.Form
          DataTable tbl_Coa = new();
         private void Load_COA()
         {
-            if (CompanyInfo.INIT == "KSKINTI")
+            if (CompanyInfo.IDDATA == "KSKINTI")
             {
                 EntityInstantFeedbackSource eifs = new();
                 eifs.KeyExpression = "ID";
@@ -82,7 +80,7 @@ namespace Accounting.Form
             }
             else
             {
-                var p_iddata = CompanyInfo.INIT;
+                var p_iddata =CompanyInfo.IDDATA;
                 var p_tahun = Convert.ToInt32(setahun.Value);
                 var p_bulan = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
                 if (p_tahun != 0 && p_bulan != 0)
@@ -96,7 +94,7 @@ namespace Accounting.Form
 
         private void Dapper_GetQueryable(object sender, GetQueryableEventArgs e)
         {
-            var p_iddata = CompanyInfo.INIT;
+            var p_iddata =CompanyInfo.IDDATA;
             var p_tahun = Convert.ToInt32(setahun.Value);
             var p_bulan = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
             if (p_tahun != 0 && p_bulan != 0)
@@ -236,7 +234,7 @@ namespace Accounting.Form
                 }
                
 
-                fileName = CompanyInfo.INIT + "DaftarPerkiraan.xlsx";
+                fileName =CompanyInfo.IDDATA + "DaftarPerkiraan.xlsx";
 
                 if (CompanyInfo.JENIS_AKUNTING == "KEBUN")
                 {
@@ -275,7 +273,7 @@ namespace Accounting.Form
 
                 //gridView1.BestFitColumns();
                 string sheetname;
-                sheetname = CompanyInfo.INIT + cmbbulan.Text + setahun.Value;
+                sheetname =CompanyInfo.IDDATA + cmbbulan.Text + setahun.Value;
 
                 XlsxExportOptionsEx xlsxOptions = new XlsxExportOptionsEx
                 {
@@ -475,19 +473,7 @@ namespace Accounting.Form
         {
             try
             {
-                using (OracleCommand _command = new("DELETE FROM ACCT_COA WHERE ACCTCOAID=:p_id", conn)
-                {
-                    CommandType = CommandType.Text
-                })
-                {
-                    if (conn.State != ConnectionState.Open)
-                    {
-                        conn.Open();
-                    }
-                    _command.Parameters.Add(":p_id", OracleDbType.Varchar2, 40).Value = iD;
-                    _command.ExecuteNonQuery();
-                    conn.Close();
-                }
+                AccountServices.DeleteCOA(iD);
                 Load_COA();
                 XtraMessageBox.Show("Account Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -761,7 +747,7 @@ namespace Accounting.Form
                 ptahun = (int)setahun.Value;
                 var bulan = bulanbi[pbulan].ToString() + "-" + ptahun.ToString();
                 var periode = pbulan.ToString("00") + "/" + ptahun.ToString();
-                var iddata = CompanyInfo.INIT;
+                var iddata =CompanyInfo.IDDATA;
                 var userid = LoginInfo.userID;
 
                 if (debet == 0 && kredit == 0)

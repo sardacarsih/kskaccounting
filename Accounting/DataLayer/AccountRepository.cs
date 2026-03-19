@@ -1,4 +1,5 @@
 ﻿using Accounting.Model;
+using Accounting.Utilities;
 using Dapper;
 using DevExpress.Data.ODataLinq;
 using DevExpress.XtraEditors;
@@ -13,7 +14,7 @@ namespace Accounting.DataLayer
 {
     public class AccountRepository : IAccountRepository
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new(ConnectionManager.GetOracleConnection());
         public DataTable GetCOA(string piddata, int pbulan, int ptahun)
         {
             using OracleCommand _command = new("ACCOUNTING.COA2", conn)
@@ -719,83 +720,13 @@ namespace Accounting.DataLayer
             var parameters = new DynamicParameters();
             parameters.Add("p_iddata", p_iddata, DbType.String);
             parameters.Add("p_tahun", p_tahun, DbType.Int32);
-            var sql1 = string.Empty;
+            string prevS = p_bulan == 1 ? "SALDOAWAL" : $"\"{p_bulan - 1}S\"";
+            var sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  "
+                + $",{prevS} SALDOAWAL ,\"{p_bulan}D\" DEBET ,\"{p_bulan}K\" KREDIT ,\"{p_bulan}S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM "
+                + "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
             IEnumerable<COADaftarPerkiraanSaldoDTO> KodePerkiraanSaldo;
-            using (var contol = new OracleConnection(Acct.OracleConnString))
+            using (var contol = new OracleConnection( LoginInfo.OracleConnString))
             {
-                if (p_bulan == 1)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",SALDOAWAL SALDOAWAL ,\"1D\" DEBET ,\"1K\" KREDIT ,\"1S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 2)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"1S\"  SALDOAWAL ,\"2D\" DEBET ,\"2K\" KREDIT ,\"2S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 3)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"2S\"  SALDOAWAL ,\"3D\" DEBET ,\"3K\" KREDIT ,\"3S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 4)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"3S\"  SALDOAWAL ,\"4D\" DEBET ,\"4K\" KREDIT ,\"4S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 5)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"4S\"  SALDOAWAL ,\"5D\" DEBET ,\"5K\" KREDIT ,\"5S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 6)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"5S\"  SALDOAWAL ,\"6D\" DEBET ,\"6K\" KREDIT ,\"6S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 7)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"6S\"  SALDOAWAL ,\"7D\" DEBET ,\"7K\" KREDIT ,\"7S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 8)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"7S\"  SALDOAWAL ,\"8D\" DEBET ,\"8K\" KREDIT ,\"8S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 9)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"8S\"  SALDOAWAL ,\"9D\" DEBET ,\"9K\" KREDIT ,\"9S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 10)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"9S\"  SALDOAWAL ,\"10D\" DEBET ,\"10K\" KREDIT ,\"10S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 11)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"10S\"  SALDOAWAL ,\"11D\" DEBET ,\"11K\" KREDIT ,\"11S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-                }
-                else if (p_bulan == 12)
-                {
-                    sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  " +
-                        ",\"11S\"  SALDOAWAL ,\"12D\" DEBET ,\"12K\" KREDIT ,\"12S\" SALDOAKHIR ,DIVISI ,BLOK ,TAHUNTANAM " +
-                        "from acct_coa where iddata=:p_iddata and tahun=:p_tahun ";
-
-                }
 
                 if (contol.State == ConnectionState.Closed)
                     contol.Open();
@@ -856,7 +787,7 @@ namespace Accounting.DataLayer
                 cmd.Parameters.Add(":p_HID", OracleDbType.Double).Value = p_JurnalID;
                 cmd.Parameters.Add(":p_Periode", OracleDbType.Varchar2, 7).Value = p_Periode;
                 cmd.Parameters.Add(":p_Userid", OracleDbType.Varchar2, 20).Value = p_Userid;
-                cmd.ExecuteReader();
+                cmd.ExecuteNonQuery();
                 conn.Close();
             }
         }
@@ -866,7 +797,7 @@ namespace Accounting.DataLayer
             var parameters = new DynamicParameters();
             parameters.Add("p_iddata", p_iddata, DbType.String);
             parameters.Add("p_tahun", p_tahun, DbType.Int32);
-            using (var contol = new OracleConnection("Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=LOCALHOST)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=KSKGROUP)));User Id=KSKG;Password=KSKGboss2022"))
+            using (var contol = new OracleConnection(LoginInfo.OracleConnString))
             {
                     var sql1 = "SELECT ACCTCOAID ID,KODEACC KODEACC,PARENTACC INDUK,NAMAACC NAMAACC,POSISI ,LVL ,ISHEADER GD  ,GRP ,ISAKTIF ,SALDOAWAL AWALTAHUN  "+
                         "from acct_coa where iddata=:p_iddata and tahun=:p_tahun order by kodeacc";
@@ -909,6 +840,92 @@ namespace Accounting.DataLayer
                 }
             }
             return true;
+        }
+
+        public DataTable GetMasterAkun(string kategori, string kelompok)
+        {
+            string selectQuery = "select ACCOUNT "
+                + ", lpad ( ' ', (level - 1) * 3) || PERKIRAAN PERKIRAAN "
+                + ",JENIS,LVL,INDUK,GD,POSISI from master_AKUN where KATEGORI =:p_KAT AND SUBSTR(ACCOUNT, 1, 2) =:p_KEL "
+                + "start  with LVL='3'"
+                + "connect by prior ACCOUNT = INDUK "
+                + "ORDER SIBLINGS BY ACCOUNT";
+            using var localConn = new OracleConnection(LoginInfo.OracleConnString);
+            using var _command = new OracleCommand(selectQuery, localConn) { CommandType = CommandType.Text };
+            localConn.Open();
+            _command.Parameters.Add(":p_KAT", OracleDbType.Varchar2, 3).Value = kategori;
+            _command.Parameters.Add(":p_KEL", OracleDbType.Varchar2, 2).Value = kelompok;
+            OracleDataReader dr = _command.ExecuteReader();
+            DataTable _dt = new DataTable();
+            _dt.Load(dr);
+            dr.Close();
+            return _dt;
+        }
+
+        public DataTable GetIndukAkun(string kategori, string kelompok)
+        {
+            string selectQuery = "select ACCOUNT "
+                + ", lpad ( ' ', (level - 1) * 3) || PERKIRAAN PERKIRAAN "
+                + ",JENIS,LVL,INDUK,GD,POSISI from master_AKUN where KATEGORI =:p_KAT AND SUBSTR(ACCOUNT, 1, 2) =:p_KEL and GD='G'"
+                + "start  with LVL='3'"
+                + "connect by prior ACCOUNT = INDUK "
+                + "ORDER SIBLINGS BY ACCOUNT";
+            using var localConn = new OracleConnection(LoginInfo.OracleConnString);
+            using var _command = new OracleCommand(selectQuery, localConn) { CommandType = CommandType.Text };
+            localConn.Open();
+            _command.Parameters.Add(":p_KAT", OracleDbType.Varchar2, 3).Value = kategori;
+            _command.Parameters.Add(":p_KEL", OracleDbType.Varchar2, 2).Value = kelompok;
+            OracleDataReader dr = _command.ExecuteReader();
+            DataTable _dt = new DataTable();
+            _dt.Load(dr);
+            dr.Close();
+            return _dt;
+        }
+
+        public void UpdateCOA(string coaId, string kodeAcc, string grp, string parentAcc, string namaAcc, char isAktif, string lvl)
+        {
+            string sql = "UPDATE ACCT_COA SET KODEACC=:p_KODEACC,GRP=:p_GRP,PARENTACC=:p_PARENTACC,NAMAACC=:p_NAMAACC,ISAKTIF=:p_NONAKTIF,lvl=:p_lvl WHERE ACCTCOAID=:p_ID";
+            using var localConn = new OracleConnection(LoginInfo.OracleConnString);
+            using var cmd = new OracleCommand(sql, localConn) { CommandType = CommandType.Text };
+            localConn.Open();
+            cmd.Parameters.Add(":p_KODEACC", OracleDbType.Varchar2, 20).Value = kodeAcc;
+            cmd.Parameters.Add(":p_GRP", OracleDbType.Varchar2, 20).Value = grp;
+            cmd.Parameters.Add(":p_PARENTACC", OracleDbType.Varchar2, 20).Value = parentAcc;
+            cmd.Parameters.Add(":p_NAMAACC", OracleDbType.Varchar2, 100).Value = namaAcc;
+            cmd.Parameters.Add(":p_NONAKTIF", OracleDbType.Char, 1).Value = isAktif;
+            cmd.Parameters.Add(":p_lvl", OracleDbType.Char, 1).Value = lvl;
+            cmd.Parameters.Add(":p_ID", OracleDbType.Varchar2, 50).Value = coaId;
+            cmd.ExecuteNonQuery();
+        }
+
+        public void DeleteCOA(string coaId)
+        {
+            using var localConn = new OracleConnection(LoginInfo.OracleConnString);
+            using var cmd = new OracleCommand("DELETE FROM ACCT_COA WHERE ACCTCOAID=:p_id", localConn)
+            { CommandType = CommandType.Text };
+            localConn.Open();
+            cmd.Parameters.Add(":p_id", OracleDbType.Varchar2, 40).Value = coaId;
+            cmd.ExecuteNonQuery();
+        }
+
+        public void UpdateCOATmpIdData(string iddata, int tahun, string userid)
+        {
+            string sql = "update ACC_COA_TMP set IDDATA=:iddata,tahun=:ptahun,userid=:userid";
+            using var localConn = new OracleConnection(LoginInfo.OracleConnString);
+            using var cmd = new OracleCommand(sql, localConn) { CommandType = CommandType.Text };
+            localConn.Open();
+            cmd.Parameters.Add(":iddata", OracleDbType.Varchar2, 20).Value = iddata;
+            cmd.Parameters.Add(":ptahun", OracleDbType.Int16).Value = tahun;
+            cmd.Parameters.Add(":userid", OracleDbType.Varchar2, 20).Value = userid;
+            cmd.ExecuteNonQuery();
+        }
+
+        public void TruncateCOATmp()
+        {
+            using var localConn = new OracleConnection(LoginInfo.OracleConnString);
+            using var cmd = new OracleCommand("TRUNCATE TABLE ACC_COA_TMP", localConn) { CommandType = CommandType.Text };
+            localConn.Open();
+            cmd.ExecuteNonQuery();
         }
 
         public DataTable Akun_Agronomy(string p_iddata, int p_tahun, string p_kelompok)

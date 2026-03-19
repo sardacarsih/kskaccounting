@@ -36,15 +36,28 @@ namespace Accounting.Form
 {
     public partial class FrmJurnal : XtraForm
     {
-        private void PilihanPeriodeAkuntansi()
+        private void PilihanPeriodeAkuntansi(bool useLoading = true)
         {
+            int detailCount = 0;
+            int headerCount = 0;
+            string periodeSnapshot = leallperiode.EditValue?.ToString() ?? string.Empty;
+            using var perf = BeginPerfMeasurement(
+                "FrmJurnal.PilihanPeriodeAkuntansi",
+                () => $"periode={periodeSnapshot};headers={headerCount};details={detailCount};useLoading={useLoading}");
+
+            IDisposable? loadingScope = null;
             try
             {
-                using var handle = SplashScreenManager.ShowOverlayForm(this);
-                handle.QueueFocus(IntPtr.Zero);
+                if (useLoading)
+                {
+                    loadingScope = BeginGlobalLoadingScope();
+                }
 
-                // Sample input: "01/2024"
-                var Periode_daftar_Jurnal = leallperiode.EditValue.ToString();
+                var Periode_daftar_Jurnal = leallperiode.EditValue?.ToString();
+                if (string.IsNullOrWhiteSpace(Periode_daftar_Jurnal))
+                {
+                    return;
+                }
 
                 // Try parsing the string to DateTime
                 DateTime periodeDate;
@@ -63,13 +76,16 @@ namespace Accounting.Form
                         !string.IsNullOrEmpty(txtfilterkode.Text) || !string.IsNullOrEmpty(txtfilternojurnal.Text) || !string.IsNullOrEmpty(txtfilterketerangan.Text))
                     {
                         JurnalDetail = jurnalRepository.GetJurnalDetails_DapperAsQueryable(CompanyInfo.IDDATA,year,month,month);
-                        CariJurnal_Bulan();
+                        detailCount = JurnalDetail?.Count() ?? 0;
+                        CariJurnal_Bulan(useLoading: false);
                         GCHeader.Focus();
                     }
                     else
                     {
                         JurnalHeader = jurnalRepository.GetJurnalHeader_Dapper(CompanyInfo.IDDATA, Periode_daftar_Jurnal);
                         JurnalDetail = jurnalRepository.GetJurnalDetails_DapperAsQueryable(CompanyInfo.IDDATA, year, month, month);
+                        headerCount = JurnalHeader?.Count() ?? 0;
+                        detailCount = JurnalDetail?.Count() ?? 0;
 
                         GCHeader.DataSource = JurnalHeader;
                         GCDetails.DataSource = null;
@@ -91,6 +107,10 @@ namespace Accounting.Form
             catch (Exception ex)
             {
                 XtraMessageBox.Show($"Error during 'Pilihan Periode Akuntansi': {ex.Message}", "Error Pilihan Periode", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                loadingScope?.Dispose();
             }
         }
 

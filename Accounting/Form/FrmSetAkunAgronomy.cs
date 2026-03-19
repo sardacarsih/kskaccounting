@@ -21,7 +21,7 @@ namespace Accounting.Form
     {
         bool editkerja;
 
-        readonly OracleConnection conn = new(Acct.OracleConnString);
+        readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmSetAkunAgronomy()
         {
             InitializeComponent();
@@ -168,11 +168,11 @@ namespace Accounting.Form
         private void FrmSetAkunAgronomy_Load(object sender, EventArgs e)
         {
             NAMAPT.Text = CompanyInfo.NAMAPT;
-            IDDATA.Text = CompanyInfo.INIT;
+            IDDATA.Text =CompanyInfo.IDDATA;
             WILAYAH.Text = CompanyInfo.WILAYAH;
 
             //load jurnal from other
-            string serverip = Acct.OracleConnString.Substring(54, 11);
+            string serverip =  LoginInfo.OracleConnString.Substring(54, 11);
             if (serverip != "10.10.10.41")
             {
                 Alokasi_Pekerjaan_ke_KodeAkun();
@@ -268,7 +268,7 @@ namespace Accounting.Form
         private void Load_daftar_kode_akun()
         {
             var kelompok = LEKELOMPOK.Text;
-            var kode = AccountServices.Akun_Agronomy(CompanyInfo.INIT, Acct.TahunMax, kelompok);
+            var kode = AccountServices.Akun_Agronomy(CompanyInfo.IDDATA, Acct.TahunMax, kelompok);
             searchLookUpEditkodegl.Properties.DataSource = kode;
             searchLookUpEditkodegl.Properties.ValueMember = "KODE";
             searchLookUpEditkodegl.Properties.DisplayMember= "KODE";

@@ -13,7 +13,7 @@ namespace Accounting
             _View = view;
             _View.HiddenEditor += _View_HiddenEditor;
             view.GridControl.EditorKeyDown += GridControl_EditorKeyDown;
-            view.GridControl.KeyDown += new KeyEventHandler(GridControl_KeyDown);
+            view.GridControl.KeyDown += GridControl_KeyDown;
         }
 
         void _View_HiddenEditor(object sender, EventArgs e)
@@ -23,18 +23,19 @@ namespace Accounting
 
         void GridControl_KeyDown(object sender, KeyEventArgs e)
         {
-            e.Handled = OnKeyDown(e.KeyCode, e.Modifiers);
+            if (OnKeyDown(e.KeyCode, e.Modifiers))
+                e.Handled = true;
         }
 
         void GridControl_EditorKeyDown(object sender, KeyEventArgs e)
         {
-            e.Handled = OnKeyDown(e.KeyCode, e.Modifiers);
+            if (OnKeyDown(e.KeyCode, e.Modifiers))
+                e.Handled = true;
         }
         private bool OnKeyDown(Keys keyCode, Keys modifiers)
         {
-            if (modifiers == Keys.None & (keyCode == Keys.Enter || keyCode == Keys.Tab))
+            if (modifiers == Keys.None && keyCode == Keys.Tab)
             {
-
                 return CheckAddNewRow();
             }
             return false;
@@ -42,18 +43,16 @@ namespace Accounting
 
         private bool CheckAddNewRow()
         {
-            if (_View.FocusedColumn.VisibleIndex == _View.VisibleColumns.Count - 2)
-            {
-                if (_View.PostEditor()) { _View.UpdateCurrentRow(); }
-                if (_View.IsNewItemRow(_View.FocusedRowHandle))
-                {
-                    
-                    _View.PostEditor();
-                    _View.UpdateCurrentRow();
-                }
-                if (_View.IsLastRow)
-                    return AddNewRow();
-            }
+            if (_View.FocusedColumn == null ||
+                _View.FocusedColumn.VisibleIndex != _View.VisibleColumns.Count - 2)
+                return false;
+
+            if (_View.PostEditor())
+                _View.UpdateCurrentRow();
+
+            if (_View.IsLastRow)
+                return AddNewRow();
+
             return false;
         }
 

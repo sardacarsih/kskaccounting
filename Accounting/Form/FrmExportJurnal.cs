@@ -5,6 +5,7 @@ using DevExpress.XtraGrid;
 using DevExpress.XtraSplashScreen;
 using OfficeOpenXml;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace Accounting.Form
 {
     public partial class FrmExportJurnal : DevExpress.XtraEditors.XtraForm
     {
-        IQueryable<JurnalDetailDTO> JurnalDetail = null;
+        IQueryable<JurnalDetailDTO> JurnalDetail ;
         public FrmExportJurnal()
         {
             InitializeComponent();
@@ -23,19 +24,38 @@ namespace Accounting.Form
         {
             try
             {
-                cmbbulan.Properties.Items.AddRange(new[] { "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" });
-               
-                cmbbulan.SelectedIndex = 0;
+                // Mengisi ComboBox dengan nama bulan untuk cmbbulandari
+                cmbbulandari.Properties.Items.AddRange(new[]
+                {
+            "Januari", "Februari", "Maret", "April", "Mei",
+            "Juni", "Juli", "Agustus", "September", "Oktober",
+            "Nopember", "Desember"
+        });
+
+                // Mengisi ComboBox dengan nama bulan untuk cmbbulansampai (sama dengan cmbbulandari)
+                cmbbulansampai.Properties.Items.AddRange(new[]
+                {
+            "Januari", "Februari", "Maret", "April", "Mei",
+            "Juni", "Juli", "Agustus", "September", "Oktober",
+            "Nopember", "Desember"
+        });
+
+                // Menentukan bulan pertama yang dipilih untuk cmbbulandari dan cmbbulansampai
+                cmbbulandari.SelectedIndex = 0;
+                cmbbulansampai.SelectedIndex = 0;
+
+                // Mengatur nilai minimum dan maksimum untuk tahun
                 setahun.Properties.MinValue = Acct.TahunMin;
                 setahun.Properties.MaxValue = Acct.TahunMax;
-                setahun.Value = Acct.TahunMax;
+                setahun.Value = Acct.TahunMax;  // Menetapkan tahun maksimum sebagai nilai default
             }
             catch (SystemException ex)
             {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Menampilkan pesan error jika terjadi pengecualian
+                XtraMessageBox.Show($"Terjadi kesalahan: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
         }
+
         private void cmbbulan_SelectedIndexChanged(object sender, EventArgs e)
         {
            
@@ -43,25 +63,46 @@ namespace Accounting.Form
         }
 
         private void Load_Jurnal_Periode()
-        {          
+        {
             try
             {
                 using var handle = SplashScreenManager.ShowOverlayForm(gridControl1);
                 handle.QueueFocus(IntPtr.Zero);
-                var bulan = cmbbulan.SelectedIndex + 1;
+
+                if (cmbbulandari.SelectedIndex == -1 || cmbbulansampai.SelectedIndex == -1 || setahun.Value == null)
+                    return;
+
+                var bulan1 = cmbbulandari.SelectedIndex + 1;
+                var bulan2 = cmbbulansampai.SelectedIndex + 1;
                 var tahun = Convert.ToInt16(setahun.Value);
-                string p_periode = bulan.ToString("0#") + "/" + tahun.ToString();
-                JurnalDetail = JurnalServices.GetJurnalDetails_Dapper(CompanyInfo.INIT, p_periode);
 
-                gridControl1.DataSource = JurnalDetail;
+                if (bulan2 < bulan1)
+                {
+                    XtraMessageBox.Show("Bulan akhir harus lebih besar atau sama dengan bulan awal.", "Kesalahan Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
 
+                JurnalDetail = JurnalServices
+    .GetJurnalDetails_DapperAsQueryable(CompanyInfo.IDDATA, tahun, bulan1, bulan2)
+    .OrderBy(j => j.Tanggal)
+    .ThenBy(j => j.NoJurnal);
+
+                gridControl1.DataSource = JurnalDetail.ToList();
+
+
+                // Terapkan sorting di GridView
+                gridView1.BeginSort();
+                gridView1.ClearSorting(); // atau gridView1.SortInfo.Clear();
+                gridView1.Columns["Tanggal"].SortOrder = DevExpress.Data.ColumnSortOrder.Ascending;
+                gridView1.Columns["NoJurnal"].SortOrder = DevExpress.Data.ColumnSortOrder.Ascending;
+                gridView1.EndSort();
             }
             catch (SystemException ex)
             {
                 XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-           
         }
+
 
         private void setahun_EditValueChanged(object sender, EventArgs e)
         {
@@ -72,8 +113,8 @@ namespace Accounting.Form
         {
             using var handle = SplashScreenManager.ShowOverlayForm(this);
             handle.QueueFocus(IntPtr.Zero);
-            try
-            {
+            //try
+            //{
                     // If you use EPPlus in a noncommercial context
                     // according to the Polyform Noncommercial license:
                     ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
@@ -124,7 +165,7 @@ namespace Accounting.Form
 
                             Byte[] bin = package.GetAsByteArray();
                         string tempPath = Path.GetTempPath();
-                        filename = tempPath + CompanyInfo.INIT + "Jurnal.xlsx";
+                        filename = tempPath +CompanyInfo.IDDATA + "Jurnal.xlsx";
                             File.WriteAllBytes(@filename, bin);
 
                         }
@@ -134,13 +175,13 @@ namespace Accounting.Form
                     UseShellExecute = true
                 };
                 Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
+            //}
+            //catch (Exception ex)
+            //{
                 
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-            }
+            //}
     
         }
     }

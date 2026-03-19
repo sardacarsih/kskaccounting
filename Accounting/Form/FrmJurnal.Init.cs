@@ -155,6 +155,13 @@ namespace Accounting.Form
 
         private async void FrmJurnal_Load(object sender, EventArgs e)
         {
+            int coaCount = 0;
+            int periodeAllCount = 0;
+            int periodeListCount = 0;
+            using var perf = BeginPerfMeasurement(
+                "FrmJurnal.Load",
+                () => $"coaCount={coaCount};periodeAllCount={periodeAllCount};periodeListCount={periodeListCount}");
+
             isInitializing = true;
             try
             {
@@ -165,6 +172,7 @@ namespace Accounting.Form
                 await Task.WhenAll(periodeAllTask, maxTahunTask);
 
                 BindAllPeriode(periodeAllTask.Result);
+                periodeAllCount = periodeAllTask.Result?.Rows.Count ?? 0;
                 Acct.TahunMax = maxTahunTask.Result;
 
                 SetupComboBoxes();
@@ -177,6 +185,8 @@ namespace Accounting.Form
                 await Task.WhenAll(coaTask, periodeListTask);
 
                 ListCoaAktif = coaTask.Result;
+                coaCount = ListCoaAktif?.Count() ?? 0;
+                periodeListCount = periodeListTask.Result?.Rows.Count ?? 0;
                 InitializeRepositoryItems();
                 ApplyStaticGridAppearance();
                 ApplyInputGridEditorConfiguration();

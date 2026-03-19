@@ -1,0 +1,6 @@
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\Form\FrmJurnal.EntryGridInteractions.cs(644,17): warning CS8602: Dereference of a possibly null reference. [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\Form\FrmJurnal.EntryGridInteractions.cs(671,17): warning CS8602: Dereference of a possibly null reference. [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\Form\FrmJurnal.ImportAisHris.cs(151,18): warning CS8600: Converting null literal or possible null value to non-nullable type. [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\Form\FrmJurnal.EntryGridInteractions.cs(644,17): warning CS8602: Dereference of a possibly null reference. [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\Form\FrmJurnal.EntryGridInteractions.cs(671,17): warning CS8602: Dereference of a possibly null reference. [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\Form\FrmJurnal.ImportAisHris.cs(151,18): warning CS8600: Converting null literal or possible null value to non-nullable type. [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]

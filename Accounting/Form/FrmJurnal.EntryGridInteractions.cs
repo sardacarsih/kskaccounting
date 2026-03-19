@@ -64,13 +64,16 @@ namespace Accounting.Form
             object sourceValue = JDgridView.GetRowCellValue(focusedRowHandle, sourceColumn);
             if (!decimal.TryParse(sourceValue?.ToString(), out decimal parsedValue) || parsedValue <= 0)
             {
+                JDgridView.CloseEditor();
+                JDgridView.FocusedColumn = JDgridView.Columns[oppositeColumn];
                 e.Handled = true;
                 return;
             }
 
             JDgridView.SetRowCellValue(focusedRowHandle, oppositeColumn, 0);
             HitungSelisih();
-            JDgridView.MoveNext();
+
+            JDgridView.FocusedColumn = JDgridView.Columns["Keterangan"];
 
             e.Handled = true;
         }
@@ -540,7 +543,15 @@ namespace Accounting.Form
                 string focusedField = gridView.FocusedColumn.FieldName;
                 if (string.Equals(focusedField, "Debet", StringComparison.OrdinalIgnoreCase))
                 {
-                    gridView.SetRowCellValue(focusedRowHandle, "Kredit", 0m);
+                    decimal debetVal = Convert.ToDecimal(gridView.GetRowCellValue(focusedRowHandle, "Debet"));
+                    if (debetVal > 0)
+                    {
+                        gridView.SetRowCellValue(focusedRowHandle, "Kredit", 0m);
+                        gridView.FocusedColumn = gridView.Columns["Keterangan"];
+                        e.Handled = true;
+                        return;
+                    }
+                    // else: fall through to MoveNext → Kredit
                 }
                 else if (string.Equals(focusedField, "Kredit", StringComparison.OrdinalIgnoreCase))
                 {

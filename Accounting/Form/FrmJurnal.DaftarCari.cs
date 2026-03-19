@@ -6,17 +6,30 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Accounting.Form
 {
     public partial class FrmJurnal
     {
-        private void CariJurnal_Bulan()
+        private void CariJurnal_Bulan(bool useLoading = true)
         {
+            int resultRows = 0;
+            int headerRows = 0;
+            string periodeSnapshot = leallperiode.Text;
+            using var perf = BeginPerfMeasurement(
+                "FrmJurnal.CariJurnal_Bulan",
+                () => $"periode={periodeSnapshot};resultRows={resultRows};headerRows={headerRows};useLoading={useLoading}");
+
+            IDisposable? loadingScope = null;
             try
             {
-                using var handle = SplashScreenManager.ShowOverlayForm(this);
+                if (useLoading)
+                {
+                    loadingScope = BeginGlobalLoadingScope();
+                }
+
                 MonthlySearchRequest request = new()
                 {
                     IdData = CompanyInfo.IDDATA,
@@ -34,6 +47,8 @@ namespace Accounting.Form
                 if (result.IsFiltered)
                 {
                     lblrecordbulan.Visible = true;
+                    resultRows = result.DetailRows.Count;
+                    headerRows = result.HeaderRows.Count;
                     PencarianJurnal_Bulan = result.DetailRows;
                     JurnalHeader_Filtered = result.HeaderRows;
                     GCHeader.DataSource = result.HeaderRows.Any() ? result.HeaderRows : null;
@@ -45,6 +60,8 @@ namespace Accounting.Form
                 {
                     lblrecordbulan.Visible = false;
                     lblrecordbulan.Text = "Filter Record : 0";
+                    resultRows = 0;
+                    headerRows = JurnalHeader?.Count() ?? 0;
                     GCHeader.DataSource = JurnalHeader;
                     GCDetails.DataSource = null;
                     PencarianJurnal_Bulan = Enumerable.Empty<JurnalDetailDTO>();
@@ -56,13 +73,27 @@ namespace Accounting.Form
             {
                 XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                loadingScope?.Dispose();
+            }
         }
 
-        private void CariJurnal_Tahun()
+        private void CariJurnal_Tahun(bool useLoading = true)
         {
+            int resultRows = 0;
+            string periodRange = $"{(int)daritahun.Value}-{cmbbulan.SelectedIndex + 1:00}_to_{(int)sampaitahun.Value}-{cmbbulan2.SelectedIndex + 1:00}";
+            using var perf = BeginPerfMeasurement(
+                "FrmJurnal.CariJurnal_Tahun",
+                () => $"range={periodRange};resultRows={resultRows};useLoading={useLoading}");
+
+            IDisposable? loadingScope = null;
             try
             {
-                using var handle = SplashScreenManager.ShowOverlayForm(this);
+                if (useLoading)
+                {
+                    loadingScope = BeginGlobalLoadingScope();
+                }
 
                 YearlySearchRequest request = new()
                 {
@@ -88,6 +119,7 @@ namespace Accounting.Form
                 if (result.DetailRows.Any())
                 {
                     PencarianJurnal = result.DetailRows;
+                    resultRows = result.DetailRows.Count;
                     cmbcariperiode.Properties.Items.Clear();
                     cmbcariperiode.Properties.Items.AddRange(result.Periodes);
                     gridControl1.DataSource = result.DetailRows;
@@ -97,6 +129,7 @@ namespace Accounting.Form
                 }
 
                 lblrecord.Text = "Jumlah Record : 0";
+                resultRows = 0;
                 cmbcariperiode.Properties.Items.Clear();
                 gridControl1.DataSource = null;
                 PencarianJurnal = Enumerable.Empty<JurnalDetailDTO>();
@@ -105,6 +138,52 @@ namespace Accounting.Form
             {
                 XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                loadingScope?.Dispose();
+            }
+        }
+
+        private bool HasYearlySearchFilters()
+        {
+            int jumlah = 0;
+            _ = int.TryParse(txtcarijumlah.Text, out jumlah);
+            return jumlah > 0
+                || !string.IsNullOrEmpty(txtcarikode.Text)
+                || !string.IsNullOrEmpty(txtcarinomor.Text)
+                || !string.IsNullOrEmpty(txtcariketerangan.Text)
+                || decaritanggal.EditValue != null;
+        }
+
+        private void ScheduleCariJurnalTahun()
+        {
+            if (!HasYearlySearchFilters())
+            {
+                return;
+            }
+
+            ScheduleDebounced(
+                ref yearlySearchCts,
+                cancellationToken =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    CariJurnal_Tahun();
+                    return Task.CompletedTask;
+                },
+                "loading yearly jurnal search");
+        }
+
+        private void ScheduleCariJurnalBulan()
+        {
+            ScheduleDebounced(
+                ref monthlySearchCts,
+                cancellationToken =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    CariJurnal_Bulan();
+                    return Task.CompletedTask;
+                },
+                "loading monthly jurnal search");
         }
 
         private void ApplyHeaderGridFormat()
@@ -190,7 +269,7 @@ namespace Accounting.Form
         {
             if (decaritanggal.EditValue != null)
             {
-                CariJurnal_Tahun();
+                ScheduleCariJurnalTahun();
             }
 
         }
@@ -206,7 +285,7 @@ namespace Accounting.Form
         {
             if (defiltertanggal.EditValue != null)
             {
-                CariJurnal_Bulan();
+                ScheduleCariJurnalBulan();
             }
         }
 
@@ -220,7 +299,7 @@ namespace Accounting.Form
 
         private void Sbfilterexport_Click(object sender, EventArgs e)
         {
-            using var handle = SplashScreenManager.ShowOverlayForm(this);
+            using var loadingScope = BeginGlobalLoadingScope();
             try
             {
                 if (filter)
@@ -255,37 +334,25 @@ namespace Accounting.Form
         private void cmbbulan_SelectedIndexChanged(object sender, EventArgs e)
         {
             gridControl1.DataSource = null;
-            if (Int32.Parse(txtcarijumlah.Text) > 0 || !string.IsNullOrEmpty(txtcarikode.Text) || !string.IsNullOrEmpty(txtcarinomor.Text) || !string.IsNullOrEmpty(txtcariketerangan.Text))
-            {
-                CariJurnal_Tahun();
-            }
+            ScheduleCariJurnalTahun();
         }
 
         private void daritahun_EditValueChanged(object sender, EventArgs e)
         {
             gridControl1.DataSource = null;
-            if (Int32.Parse(txtcarijumlah.Text) > 0 || !string.IsNullOrEmpty(txtcarikode.Text) || !string.IsNullOrEmpty(txtcarinomor.Text) || !string.IsNullOrEmpty(txtcariketerangan.Text))
-            {
-                CariJurnal_Tahun();
-            }
+            ScheduleCariJurnalTahun();
         }
 
         private void cmbbulan2_SelectedIndexChanged(object sender, EventArgs e)
         {
             gridControl1.DataSource = null;
-            if (Int32.Parse(txtcarijumlah.Text) > 0 || !string.IsNullOrEmpty(txtcarikode.Text) || !string.IsNullOrEmpty(txtcarinomor.Text) || !string.IsNullOrEmpty(txtcariketerangan.Text))
-            {
-                CariJurnal_Tahun();
-            }
+            ScheduleCariJurnalTahun();
         }
 
         private void sampaitahun_EditValueChanged(object sender, EventArgs e)
         {
             gridControl1.DataSource = null;
-            if (Int32.Parse(txtcarijumlah.Text) > 0 || !string.IsNullOrEmpty(txtcarikode.Text) || !string.IsNullOrEmpty(txtcarinomor.Text) || !string.IsNullOrEmpty(txtcariketerangan.Text))
-            {
-                CariJurnal_Tahun();
-            }
+            ScheduleCariJurnalTahun();
         }
 
 
@@ -387,7 +454,7 @@ namespace Accounting.Form
 
         private void sbexport_Click(object sender, EventArgs e)
         {
-            using var handle = SplashScreenManager.ShowOverlayForm(this);
+            using var loadingScope = BeginGlobalLoadingScope();
             try
             {
                 if (PencarianJurnal.Any())

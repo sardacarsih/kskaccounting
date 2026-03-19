@@ -165,7 +165,7 @@ namespace Accounting.Form
             Cursor.Current = Cursors.WaitCursor;
             Stopwatch watch = new Stopwatch();
             watch.Start();
-            var data = ExportServices.ExportJurnalMonthly(CompanyInfo.INIT, periode);
+            var data = ExportServices.ExportJurnalMonthly(CompanyInfo.IDDATA, periode);
 
             //ExcelUtility obj = new ExcelUtility();
             //obj.WriteDataTableToExcel(data, "Jurnal Entries", "D:\\JurnalTest.xlsx", "Details");
@@ -186,10 +186,10 @@ namespace Accounting.Form
             pbulan = cmbbulan.SelectedIndex + 1;
             ptahun = (int)setahun.Value;
             periode = pbulan.ToString("0#") + "/" + ptahun.ToString();
-            Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.INIT,periode);
+            Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.IDDATA,periode);
             //MessageBox.Show(periode+" Status Lock : "+Acct.KunciPeriode);
 
-            var jurnalheader = JurnalServices.GetJurnalHeader(CompanyInfo.INIT,periode);
+            var jurnalheader = JurnalServices.GetJurnalHeader(CompanyInfo.IDDATA,periode);
             if (jurnalheader.Rows.Count == 0)
             {
                 NODATA = true;
@@ -203,7 +203,7 @@ namespace Accounting.Form
             gridView2.Columns[2].DisplayFormat.FormatType = DevExpress.Utils.FormatType.DateTime;
             gridView2.Columns[2].DisplayFormat.FormatString = "dd-MMM-yyyy";
 
-            var jurnaldetail = JurnalServices.GetJurnalDetails(CompanyInfo.INIT, periode);
+            var jurnaldetail = JurnalServices.GetJurnalDetails(CompanyInfo.IDDATA, periode);
             gridControl1.DataSource = jurnaldetail;
             gridView1.Columns[0].Visible = false;
             gridView1.Columns[1].Visible = false;

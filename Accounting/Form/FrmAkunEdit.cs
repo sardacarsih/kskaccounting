@@ -3,9 +3,7 @@ using Accounting.BusinessLayer;
 using Accounting.Form;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
-using Oracle.ManagedDataAccess.Client;
 using System;
-using System.Configuration;
 using System.Data;
 using System.Windows.Forms;
 
@@ -44,7 +42,7 @@ namespace Accounting
             setahun.Properties.MinValue = Acct.TahunMin;
             setahun.Properties.MaxValue = Acct.TahunMax;
             setahun.Value = Acct.TahunMax;
-            lbliddata.Text = CompanyInfo.INIT;
+            lbliddata.Text =CompanyInfo.IDDATA;
             Load_TipeAkun();           
             Edit_COA();
 
@@ -111,7 +109,7 @@ namespace Accounting
         }
         private void simpleButton2_Click(object sender, EventArgs e)
         {
-           
+            this.Close();
         }
 
 
@@ -123,7 +121,7 @@ namespace Accounting
                 Cursor.Current = Cursors.WaitCursor;
                 var tipe = lookUpEdikat.EditValue.ToString();
 
-                grp = AccountServices.GetParentAccount(CompanyInfo.INIT, ptahun, tipe);
+                grp = AccountServices.GetParentAccount(CompanyInfo.IDDATA, ptahun, tipe);
                 lookUpEditbagiandari.Properties.DataSource = grp;
                 lookUpEditbagiandari.Properties.ValueMember = "KODEACC";
                 lookUpEditbagiandari.Properties.DisplayMember = "KODEACC";
@@ -133,9 +131,9 @@ namespace Accounting
                 lookUpEditbagiandari.Properties.Columns["KEL"].Visible = false;
                 lookUpEditbagiandari.Properties.BestFit();
             }
-            catch
+            catch (Exception ex)
             {
-
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -174,7 +172,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -182,20 +180,15 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
-        }
-
-        private void txtnoakun_KeyDown(object sender, KeyEventArgs e)
-        {
-
         }
 
         private void txtnamaakun_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -203,7 +196,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -211,7 +204,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {                
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -219,7 +212,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -227,7 +220,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -235,7 +228,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -253,13 +246,12 @@ namespace Accounting
                 return;
             }
         }
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
         private void sbupdate_Click(object sender, EventArgs e)
         {
             Cursor.Current = Cursors.WaitCursor;
             try
             {
-                
+
                 if (string.IsNullOrEmpty(txtnamaakun.Text))
                 {
                     XtraMessageBox.Show("Nama Akun wajib diisi", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -272,36 +264,23 @@ namespace Accounting
                     return;
                 }
 
-                string update = "UPDATE ACCT_COA SET KODEACC=:p_KODEACC,GRP=:p_GRP,PARENTACC=:p_PARENTACC,NAMAACC=:p_NAMAACC,ISAKTIF=:p_NONAKTIF,lvl=:p_lvl WHERE ACCTCOAID=:p_ID";
                 char status='-';
                 if (checkEditnonaktif.Checked == true)
                 {
                     status ='T';
                 }
-                
-                using (OracleCommand _command = new OracleCommand(update, conn)
-                {
-                    CommandType = CommandType.Text
-                })
-                {
-                    if (conn.State != ConnectionState.Open)
-                    {
-                        conn.Open();
-                    }
 
-                    _command.Parameters.Add(":p_KODEACC", OracleDbType.Varchar2, 20).Value = txtnoakundetail.Text;
-                    _command.Parameters.Add(":p_GRP", OracleDbType.Varchar2, 20).Value = lookUpEdikat.EditValue;
-                    _command.Parameters.Add(":p_PARENTACC", OracleDbType.Varchar2, 20).Value = lookUpEditbagiandari.EditValue;
-                    _command.Parameters.Add(":p_NAMAACC", OracleDbType.Varchar2, 100).Value = txtnamaakun.Text;
-                    _command.Parameters.Add(":p_NONAKTIF", OracleDbType.Char, 1).Value = status;
-                    _command.Parameters.Add(":p_lvl", OracleDbType.Char, 1).Value = txtlvel.Text;
-                    _command.Parameters.Add(":p_ID", OracleDbType.Varchar2, 50).Value = EditCOA.COAID;
+                AccountServices.UpdateCOA(
+                    EditCOA.COAID,
+                    txtnoakundetail.Text,
+                    lookUpEdikat.EditValue.ToString(),
+                    lookUpEditbagiandari.EditValue?.ToString(),
+                    txtnamaakun.Text,
+                    status,
+                    txtlvel.Text);
 
-                    _command.ExecuteNonQuery();
-                    Update();
-                    XtraMessageBox.Show("Account Code Updated", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                //AccountServices.UpdateLevelAccount(lbliddata.Text, Convert.ToInt32(setahun.Value));
+                Update();
+                XtraMessageBox.Show("Account Code Updated", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.Close();
 
             }
@@ -327,7 +306,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 
@@ -335,7 +314,7 @@ namespace Accounting
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SendKeys.Send("{TAB}");
+                SelectNextControl(ActiveControl, true, true, true, true);
             }
         }
 

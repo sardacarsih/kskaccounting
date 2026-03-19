@@ -1,6 +1,8 @@
-﻿using Accounting.BusinessLayer;
+﻿using Accounting._3.Services;
+using Accounting.BusinessLayer;
 using Accounting.Form;
 using Accounting.Laporan;
+using Accounting.UC;
 using DevExpress.LookAndFeel;
 using DevExpress.XtraBars.Docking2010;
 using DevExpress.XtraBars.Docking2010.Views.Tabbed;
@@ -64,7 +66,7 @@ namespace Accounting
         {
             set
             {
-                var y= "Periode Akuntansi : " + AccountServices.GetNamaPeriode(CompanyInfo.INIT).ToString();
+                var y= "Periode Akuntansi : " + AccountServices.GetNamaPeriode(CompanyInfo.IDDATA).ToString();
                 if (value == y)
                     bbiperiode.Caption = value;
             }
@@ -87,15 +89,15 @@ namespace Accounting
         {
             try
             {
-                using var handle = SplashScreenManager.ShowOverlayForm(this);
-                handle.QueueFocus(IntPtr.Zero);
-                //2 kode buka kode perkiraan
-                bool akses = LevelAksesServices.OpenForm(2, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //using var handle = SplashScreenManager.ShowOverlayForm(this);
+                //handle.QueueFocus(IntPtr.Zero);
+                ////2 kode buka kode perkiraan
+                //bool akses = LevelAksesServices.OpenForm(2, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                 
 
                 OpenMDI<FrmAkunEF>(false);
@@ -135,13 +137,13 @@ namespace Accounting
         {
             try
             {
-                //17 kode buka input jurnal
-                bool akses = LevelAksesServices.OpenForm(17, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////17 kode buka input jurnal
+                //bool akses = LevelAksesServices.OpenForm(17, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
 
                 OpenMDI<FrmImportJurnal_Parsial>(false);
             }
@@ -173,25 +175,20 @@ namespace Accounting
 
         private void barButtonItem18_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            try
-            {
+           
                 using var handle = SplashScreenManager.ShowOverlayForm(this);
                 handle.QueueFocus(IntPtr.Zero);
-                //16 kode buka input jurnal
-                bool akses = LevelAksesServices.OpenForm(16, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                //OpenMDI<FrmJurnal>(true);
+                ////16 kode buka input jurnal
+                //bool akses = LevelAksesServices.OpenForm(16, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
+                ////OpenMDI<FrmJurnal>(true);
                 FrmJurnal fjurnal = new();
                 fjurnal.Show(this);   
-            }
-            catch (SystemException ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            
         }
 
        
@@ -207,13 +204,13 @@ namespace Accounting
         {
             try
             {
-                //19 kode tutup buku bulanan
-                bool akses = LevelAksesServices.OpenForm(19, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////19 kode tutup buku bulanan
+                //bool akses = LevelAksesServices.OpenForm(19, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
              
                
                 FrmClosingMonth f1 = new ();
@@ -230,13 +227,13 @@ namespace Accounting
         {
             try
             {
-                //20 kode tutup buku tahun
-                bool akses = LevelAksesServices.OpenForm(20, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////20 kode tutup buku tahun
+                //bool akses = LevelAksesServices.OpenForm(20, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                
                 FrmClosingYear f1 = new();
                 f1.StartPosition = FormStartPosition.CenterScreen;
@@ -250,13 +247,13 @@ namespace Accounting
 
         private void barButtonItem23_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            //23 kode buka laporan daftar perkiraan
-            bool akses = LevelAksesServices.OpenForm(23, LoginInfo.userID);
-            if (akses == false)
-            {
-                XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            ////23 kode buka laporan daftar perkiraan
+            //bool akses = LevelAksesServices.OpenForm(23, LoginInfo.userID);
+            //if (akses == false)
+            //{
+            //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            //    return;
+            //}
         }
 
         private void barButtonItem19_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
@@ -275,13 +272,13 @@ namespace Accounting
         {
             try
             {
-                //39 kode buka SETTING PERIODE
-                bool akses = LevelAksesServices.OpenForm(39, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////39 kode buka SETTING PERIODE
+                //bool akses = LevelAksesServices.OpenForm(39, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
               
                 OpenMDI<FrmImportCOA>(false);
             }
@@ -296,12 +293,12 @@ namespace Accounting
             try
             {
                 //39 kode buka SETTING PERIODE
-                bool akses = LevelAksesServices.OpenForm(39, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(39, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
          
                 OpenMDI<FrmImportJurnalSheet>(false);
             }
@@ -315,17 +312,17 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(42, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
-                {
-                    XtraMessageBox.Show("Module ini hanya dapat digunakan untuk COA berjenis kebun...!!!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(42, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
+                //if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
+                //{
+                //    XtraMessageBox.Show("Module ini hanya dapat digunakan untuk COA berjenis kebun...!!!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //    return;
+                //}
              
                 OpenMDI<FrmMasterBlok>(false);
             }
@@ -337,33 +334,34 @@ namespace Accounting
 
         private void BSETUSER_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            try
-            {
-                bool akses = LevelAksesServices.OpenForm(40, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-               
-                OpenMDI<FrmUsers>(false);
-            }
-            catch (SystemException ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            //string permissionName = "USER_AKSES";
+
+            ////bool canCreate = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanCreate);
+            //bool canRead = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanRead);
+            ////bool canUpdate = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanUpdate);
+            ////bool canDelete = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanDelete);
+            //if (canRead)
+            //{
+            //    OpenMDI<FrmUsers>(false);
+            //}
+            //else
+            //{
+            //    XtraMessageBox.Show("Anda tidak memiliki Akses untuk membuka Pengaturan Akses User.", "Stop", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+
+            //}
+            OpenMDI<FrmUsers>(false);
         }
 
         private void BSETPERIODE_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(39, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(39, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
            
                 OpenMDI<FrmPeriode>(false);
             }
@@ -375,22 +373,67 @@ namespace Accounting
 
         private void BSETAKSES_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            //string permissionName = "USER_AKSES";
+
+            ////bool canCreate = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanCreate);
+            //bool canRead = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanRead);
+            ////bool canUpdate = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanUpdate);
+            ////bool canDelete = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanDelete);
+            //if (canRead)
+            //{
+            //    AddUserControlTab(typeof(uc_Level_Akses), "Pengaturan Akses User");
+            //}
+            //else
+            //{
+            //    XtraMessageBox.Show("Anda tidak memiliki Akses untuk membuka Pengaturan Akses User.", "Stop", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+
+            //}
+            AddUserControlTab(typeof(uc_Level_Akses), "Pengaturan Akses User");
+        }
+        private void AddUserControlTab(Type userControlType, string tabText)
+        {
+            // Ensure the provided type is a UserControl
+            if (!typeof(UserControl).IsAssignableFrom(userControlType))
+            {
+                throw new ArgumentException("Type must be a UserControl.", nameof(userControlType));
+            }
+
+            // Check if the user control is already loaded
+            foreach (System.Windows.Forms.Form mdiChild in this.MdiChildren)
+            {
+                foreach (Control control in mdiChild.Controls)
+                {
+                    if (control.GetType() == userControlType)
+                    {
+                        // Activate the existing tab with the user control
+                        mdiChild.Activate();
+                        return;
+                    }
+                }
+            }
+
+            // If not found, create a new child form with the user control
+            var childForm = new System.Windows.Forms.Form
+            {
+                MdiParent = this,
+                Text = tabText,
+                WindowState = FormWindowState.Maximized
+            };
+
             try
             {
-                bool akses = LevelAksesServices.OpenForm(41, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-             
-                OpenMDI<FrmAksesLevel>(false);
+                var userControl = (UserControl)Activator.CreateInstance(userControlType);
+                userControl.Dock = DockStyle.Fill;
+                childForm.Controls.Add(userControl);
+                childForm.Show();
             }
             catch (Exception ex)
             {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Handle potential exceptions, e.g., log them or show a message to the user
+                MessageBox.Show($"Failed to create UserControl: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
 
         private void barButtonItem36_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
@@ -426,12 +469,12 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(34, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(34, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
 
         
                 OpenMDI<FrmReportParam>(false);
@@ -469,13 +512,13 @@ namespace Accounting
         {
             try
             {
-                //39 kode buka SETTING PERIODE
-                bool akses = LevelAksesServices.OpenForm(43, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////39 kode buka SETTING PERIODE
+                //bool akses = LevelAksesServices.OpenForm(43, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
              
                 OpenMDI<FrmCompanyProfile>(false);
             }
@@ -489,13 +532,13 @@ namespace Accounting
         {
             try
             {
-                //39 kode buka SETTING PERIODE
-                bool akses = LevelAksesServices.OpenForm(39, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////39 kode buka SETTING PERIODE
+                //bool akses = LevelAksesServices.OpenForm(39, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                 OpenMDI<FrmSettingRL>(false);
 
             }
@@ -509,13 +552,13 @@ namespace Accounting
         {
             try
             {
-                //17 kode buka input jurnal
-                bool akses = LevelAksesServices.OpenForm(17, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////17 kode buka input jurnal
+                //bool akses = LevelAksesServices.OpenForm(17, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                 OpenMDI<FrmExportJurnal>(false);
             }
             catch (SystemException ex)
@@ -529,12 +572,12 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(32, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(32, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
 
                 if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
                 {
@@ -583,7 +626,7 @@ namespace Accounting
                 //int tahun, bulan;
                 //tahun = Convert.ToInt32(this.Parameters["Tahun"].Value);
                 //bulan = Convert.ToInt32(this.Parameters["Bulan"].Value);
-                var NeracaLajur = LaporanServices.ViewLap_NeracaLajur(CompanyInfo.INIT, 1, 2021);
+                var NeracaLajur = LaporanServices.ViewLap_NeracaLajur(CompanyInfo.IDDATA, 1, 2021);
 
                 //NeracaLajur.WriteXmlSchema("NeracaLajur.xsd");
                 NeracaLajur laporan = new NeracaLajur();
@@ -610,12 +653,12 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(45, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(45, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                 FrmSetAkun f1 = new FrmSetAkun();
                 f1.StartPosition = FormStartPosition.CenterScreen;
                 f1.ShowDialog();
@@ -642,24 +685,24 @@ namespace Accounting
 
         private void barButtonItem10_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            bool akses = LevelAksesServices.OpenForm(46, LoginInfo.userID);
-            if (akses == false)
-            {
-                XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            //bool akses = LevelAksesServices.OpenForm(46, LoginInfo.userID);
+            //if (akses == false)
+            //{
+            //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            //    return;
+            //}
         }
 
         private void barButtonItem19_ItemClick_1(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(15, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(15, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
         
                 OpenMDI<FrmNotaDebet>(false);
             }
@@ -673,12 +716,12 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(15, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(15, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
           
 
                  OpenMDI<FrmNotaKredit>(false);
@@ -694,13 +737,13 @@ namespace Accounting
         {
             try
             {
-                //39 kode buka SETTING PERIODE
-                bool akses = LevelAksesServices.OpenForm(43, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                ////39 kode buka SETTING PERIODE
+                //bool akses = LevelAksesServices.OpenForm(43, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
            
 
                 OpenMDI<FrmCompany>(false);
@@ -759,12 +802,12 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(42, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(42, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                 if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
                 {
                     XtraMessageBox.Show("Module ini hanya dapat digunakan untuk COA berjenis kebun...!!!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -783,17 +826,17 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(42, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
-                {
-                    XtraMessageBox.Show("Module ini hanya dapat digunakan untuk COA berjenis kebun...!!!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(42, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
+                //if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
+                //{
+                //    XtraMessageBox.Show("Module ini hanya dapat digunakan untuk COA berjenis kebun...!!!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //    return;
+                //}
                  
                 OpenMDI<FrmMasterAkun>(false);
             }
@@ -807,12 +850,12 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(35, LoginInfo.userID);
-                if (akses == false)
-                {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                //bool akses = LevelAksesServices.OpenForm(35, LoginInfo.userID);
+                //if (akses == false)
+                //{
+                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return;
+                //}
                 if (CompanyInfo.JENIS_AKUNTING == "PUSAT")
                 {
                     if (Application.OpenForms.OfType<FrmBiayaBlokPusat>().Count() == 1)
@@ -873,7 +916,7 @@ namespace Accounting
                 ribbonControl1.Minimized = true;
                 if (Acct.PeriodeMax == 0)
                 {
-                    FrmPeriodeNew frm = new FrmPeriodeNew();
+                    FrmPeriodeNew frm = new();
                     frm.ShowDialog();
                 };
 
@@ -881,20 +924,20 @@ namespace Accounting
                 int newperiode = int.Parse(periodedipilih);
                 if (newperiode > Acct.PeriodeMax)
                 {
-                    AccountServices.CreateNextPeriode(CompanyInfo.INIT, DateTime.Today.Month - 1, DateTime.Today.Year);
+                    AccountServices.CreateNextPeriode(CompanyInfo.IDDATA, DateTime.Today.Month - 1, DateTime.Today.Year);
                     XtraMessageBox.Show($"New Period Created {periodedipilih}");
                 }
 
 
                 //string configvalue1 = ConfigurationManager.AppSettings.GetValues(descriptor);
-                this.Text = "GENERAL LEDGER - " + CompanyInfo.NAMAPT + " - " + CompanyInfo.WILAYAH + " (" + CompanyInfo.INIT + ")";
+                this.Text = "GENERAL LEDGER - " + CompanyInfo.NAMAPT + " - " + CompanyInfo.WILAYAH + " (" +CompanyInfo.IDDATA + ")";
                 //bbiinit.Caption = configvalue1;
-                bbiinit.Caption = CompanyInfo.INIT;
+                bbiinit.Caption =CompanyInfo.IDDATA;
                 bbinamapt.Caption = CompanyInfo.NAMAPT;
                 bbiwilayah.Caption = CompanyInfo.WILAYAH.ToUpper();
                 bsversion.Caption = "Version : " + Acct.AppVersion;
                 bbiuserid.Caption = LoginInfo.userID + " (" + LoginInfo.role + ")";
-                bbiperiode.Caption = "Periode Akuntansi : " + AccountServices.GetNamaPeriode(CompanyInfo.INIT).ToString();
+                bbiperiode.Caption = "Periode Akuntansi : " + AccountServices.GetNamaPeriode(CompanyInfo.IDDATA).ToString();
                 AddDocumentManager();
             }
             catch (SystemException ex)

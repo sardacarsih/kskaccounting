@@ -21,7 +21,7 @@ namespace Accounting.Form
         {
             InitializeComponent();
         }
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
+       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         private void FrmBiayaBlokPusat_Load(object sender, EventArgs e)
         {
             setahun1.Properties.MinValue = Acct.TahunMin;
@@ -67,7 +67,7 @@ namespace Accounting.Form
             handle = SplashScreenManager.ShowOverlayForm(this);           
             var tahun1 = Convert.ToInt32(setahun1.EditValue);
             var tahun2 = Convert.ToInt32(setahun2.EditValue);
-            pivotGridControl1.DataSource = Load_BiayaBlok(CompanyInfo.INIT, tahun1, tahun2,CompanyInfo.JENIS_AKUNTING);
+            pivotGridControl1.DataSource = Load_BiayaBlok(CompanyInfo.IDDATA, tahun1, tahun2,CompanyInfo.JENIS_AKUNTING);
             pivotGridControl1.BestFit();
             sbexport.Enabled = true;
             SplashScreenManager.CloseOverlayForm(handle);

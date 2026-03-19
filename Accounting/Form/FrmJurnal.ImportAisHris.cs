@@ -91,8 +91,7 @@ namespace Accounting.Form
 
 	private void OnexpexcelALLHARIANClick(object? sender, EventArgs e)
 	{
-		using IOverlaySplashScreenHandle overlaySplashScreenHandle = SplashScreenManager.ShowOverlayForm(this);
-		overlaySplashScreenHandle.QueueFocus(IntPtr.Zero);
+		using var loadingScope = BeginGlobalLoadingScope();
 		if (lookUpEditEstate.EditValue == null || leremiseAIS.EditValue == null)
 		{
 			return;
@@ -176,7 +175,7 @@ namespace Accounting.Form
 		}
 	}
 
-	private async Task LoadDivisionsAsync()
+	private async Task LoadDivisionsAsync(System.Threading.CancellationToken cancellationToken)
 	{
 		if (cmbbulanAIS.SelectedIndex >= 0 && leremiseAIS.EditValue != null && lookUpEditEstate.EditValue != null)
 		{
@@ -192,6 +191,7 @@ namespace Accounting.Form
 
 			string p_iddata = CompanyInfo.IDDATA;
 			List<Division> divisions = await jurnalRepository.GetDivisionsAsync(p_iddata, p_estate, p_periode_int, p_remise);
+			cancellationToken.ThrowIfCancellationRequested();
 			if (divisions != null)
 			{
 				gcAISheader.DataSource = divisions;
@@ -208,7 +208,7 @@ namespace Accounting.Form
 		}
 	}
 
-	private async Task LoadJurnalAISPeriodeAsync()
+	private async Task LoadJurnalAISPeriodeAsync(System.Threading.CancellationToken cancellationToken)
 	{
 		if (lookUpEditEstate.EditValue != null && setahunAIS.Value != 0m && leremiseAIS.EditValue != null)
 		{
@@ -224,52 +224,80 @@ namespace Accounting.Form
 
 			string p_iddata = CompanyInfo.IDDATA;
 			string periodes = "R" + p_remise + " " + cmbbulanAIS.Text + " " + ptahun;
-			aisJurnal = await jurnalRepository.GetAISforJurnalAsync(p_iddata, p_estate, p_periode_int, p_remise, ptahun, periodes);
-			komponenjurnal = await jurnalRepository.GetAISforJurnalKomponenAsync(p_iddata, p_estate, p_periode_int, p_remise);
+			Task<List<AIS_JURNAL>> aisTask = jurnalRepository.GetAISforJurnalAsync(p_iddata, p_estate, p_periode_int, p_remise, ptahun, periodes);
+			Task<List<JurnalKomponen>> komponenTask = jurnalRepository.GetAISforJurnalKomponenAsync(p_iddata, p_estate, p_periode_int, p_remise);
+			await Task.WhenAll(aisTask, komponenTask);
+			cancellationToken.ThrowIfCancellationRequested();
+
+			aisJurnal = aisTask.Result;
+			komponenjurnal = komponenTask.Result;
 		}
 	}
 
-	private async Task HandleEditValueChangedOrSelectedIndexChangedAISAsync()
+	private async Task HandleEditValueChangedOrSelectedIndexChangedAISAsync(System.Threading.CancellationToken cancellationToken, bool useLoading = true)
 	{
-		await Task.WhenAll(LoadDivisionsAsync(), LoadJurnalAISPeriodeAsync());
-	}
+		int divisionCount = 0;
+		int aisCount = 0;
+		string estate = lookUpEditEstate.EditValue?.ToString() ?? string.Empty;
+		int year = Convert.ToInt32(setahunAIS.Value);
+		int month = cmbbulanAIS.SelectedIndex + 1;
+		string remise = leremiseAIS.EditValue?.ToString() ?? string.Empty;
+		using var perf = BeginPerfMeasurement(
+			"FrmJurnal.AIS.Reload",
+			() => $"estate={estate};year={year};month={month};remise={remise};divisionCount={divisionCount};aisCount={aisCount};useLoading={useLoading}");
 
-	private async void ExecuteSafeAsync(Task task, string operationName)
-	{
+		IDisposable? loadingScope = null;
 		try
 		{
-			await task;
+			if (useLoading)
+			{
+				loadingScope = BeginGlobalLoadingScope();
+			}
+
+			await Task.WhenAll(
+				LoadDivisionsAsync(cancellationToken),
+				LoadJurnalAISPeriodeAsync(cancellationToken));
+
+			divisionCount = (gcAISheader.DataSource as IEnumerable<Division>)?.Count() ?? 0;
+			aisCount = aisJurnal?.Count() ?? 0;
 		}
-		catch (Exception ex)
+		finally
 		{
-			Exception ex2 = ex;
-			XtraMessageBox.Show("An error occurred while " + operationName + ": " + ex2.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+			loadingScope?.Dispose();
 		}
+	}
+
+	private void ScheduleAisReload()
+	{
+		ScheduleDebounced(
+			ref aisReloadCts,
+			cancellationToken => HandleEditValueChangedOrSelectedIndexChangedAISAsync(cancellationToken),
+			"loading AIS data");
 	}
 
 	private void lookUpEditEstate_EditValueChanged(object sender, EventArgs e)
 	{
-		ExecuteSafeAsync(HandleEditValueChangedOrSelectedIndexChangedAISAsync(), "loading AIS data");
+		ScheduleAisReload();
 	}
 
 	private void cmbbulanAIS_SelectedIndexChanged(object sender, EventArgs e)
 	{
-		ExecuteSafeAsync(HandleEditValueChangedOrSelectedIndexChangedAISAsync(), "loading AIS data");
+		ScheduleAisReload();
 	}
 
 	private void setahunAIS_EditValueChanged(object sender, EventArgs e)
 	{
-		ExecuteSafeAsync(HandleEditValueChangedOrSelectedIndexChangedAISAsync(), "loading AIS data");
+		ScheduleAisReload();
 	}
 
 	private void leremiseAIS_EditValueChanged(object sender, EventArgs e)
 	{
-		ExecuteSafeAsync(HandleEditValueChangedOrSelectedIndexChangedAISAsync(), "loading AIS data");
+		ScheduleAisReload();
 	}
 
 	private void leremiseAIS_EditValueChanged_1(object sender, EventArgs e)
 	{
-		ExecuteSafeAsync(HandleEditValueChangedOrSelectedIndexChangedAISAsync(), "loading AIS data");
+		ScheduleAisReload();
 	}
 
     }

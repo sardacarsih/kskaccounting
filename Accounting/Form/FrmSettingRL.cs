@@ -15,13 +15,13 @@ namespace Accounting.Form
         {
             InitializeComponent();
         }
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
+       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         DataSet DSSetup;
         OracleDataAdapter sqlAdapter;
         int MAXTAHUN;
         private void FrmSettingRL_Load(object sender, EventArgs e)
         {
-            MAXTAHUN = AccountServices.MaxTahunCOA(CompanyInfo.INIT);
+            MAXTAHUN = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
             string setlr = ConfigurationManager.AppSettings["setLR"];
             if (setlr == "Ya")
             {
@@ -178,7 +178,7 @@ namespace Accounting.Form
         {
            
             var rowhandle = gridView1.FocusedRowHandle;
-            string IDDATA = CompanyInfo.INIT;
+            string IDDATA =CompanyInfo.IDDATA;
             var GRP = gridView1.GetRowCellValue(rowhandle, "GRP").ToString();
             var INDUK = gridView1.GetRowCellValue(rowhandle, "INDUK").ToString();
             int LEVEL = Convert.ToInt32(gridView1.GetRowCellValue(rowhandle, "LVL").ToString());

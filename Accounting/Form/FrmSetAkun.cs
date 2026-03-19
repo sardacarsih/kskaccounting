@@ -1,25 +1,22 @@
 ﻿using System;
 using System.Data;
 using System.Windows.Forms;
-using Accounting.BusinessLayer;
-using Accounting.Controllers;
-using Accounting.Repositories;
+using Accounting.BusinessLayer; 
+using Accounting.DataLayer;
 using DevExpress.XtraEditors;
 using Oracle.ManagedDataAccess.Client;
 
 namespace Accounting.Form
 {
     public partial class FrmSetAkun : DevExpress.XtraEditors.XtraForm
-    {
-        private readonly JurnalController _jurnalController;
+    { 
 
-        OracleConnection con = new(Acct.OracleConnString);
+        OracleConnection con = new( LoginInfo.OracleConnString);
         public FrmSetAkun()
         {
             InitializeComponent();
             // Instantiate the controller with the repository implementation
-            var jurnalRepository = new JurnalRepository();
-            _jurnalController = new JurnalController(jurnalRepository);
+            var jurnalRepository = new JurnalRepository(); 
         }
         private void SBUpdate_Click(object sender, EventArgs e)
         {
@@ -32,7 +29,7 @@ namespace Accounting.Form
         {
             con.Open();
             NAMAPT.Text = CompanyInfo.NAMAPT;
-            IDDATA.Text = CompanyInfo.INIT;
+            IDDATA.Text =CompanyInfo.IDDATA;
             WILAYAH.Text = CompanyInfo.WILAYAH;
 
             L0ad_COA();
@@ -43,7 +40,7 @@ namespace Accounting.Form
         private void L0ad_COA()
         {
             
-            var dt = _jurnalController.KodeUntukJurnal(CompanyInfo.INIT, Acct.TahunMax);
+            var dt = JurnalServices.KodeUntukJurnal(CompanyInfo.IDDATA, Acct.TahunMax);
             lookUpEdit_labatahunberjalan.Properties.DataSource = dt;
             lookUpEdit_labatahunberjalan.Properties.DisplayMember = "KODE";
             lookUpEdit_labatahunberjalan.Properties.ValueMember = "KODE";
@@ -78,7 +75,7 @@ namespace Accounting.Form
             {
                 CommandType = CommandType.Text
             };
-            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = CompanyInfo.INIT;
+            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value =CompanyInfo.IDDATA;
             OracleDataReader dr;
             dr = _command.ExecuteReader();
             DataTable _dt = new ();
@@ -88,7 +85,7 @@ namespace Accounting.Form
             if (_dt.Rows.Count == 0)
             {
                 //create default perkiraan closing
-                AccountServices.CreateClosingAcct(CompanyInfo.INIT);
+                AccountServices.CreateClosingAcct(CompanyInfo.IDDATA);
                 XtraMessageBox.Show("Silahkan buka kembali form ini", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.Close();
             }
@@ -194,7 +191,7 @@ namespace Accounting.Form
             string id = "RL_TAHUN_BERJALAN";
             string kode = lookUpEdit_labatahunberjalan.Text;
            
-            string iddata = CompanyInfo.INIT;
+            string iddata =CompanyInfo.IDDATA;
 
 
 
@@ -246,7 +243,7 @@ namespace Accounting.Form
             string id = "HUTANG_PPH21";
             string kode = lookUpEdit_pph21.Text;
 
-            string iddata = CompanyInfo.INIT;
+            string iddata =CompanyInfo.IDDATA;
 
 
 
@@ -298,7 +295,7 @@ namespace Accounting.Form
             string id = "GAJI_DAN_UPAH_YMH_DIBAYAR";
             string kode = lookUpEdit_ymh.Text;
 
-            string iddata = CompanyInfo.INIT;
+            string iddata =CompanyInfo.IDDATA;
 
 
 
@@ -349,7 +346,7 @@ namespace Accounting.Form
             string id = "LABA_DITAHAN";
             string kode = lookUpEdit_labaditahan.Text;
 
-            string iddata = CompanyInfo.INIT;
+            string iddata =CompanyInfo.IDDATA;
 
 
 
@@ -400,7 +397,7 @@ namespace Accounting.Form
             string id = "ALOKASI_LABA_DITAHAN";
             string kode = lookUpEdit_alokasiLaba.Text;
 
-            string iddata = CompanyInfo.INIT;
+            string iddata =CompanyInfo.IDDATA;
 
 
 
@@ -451,7 +448,7 @@ namespace Accounting.Form
             string id = "TUNJANGAN_ASTEK";
             string kode = lookUpEdit_ASTEK.Text;
 
-            string iddata = CompanyInfo.INIT;
+            string iddata =CompanyInfo.IDDATA;
 
 
 

@@ -32,7 +32,7 @@ namespace Accounting.Laporan
 
                 DataRowView dataRow = e.Brick.Value as DataRowView;
                 var userid = LoginInfo.userID;
-                var iddata = CompanyInfo.INIT;
+                var iddata =CompanyInfo.IDDATA;
                 var pbulan = (int)this.Parameters["PBULAN"].Value;
                 var ptahun = (int)this.Parameters["PTAHUN"].Value;
                 var periode = pbulan.ToString("00") + "/" + ptahun.ToString();

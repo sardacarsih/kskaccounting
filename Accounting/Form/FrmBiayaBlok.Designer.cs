@@ -29,295 +29,208 @@ namespace Accounting.Form
         /// </summary>
         private void InitializeComponent()
         {
-            DevExpress.XtraPivotGrid.DataSourceColumnBinding dataSourceColumnBinding1 = new DevExpress.XtraPivotGrid.DataSourceColumnBinding();
-            DevExpress.XtraPivotGrid.DataSourceColumnBinding dataSourceColumnBinding2 = new DevExpress.XtraPivotGrid.DataSourceColumnBinding();
-            DevExpress.XtraPivotGrid.DataSourceColumnBinding dataSourceColumnBinding3 = new DevExpress.XtraPivotGrid.DataSourceColumnBinding();
-            DevExpress.XtraPivotGrid.DataSourceColumnBinding dataSourceColumnBinding4 = new DevExpress.XtraPivotGrid.DataSourceColumnBinding();
-            DevExpress.XtraPivotGrid.DataSourceColumnBinding dataSourceColumnBinding5 = new DevExpress.XtraPivotGrid.DataSourceColumnBinding();
-            DevExpress.XtraPivotGrid.DataSourceColumnBinding dataSourceColumnBinding6 = new DevExpress.XtraPivotGrid.DataSourceColumnBinding();
-            DevExpress.XtraPivotGrid.DataSourceColumnBinding dataSourceColumnBinding7 = new DevExpress.XtraPivotGrid.DataSourceColumnBinding();
-            DevExpress.XtraPivotGrid.DataSourceColumnBinding dataSourceColumnBinding8 = new DevExpress.XtraPivotGrid.DataSourceColumnBinding();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmBiayaBlok));
-            this.pivotGridControl1 = new DevExpress.XtraPivotGrid.PivotGridControl();
-            this.KAT = new DevExpress.XtraPivotGrid.PivotGridField();
-            this.PEKERJAAN = new DevExpress.XtraPivotGrid.PivotGridField();
-            this.TAHUN = new DevExpress.XtraPivotGrid.PivotGridField();
-            this.BULAN = new DevExpress.XtraPivotGrid.PivotGridField();
-            this.DIV = new DevExpress.XtraPivotGrid.PivotGridField();
-            this.BLOK = new DevExpress.XtraPivotGrid.PivotGridField();
-            this.JUMLAH = new DevExpress.XtraPivotGrid.PivotGridField();
-            this.isSTATUS = new DevExpress.XtraPivotGrid.PivotGridField();
-            this.sidePanel1 = new DevExpress.XtraEditors.SidePanel();
-            this.btnproses = new DevExpress.XtraEditors.SimpleButton();
-            this.setahun2 = new DevExpress.XtraEditors.SpinEdit();
-            this.setahun1 = new DevExpress.XtraEditors.SpinEdit();
-            this.labelControl1 = new DevExpress.XtraEditors.LabelControl();
-            this.labelControl3 = new DevExpress.XtraEditors.LabelControl();
-            this.panelControl1 = new DevExpress.XtraEditors.PanelControl();
-            this.sbexport = new DevExpress.XtraEditors.SimpleButton();
-            ((System.ComponentModel.ISupportInitialize)(this.pivotGridControl1)).BeginInit();
-            this.sidePanel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.setahun2.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.setahun1.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.panelControl1)).BeginInit();
-            this.panelControl1.SuspendLayout();
-            this.SuspendLayout();
-            // 
-            // pivotGridControl1
-            // 
-            this.pivotGridControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pivotGridControl1.Fields.AddRange(new DevExpress.XtraPivotGrid.PivotGridField[] {
-            this.KAT,
-            this.PEKERJAAN,
-            this.TAHUN,
-            this.BULAN,
-            this.DIV,
-            this.BLOK,
-            this.JUMLAH,
-            this.isSTATUS});
-            this.pivotGridControl1.Location = new System.Drawing.Point(2, 2);
-            this.pivotGridControl1.Margin = new System.Windows.Forms.Padding(2);
-            this.pivotGridControl1.Name = "pivotGridControl1";
-            this.pivotGridControl1.OptionsData.DataProcessingEngine = DevExpress.XtraPivotGrid.PivotDataProcessingEngine.Optimized;
-            this.pivotGridControl1.OptionsDataField.RowHeaderWidth = 67;
-            this.pivotGridControl1.OptionsView.RowTreeOffset = 14;
-            this.pivotGridControl1.OptionsView.RowTreeWidth = 67;
-            this.pivotGridControl1.Size = new System.Drawing.Size(746, 348);
-            this.pivotGridControl1.TabIndex = 0;
-            // 
-            // KAT
-            // 
-            this.KAT.Area = DevExpress.XtraPivotGrid.PivotArea.RowArea;
-            this.KAT.AreaIndex = 0;
-            dataSourceColumnBinding1.ColumnName = "KATEGORI";
-            this.KAT.DataBinding = dataSourceColumnBinding1;
-            this.KAT.MinWidth = 13;
-            this.KAT.Name = "KAT";
-            this.KAT.Width = 67;
-            // 
-            // PEKERJAAN
-            // 
-            this.PEKERJAAN.AreaIndex = 1;
-            dataSourceColumnBinding2.ColumnName = "PERKIRAAN";
-            this.PEKERJAAN.DataBinding = dataSourceColumnBinding2;
-            this.PEKERJAAN.MinWidth = 13;
-            this.PEKERJAAN.Name = "PEKERJAAN";
-            this.PEKERJAAN.Width = 67;
-            // 
-            // TAHUN
-            // 
-            this.TAHUN.Area = DevExpress.XtraPivotGrid.PivotArea.ColumnArea;
-            this.TAHUN.AreaIndex = 0;
-            dataSourceColumnBinding3.ColumnName = "GLYEAR";
-            this.TAHUN.DataBinding = dataSourceColumnBinding3;
-            this.TAHUN.MinWidth = 13;
-            this.TAHUN.Name = "TAHUN";
-            this.TAHUN.Width = 67;
-            // 
-            // BULAN
-            // 
-            this.BULAN.Area = DevExpress.XtraPivotGrid.PivotArea.ColumnArea;
-            this.BULAN.AreaIndex = 1;
-            dataSourceColumnBinding4.ColumnName = "GLMONTH";
-            this.BULAN.DataBinding = dataSourceColumnBinding4;
-            this.BULAN.MinWidth = 13;
-            this.BULAN.Name = "BULAN";
-            this.BULAN.Width = 67;
-            // 
-            // DIV
-            // 
-            this.DIV.Area = DevExpress.XtraPivotGrid.PivotArea.RowArea;
-            this.DIV.AreaIndex = 2;
-            dataSourceColumnBinding5.ColumnName = "DIVISI";
-            this.DIV.DataBinding = dataSourceColumnBinding5;
-            this.DIV.MinWidth = 13;
-            this.DIV.Name = "DIV";
-            this.DIV.Width = 67;
-            // 
-            // BLOK
-            // 
-            this.BLOK.AreaIndex = 0;
-            dataSourceColumnBinding6.ColumnName = "NAMABLOK";
-            this.BLOK.DataBinding = dataSourceColumnBinding6;
-            this.BLOK.MinWidth = 13;
-            this.BLOK.Name = "BLOK";
-            this.BLOK.Width = 67;
-            // 
-            // JUMLAH
-            // 
-            this.JUMLAH.Area = DevExpress.XtraPivotGrid.PivotArea.DataArea;
-            this.JUMLAH.AreaIndex = 0;
-            this.JUMLAH.Caption = "JUMLAH";
-            this.JUMLAH.CellFormat.FormatString = "n2";
-            this.JUMLAH.CellFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            dataSourceColumnBinding7.ColumnName = "BULANINI";
-            this.JUMLAH.DataBinding = dataSourceColumnBinding7;
-            this.JUMLAH.MinWidth = 13;
-            this.JUMLAH.Name = "JUMLAH";
-            this.JUMLAH.TotalCellFormat.FormatString = "n2";
-            this.JUMLAH.TotalCellFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            this.JUMLAH.TotalValueFormat.FormatString = "N2";
-            this.JUMLAH.TotalValueFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            this.JUMLAH.ValueFormat.FormatString = "N2";
-            this.JUMLAH.ValueFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            this.JUMLAH.Width = 67;
-            // 
-            // isSTATUS
-            // 
-            this.isSTATUS.Area = DevExpress.XtraPivotGrid.PivotArea.RowArea;
-            this.isSTATUS.AreaIndex = 1;
-            this.isSTATUS.Caption = "STATUS";
-            dataSourceColumnBinding8.ColumnName = "STATUS";
-            this.isSTATUS.DataBinding = dataSourceColumnBinding8;
-            this.isSTATUS.MinWidth = 13;
-            this.isSTATUS.Name = "isSTATUS";
-            this.isSTATUS.Width = 67;
+            sidePanel1 = new DevExpress.XtraEditors.SidePanel();
+            cmbbulan2 = new DevExpress.XtraEditors.ComboBoxEdit();
+            cmbbulan1 = new DevExpress.XtraEditors.ComboBoxEdit();
+            sbexport = new DevExpress.XtraEditors.SimpleButton();
+            btnproses = new DevExpress.XtraEditors.SimpleButton();
+            setahun2 = new DevExpress.XtraEditors.SpinEdit();
+            setahun1 = new DevExpress.XtraEditors.SpinEdit();
+            labelControl1 = new DevExpress.XtraEditors.LabelControl();
+            labelControl3 = new DevExpress.XtraEditors.LabelControl();
+            panelControl1 = new DevExpress.XtraEditors.PanelControl();
+            gridControl1 = new DevExpress.XtraGrid.GridControl();
+            gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
+            sidePanel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)cmbbulan2.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)cmbbulan1.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)setahun2.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)setahun1.Properties).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)panelControl1).BeginInit();
+            panelControl1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)gridControl1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridView1).BeginInit();
+            SuspendLayout();
             // 
             // sidePanel1
             // 
-            this.sidePanel1.Controls.Add(this.sbexport);
-            this.sidePanel1.Controls.Add(this.btnproses);
-            this.sidePanel1.Controls.Add(this.setahun2);
-            this.sidePanel1.Controls.Add(this.setahun1);
-            this.sidePanel1.Controls.Add(this.labelControl1);
-            this.sidePanel1.Controls.Add(this.labelControl3);
-            this.sidePanel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.sidePanel1.Location = new System.Drawing.Point(0, 0);
-            this.sidePanel1.Margin = new System.Windows.Forms.Padding(2);
-            this.sidePanel1.Name = "sidePanel1";
-            this.sidePanel1.Size = new System.Drawing.Size(750, 40);
-            this.sidePanel1.TabIndex = 1;
-            this.sidePanel1.Text = "sidePanel1";
+            sidePanel1.Controls.Add(cmbbulan2);
+            sidePanel1.Controls.Add(cmbbulan1);
+            sidePanel1.Controls.Add(sbexport);
+            sidePanel1.Controls.Add(btnproses);
+            sidePanel1.Controls.Add(setahun2);
+            sidePanel1.Controls.Add(setahun1);
+            sidePanel1.Controls.Add(labelControl1);
+            sidePanel1.Controls.Add(labelControl3);
+            sidePanel1.Dock = System.Windows.Forms.DockStyle.Top;
+            sidePanel1.Location = new System.Drawing.Point(0, 0);
+            sidePanel1.Margin = new System.Windows.Forms.Padding(2);
+            sidePanel1.Name = "sidePanel1";
+            sidePanel1.Size = new System.Drawing.Size(750, 48);
+            sidePanel1.TabIndex = 1;
+            sidePanel1.Text = "sidePanel1";
             // 
-            // btnproses
+            // cmbbulan2
             // 
-            this.btnproses.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnproses.ImageOptions.Image")));
-            this.btnproses.Location = new System.Drawing.Point(236, 8);
-            this.btnproses.Margin = new System.Windows.Forms.Padding(2);
-            this.btnproses.Name = "btnproses";
-            this.btnproses.Size = new System.Drawing.Size(97, 20);
-            this.btnproses.TabIndex = 6;
-            this.btnproses.Text = "Proses";
-            this.btnproses.Click += new System.EventHandler(this.btnproses_Click);
+            cmbbulan2.Location = new System.Drawing.Point(282, 3);
+            cmbbulan2.Name = "cmbbulan2";
+            cmbbulan2.Properties.AdvancedModeOptions.Label = "Bulan";
+            cmbbulan2.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            cmbbulan2.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
+            cmbbulan2.Size = new System.Drawing.Size(100, 42);
+            cmbbulan2.TabIndex = 7;
+            cmbbulan2.SelectedIndexChanged += cmbbulan2_SelectedIndexChanged;
             // 
-            // setahun2
+            // cmbbulan1
             // 
-            this.setahun2.EditValue = new decimal(new int[] {
-            0,
-            0,
-            0,
-            0});
-            this.setahun2.Location = new System.Drawing.Point(154, 8);
-            this.setahun2.Margin = new System.Windows.Forms.Padding(425, 462, 425, 462);
-            this.setahun2.Name = "setahun2";
-            this.setahun2.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.setahun2.Properties.DisplayFormat.FormatString = "d";
-            this.setahun2.Properties.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            this.setahun2.Properties.EditFormat.FormatString = "d";
-            this.setahun2.Properties.MaskSettings.Set("mask", "d");
-            this.setahun2.Size = new System.Drawing.Size(67, 20);
-            this.setahun2.TabIndex = 5;
-            // 
-            // setahun1
-            // 
-            this.setahun1.EditValue = new decimal(new int[] {
-            0,
-            0,
-            0,
-            0});
-            this.setahun1.Location = new System.Drawing.Point(30, 8);
-            this.setahun1.Margin = new System.Windows.Forms.Padding(425, 462, 425, 462);
-            this.setahun1.Name = "setahun1";
-            this.setahun1.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.setahun1.Properties.DisplayFormat.FormatString = "d";
-            this.setahun1.Properties.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            this.setahun1.Properties.EditFormat.FormatString = "d";
-            this.setahun1.Properties.MaskSettings.Set("mask", "d");
-            this.setahun1.Size = new System.Drawing.Size(67, 20);
-            this.setahun1.TabIndex = 5;
-            // 
-            // labelControl1
-            // 
-            this.labelControl1.Location = new System.Drawing.Point(111, 15);
-            this.labelControl1.Margin = new System.Windows.Forms.Padding(425, 462, 425, 462);
-            this.labelControl1.Name = "labelControl1";
-            this.labelControl1.Size = new System.Drawing.Size(34, 13);
-            this.labelControl1.TabIndex = 4;
-            this.labelControl1.Text = "Sampai";
-            // 
-            // labelControl3
-            // 
-            this.labelControl3.Location = new System.Drawing.Point(4, 15);
-            this.labelControl3.Margin = new System.Windows.Forms.Padding(425, 462, 425, 462);
-            this.labelControl3.Name = "labelControl3";
-            this.labelControl3.Size = new System.Drawing.Size(19, 13);
-            this.labelControl3.TabIndex = 4;
-            this.labelControl3.Text = "Dari";
-            // 
-            // panelControl1
-            // 
-            this.panelControl1.Controls.Add(this.pivotGridControl1);
-            this.panelControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelControl1.Location = new System.Drawing.Point(0, 40);
-            this.panelControl1.Margin = new System.Windows.Forms.Padding(2);
-            this.panelControl1.Name = "panelControl1";
-            this.panelControl1.Size = new System.Drawing.Size(750, 352);
-            this.panelControl1.TabIndex = 2;
+            cmbbulan1.Location = new System.Drawing.Point(45, 3);
+            cmbbulan1.Name = "cmbbulan1";
+            cmbbulan1.Properties.AdvancedModeOptions.Label = "Bulan";
+            cmbbulan1.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            cmbbulan1.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
+            cmbbulan1.Size = new System.Drawing.Size(100, 42);
+            cmbbulan1.TabIndex = 7;
+            cmbbulan1.SelectedIndexChanged += cmbbulan1_SelectedIndexChanged;
             // 
             // sbexport
             // 
-            this.sbexport.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("simpleButton1.ImageOptions.Image")));
-            this.sbexport.Location = new System.Drawing.Point(337, 8);
-            this.sbexport.Margin = new System.Windows.Forms.Padding(2);
-            this.sbexport.Name = "sbexport";
-            this.sbexport.Size = new System.Drawing.Size(97, 20);
-            this.sbexport.TabIndex = 6;
-            this.sbexport.Text = "Export";
-            this.sbexport.Click += new System.EventHandler(this.sbexport_Click);
+            sbexport.ImageOptions.Image = (System.Drawing.Image)resources.GetObject("sbexport.ImageOptions.Image");
+            sbexport.Location = new System.Drawing.Point(617, 6);
+            sbexport.Margin = new System.Windows.Forms.Padding(2);
+            sbexport.Name = "sbexport";
+            sbexport.Size = new System.Drawing.Size(97, 20);
+            sbexport.TabIndex = 6;
+            sbexport.Text = "Export";
+            sbexport.Click += sbexport_Click;
+            // 
+            // btnproses
+            // 
+            btnproses.ImageOptions.Image = (System.Drawing.Image)resources.GetObject("btnproses.ImageOptions.Image");
+            btnproses.Location = new System.Drawing.Point(516, 6);
+            btnproses.Margin = new System.Windows.Forms.Padding(2);
+            btnproses.Name = "btnproses";
+            btnproses.Size = new System.Drawing.Size(97, 20);
+            btnproses.TabIndex = 6;
+            btnproses.Text = "Proses";
+            btnproses.Click += btnproses_Click;
+            // 
+            // setahun2
+            // 
+            setahun2.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
+            setahun2.Location = new System.Drawing.Point(392, 3);
+            setahun2.Margin = new System.Windows.Forms.Padding(425, 462, 425, 462);
+            setahun2.Name = "setahun2";
+            setahun2.Properties.AdvancedModeOptions.Label = "Tahun";
+            setahun2.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            setahun2.Properties.DisplayFormat.FormatString = "d";
+            setahun2.Properties.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+            setahun2.Properties.EditFormat.FormatString = "d";
+            setahun2.Properties.MaskSettings.Set("mask", "d");
+            setahun2.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
+            setahun2.Size = new System.Drawing.Size(67, 42);
+            setahun2.TabIndex = 5;
+            setahun2.EditValueChanged += setahun2_EditValueChanged;
+            // 
+            // setahun1
+            // 
+            setahun1.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
+            setahun1.Location = new System.Drawing.Point(150, 3);
+            setahun1.Margin = new System.Windows.Forms.Padding(425, 462, 425, 462);
+            setahun1.Name = "setahun1";
+            setahun1.Properties.AdvancedModeOptions.Label = "Tahun";
+            setahun1.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            setahun1.Properties.DisplayFormat.FormatString = "d";
+            setahun1.Properties.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+            setahun1.Properties.EditFormat.FormatString = "d";
+            setahun1.Properties.MaskSettings.Set("mask", "d");
+            setahun1.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
+            setahun1.Size = new System.Drawing.Size(67, 42);
+            setahun1.TabIndex = 5;
+            setahun1.EditValueChanged += setahun1_EditValueChanged;
+            // 
+            // labelControl1
+            // 
+            labelControl1.Location = new System.Drawing.Point(229, 12);
+            labelControl1.Margin = new System.Windows.Forms.Padding(425, 462, 425, 462);
+            labelControl1.Name = "labelControl1";
+            labelControl1.Size = new System.Drawing.Size(43, 17);
+            labelControl1.TabIndex = 4;
+            labelControl1.Text = "Sampai";
+            // 
+            // labelControl3
+            // 
+            labelControl3.Location = new System.Drawing.Point(4, 15);
+            labelControl3.Margin = new System.Windows.Forms.Padding(425, 462, 425, 462);
+            labelControl3.Name = "labelControl3";
+            labelControl3.Size = new System.Drawing.Size(24, 17);
+            labelControl3.TabIndex = 4;
+            labelControl3.Text = "Dari";
+            // 
+            // panelControl1
+            // 
+            panelControl1.Controls.Add(gridControl1);
+            panelControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            panelControl1.Location = new System.Drawing.Point(0, 48);
+            panelControl1.Margin = new System.Windows.Forms.Padding(2);
+            panelControl1.Name = "panelControl1";
+            panelControl1.Size = new System.Drawing.Size(750, 344);
+            panelControl1.TabIndex = 2;
+            // 
+            // gridControl1
+            // 
+            gridControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            gridControl1.Location = new System.Drawing.Point(2, 2);
+            gridControl1.MainView = gridView1;
+            gridControl1.Name = "gridControl1";
+            gridControl1.Size = new System.Drawing.Size(746, 340);
+            gridControl1.TabIndex = 0;
+            gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView1 });
+            // 
+            // gridView1
+            // 
+            gridView1.GridControl = gridControl1;
+            gridView1.Name = "gridView1";
+            gridView1.OptionsView.ShowGroupPanel = false;
             // 
             // FrmBiayaBlok
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(750, 392);
-            this.Controls.Add(this.panelControl1);
-            this.Controls.Add(this.sidePanel1);
-            this.Margin = new System.Windows.Forms.Padding(2);
-            this.Name = "FrmBiayaBlok";
-            this.Text = "Analisa Biaya Blok";
-            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
-            this.Load += new System.EventHandler(this.FrmBiayaBlok_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.pivotGridControl1)).EndInit();
-            this.sidePanel1.ResumeLayout(false);
-            this.sidePanel1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.setahun2.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.setahun1.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.panelControl1)).EndInit();
-            this.panelControl1.ResumeLayout(false);
-            this.ResumeLayout(false);
-
+            AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            ClientSize = new System.Drawing.Size(750, 392);
+            Controls.Add(panelControl1);
+            Controls.Add(sidePanel1);
+            Font = new System.Drawing.Font("Segoe UI", 10F);
+            Margin = new System.Windows.Forms.Padding(2);
+            Name = "FrmBiayaBlok";
+            Text = "Analisa Biaya Blok";
+            WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            Load += FrmBiayaBlok_Load;
+            sidePanel1.ResumeLayout(false);
+            sidePanel1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)cmbbulan2.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)cmbbulan1.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)setahun2.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)setahun1.Properties).EndInit();
+            ((System.ComponentModel.ISupportInitialize)panelControl1).EndInit();
+            panelControl1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)gridControl1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridView1).EndInit();
+            ResumeLayout(false);
         }
 
         #endregion
-
-        private DevExpress.XtraPivotGrid.PivotGridControl pivotGridControl1;
         private DevExpress.XtraEditors.SidePanel sidePanel1;
         private DevExpress.XtraEditors.PanelControl panelControl1;
-        private DevExpress.XtraPivotGrid.PivotGridField KAT;
-        private DevExpress.XtraPivotGrid.PivotGridField PEKERJAAN;
-        private DevExpress.XtraPivotGrid.PivotGridField TAHUN;
-        private DevExpress.XtraPivotGrid.PivotGridField BULAN;
-        private DevExpress.XtraPivotGrid.PivotGridField DIV;
-        private DevExpress.XtraPivotGrid.PivotGridField BLOK;
         private DevExpress.XtraEditors.SimpleButton btnproses;
         private DevExpress.XtraEditors.SpinEdit setahun2;
         private DevExpress.XtraEditors.SpinEdit setahun1;
         private DevExpress.XtraEditors.LabelControl labelControl1;
         private DevExpress.XtraEditors.LabelControl labelControl3;
-        private DevExpress.XtraPivotGrid.PivotGridField JUMLAH;
-        private DevExpress.XtraPivotGrid.PivotGridField isSTATUS;
         private DevExpress.XtraEditors.SimpleButton sbexport;
+        private DevExpress.XtraEditors.ComboBoxEdit cmbbulan2;
+        private DevExpress.XtraEditors.ComboBoxEdit cmbbulan1;
+        private DevExpress.XtraGrid.GridControl gridControl1;
+        private DevExpress.XtraGrid.Views.Grid.GridView gridView1;
     }
 }

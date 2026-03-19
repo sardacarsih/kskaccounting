@@ -26,7 +26,7 @@ namespace Accounting.Form
         {
             InitializeComponent();
         }
-        OracleConnection con = new OracleConnection(Acct.OracleConnString);
+        OracleConnection con = new OracleConnection( LoginInfo.OracleConnString);
         private void FrmNotaKredit_Load(object sender, EventArgs e)
         {
             cmbbulan.Properties.Items.AddRange(new[] { "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" });
@@ -46,7 +46,7 @@ namespace Accounting.Form
             var rowhandle = gridView2.FocusedRowHandle;
             var PKODE = gridView2.GetRowCellValue(rowhandle, "KODE").ToString();
             var PPERIODE = (cmbbulan.SelectedIndex + 1).ToString("00") + "/" + setahun.Value;            
-            _ds = JurnalServices.GetNotaKredit(CompanyInfo.INIT, PPERIODE, PKODE);
+            _ds = JurnalServices.GetNotaKredit(CompanyInfo.IDDATA, PPERIODE, PKODE);
             gridControl1.DataSource = _ds.Tables[0];
             gridViewND.Columns[0].Visible = false;
             gridViewND.Columns[1].Visible = false;
@@ -79,9 +79,9 @@ namespace Accounting.Form
             {
                 con.Open();
             }
-            cmd.Parameters.Add(":PIDDATA", OracleDbType.Varchar2, 20).Value = CompanyInfo.INIT;
+            cmd.Parameters.Add(":PIDDATA", OracleDbType.Varchar2, 20).Value =CompanyInfo.IDDATA;
             cmd.Parameters.Add(":PTAHUN", OracleDbType.Int16).Value = PTAHUN;
-            cmd.Parameters.Add(":PIDDATA", OracleDbType.Varchar2, 20).Value = CompanyInfo.INIT;
+            cmd.Parameters.Add(":PIDDATA", OracleDbType.Varchar2, 20).Value =CompanyInfo.IDDATA;
             cmd.Parameters.Add(":PPERIODE", OracleDbType.Varchar2, 7).Value = PPERIODE;
             OracleDataReader dr;
             dr = cmd.ExecuteReader();

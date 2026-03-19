@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Media;
-using System.Security.Authentication;
 using System.Security.Cryptography;
 namespace Accounting
 {
-   
+
     public class PasswordCryptographyPbkdf2
     {
-        private SoundPlayer Player = new SoundPlayer();
         /// <summary>
         /// Get the hash of the password
         /// </summary>
@@ -59,18 +56,11 @@ namespace Accounting
             {
                 if (hashBytes[i + 20] != hash[i])
                 {
-                    //throw new UnauthorizedAccessException();
-                    // Assign the selected file's path to 
-                    // the SoundPlayer object.  
-                    Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\sandi_salah.wav";
-
-                    // Load the .wav file.
-                    Player.Play();
-                    throw new AuthenticationException("Kata sandi anda Salah");
+                    return false;
                 }
             }
 
-            return result;
+            return true;
         }
     }
 }

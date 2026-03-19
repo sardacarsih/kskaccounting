@@ -12,7 +12,7 @@ namespace Accounting.Form
 {
     public partial class FrmMasterDivisi : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
+       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmMasterDivisi()
         {
             InitializeComponent();   
@@ -32,7 +32,7 @@ namespace Accounting.Form
                 CommandType = CommandType.Text
             };
             conn.Open();
-            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 30).Value = CompanyInfo.INIT;
+            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 30).Value =CompanyInfo.IDDATA;
             OracleDataReader dr;
             dr = _command.ExecuteReader();
             DataTable _dt = new DataTable();
@@ -65,7 +65,7 @@ namespace Accounting.Form
                     conn.Open();
                 }
                 _command.Parameters.Add(":p_divisiid", OracleDbType.Varchar2, 30).Value = p_divisiid;
-                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 30).Value = CompanyInfo.INIT;
+                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 30).Value =CompanyInfo.IDDATA;
                 _command.Parameters.Add(":p_kode", OracleDbType.Varchar2, 30).Value = txtkodediv.Text;
                 _command.Parameters.Add(":p_nama", OracleDbType.Varchar2, 30).Value = txtnamadiv.Text.ToUpper();
                 _command.ExecuteReader();               

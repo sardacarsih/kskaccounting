@@ -18,7 +18,7 @@ namespace Accounting.Form
 {
     public partial class FrmMasterBlok : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
+       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmMasterBlok()
         {
             InitializeComponent();   
@@ -40,7 +40,7 @@ namespace Accounting.Form
                 CommandType = CommandType.Text
             };
             conn.Open();
-            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 30).Value = CompanyInfo.INIT;
+            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 30).Value =CompanyInfo.IDDATA;
             OracleDataReader dr;
             dr = _command.ExecuteReader();
             DataTable _dt = new DataTable();
@@ -87,7 +87,7 @@ namespace Accounting.Form
                     conn.Open();
                 }
                 _command.Parameters.Add(":p_blokid", OracleDbType.Varchar2, 30).Value = p_blokid;
-                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 30).Value = CompanyInfo.INIT;
+                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 30).Value =CompanyInfo.IDDATA;
                 _command.Parameters.Add(":p_kode", OracleDbType.Varchar2, 30).Value = txtkodeblok.Text;
                 _command.Parameters.Add(":p_nama", OracleDbType.Varchar2, 30).Value = txtnamablok.Text.ToUpper();
                 _command.Parameters.Add(":p_divid", OracleDbType.Varchar2, 30).Value = lookUpEditdivisi.EditValue;
@@ -100,7 +100,7 @@ namespace Accounting.Form
                 conn.Close();
                 Load_BlokList();
                 Bersihkan();
-                Update_LuasanDivisi(CompanyInfo.INIT);
+                Update_LuasanDivisi(CompanyInfo.IDDATA);
                 XtraMessageBox.Show("Blok Saved Successfully", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 p_blokid = "New";
                 btnenable.Enabled = false;
@@ -154,7 +154,7 @@ namespace Accounting.Form
         }
         private void Load_BlokList()
         {
-           var data = ToolsServices.GetBlokList(CompanyInfo.INIT);
+           var data = ToolsServices.GetBlokList(CompanyInfo.IDDATA);
             gridControl1.DataSource = data;
             gridView1.Columns[0].Visible = false;
             gridView1.Columns[1].Visible = false;
@@ -264,7 +264,7 @@ namespace Accounting.Form
                 var rowhandle = gridView1.FocusedRowHandle;
                 divisi = gridView1.GetRowCellValue(rowhandle, "DIVISI").ToString().ToUpper();
                 blok = gridView1.GetRowCellValue(rowhandle, "BLOK").ToString().ToUpper();
-                var data = ToolsServices.LoadPerkiraanBlok(CompanyInfo.INIT, Acct.TahunMax, divisi, blok);
+                var data = ToolsServices.LoadPerkiraanBlok(CompanyInfo.IDDATA, Acct.TahunMax, divisi, blok);
                 gridControl2.DataSource = data;
                 lblBlok.Text = divisi + " Blok " + blok;
                
@@ -290,7 +290,7 @@ namespace Accounting.Form
 
         private void btnhapus_Click(object sender, EventArgs e)
         {
-            var ada = ToolsServices.CekAkunBlok(CompanyInfo.INIT, Acct.TahunMax, divisi, blok);
+            var ada = ToolsServices.CekAkunBlok(CompanyInfo.IDDATA, Acct.TahunMax, divisi, blok);
             if (ada > 0)
             {
                 XtraMessageBox.Show("Data Blok tidak dapat dihapus, karena telah memiliki daftar perkiraan" , "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -314,7 +314,7 @@ namespace Accounting.Form
             _command.Parameters.Add(":p_BLOKID", OracleDbType.Varchar2, 50).Value = gridView1.GetFocusedRowCellValue("BLOKID").ToString();
             _command.ExecuteReader();
             conn.Close();
-            Update_LuasanDivisi(CompanyInfo.INIT);
+            Update_LuasanDivisi(CompanyInfo.IDDATA);
             Load_BlokList();
             XtraMessageBox.Show(namablok + " Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             
@@ -324,7 +324,7 @@ namespace Accounting.Form
         {
             try
             {
-                var p_IDDATA = CompanyInfo.INIT;
+                var p_IDDATA =CompanyInfo.IDDATA;
                 var p_tahun = Acct.TahunMax;
                 var p_status = cmbstatus.Text;
                 var p_divisiID = lookUpEditdivisi.EditValue.ToString();
@@ -420,7 +420,7 @@ namespace Accounting.Form
         {
             try
             {
-                var p_IDDATA = CompanyInfo.INIT;
+                var p_IDDATA =CompanyInfo.IDDATA;
                 var p_tahun = Acct.TahunMax;
                 var p_status = cmbstatus.Text;
                 var p_divisiID = lookUpEditdivisi.EditValue.ToString();
@@ -451,7 +451,7 @@ namespace Accounting.Form
         {
             try
             {
-                var p_IDDATA = CompanyInfo.INIT;
+                var p_IDDATA =CompanyInfo.IDDATA;
                 var p_tahun = Acct.TahunMax;
                 var p_status = cmbstatus.Text;
                 var p_divisiID = lookUpEditdivisi.EditValue.ToString();
@@ -516,7 +516,7 @@ namespace Accounting.Form
         {
             try
             {
-                var p_IDDATA = CompanyInfo.INIT;
+                var p_IDDATA =CompanyInfo.IDDATA;
                 var p_tahun = Acct.TahunMax;
                 var p_status = cmbstatus.Text;
                 var p_divisiID = lookUpEditdivisi.EditValue.ToString();

@@ -9,7 +9,7 @@ namespace Accounting.Form
 {
     public partial class FrmCompanyProfile : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new(Acct.OracleConnString);
+       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmCompanyProfile()
         {
             InitializeComponent();
@@ -19,7 +19,7 @@ namespace Accounting.Form
         {
            
             lblnamapt.Text = CompanyInfo.NAMAPT;
-            lblIDDATA.Text = CompanyInfo.INIT;
+            lblIDDATA.Text =CompanyInfo.IDDATA;
             txtwilayah.Text = CompanyInfo.WILAYAH;
             if (CompanyInfo.JENIS_AKUNTING == "PUSAT")
             {

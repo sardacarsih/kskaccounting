@@ -9,7 +9,7 @@ namespace Accounting.DataLayer
 {
     public class LaporanRepository : ILaporanRepository
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
 
         public Decimal Generate_LabaRugi(string piddata, int pbulan, int ptahun, string userid, string jenisakunting)
         {
@@ -317,7 +317,7 @@ namespace Accounting.DataLayer
         {
             List<AccountSummary> accountDataList = new();
 
-            using (OracleConnection connection = new(Acct.OracleConnString))
+            using (OracleConnection connection = new( LoginInfo.OracleConnString))
             {
                 connection.Open();
 

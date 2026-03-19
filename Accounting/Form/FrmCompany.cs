@@ -12,7 +12,7 @@ namespace Accounting.Form
 {
     public partial class FrmCompany : DevExpress.XtraEditors.XtraForm
     {
-        private readonly OracleConnection conn = new(Acct.OracleConnString);
+        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         
         public FrmCompany()
         {
@@ -82,7 +82,7 @@ namespace Accounting.Form
                 {
                     conn.Open();
                 }
-                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 30).Value = CompanyInfo.INIT;
+                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 30).Value =CompanyInfo.IDDATA;
                 _command.Parameters.Add(":apps", OracleDbType.Varchar2, 30).Value = "GL";
                 _command.Parameters.Add(":userid", OracleDbType.Varchar2, 30).Value = TXTIDDATA.Text.ToLower();
                 _command.Parameters.Add(":pass", OracleDbType.Varchar2, 100).Value = savePasswordHash;
@@ -282,23 +282,27 @@ namespace Accounting.Form
                     XtraMessageBox.Show("Semua Informasi Wajib Diisi", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
-                string insertpt = "insert into master_pt_hdr values(:pidpt,:pnamapt,:pgroup)";
+            string insertpt = "INSERT INTO master_pt_hdr (IDPT, NAMAPT, IDGROUP) VALUES (:pidpt, :pnamapt, :pgroup)";
 
-                OracleCommand _command = new OracleCommand(insertpt, conn)
-                {
-                    CommandType = CommandType.Text
-                };
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
+            using (OracleCommand _command = new(insertpt, conn))
+            {
+                _command.CommandType = CommandType.Text;
+
                 _command.Parameters.Add(":pidpt", OracleDbType.Varchar2, 30).Value = TXTKODEPT.Text;
                 _command.Parameters.Add(":pnamapt", OracleDbType.Varchar2, 50).Value = TXTNAMAPT.Text;
                 _command.Parameters.Add(":pgroup", OracleDbType.Varchar2, 30).Value = CMBGROUP.Text;
-                _command.ExecuteReader();
+
+                if (conn.State != ConnectionState.Open)
+                    conn.Open();
+
+                _command.ExecuteNonQuery(); // Use ExecuteNonQuery instead of ExecuteReader for INSERT
+
                 conn.Close();
-                Load_Perusahaan();
-                XtraMessageBox.Show(TXTNAMAPT.Text + " diSimpan", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+
+            Load_Perusahaan();
+            XtraMessageBox.Show(TXTNAMAPT.Text + " disimpan", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
 
             }
             catch (Exception ex)

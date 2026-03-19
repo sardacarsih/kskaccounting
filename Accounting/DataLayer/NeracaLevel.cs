@@ -13,7 +13,7 @@ public class NeracaLevel
     public List<ACCT_KATEGORI> GetLapNeraca(int month, string dataId, int year)
     {
         List<ACCT_KATEGORI> results = new ();
-        using (OracleConnection connection = new (Acct.OracleConnString))
+        using (OracleConnection connection = new ( LoginInfo.OracleConnString))
         {
             connection.Open();
 
@@ -52,7 +52,7 @@ public class NeracaLevel
     }
     private List<LaporanNeraca> GetLapNeracaAkun(string kategori, string dataId, int month, int year)
     {
-        using OracleConnection connection = new(Acct.OracleConnString);
+        using OracleConnection connection = new( LoginInfo.OracleConnString);
 
         string query = @"SELECT K.KODE,
                        'NERACA' CAT1,

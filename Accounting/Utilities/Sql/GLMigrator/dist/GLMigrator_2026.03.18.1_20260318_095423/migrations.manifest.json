@@ -1,0 +1,22 @@
+{
+  "packageName": "GL Migrator",
+  "version": "2026.03.18.1",
+  "migrations": [
+    {
+      "id": "20260318_001_jurnal_index_tuning",
+      "order": 1,
+      "description": "Add B-Tree indexes for FrmJurnal period/search performance.",
+      "script": "migrations/V20260318_001__jurnal_index_tuning.sql",
+      "rollbackScript": "migrations/R20260318_001__jurnal_index_tuning.sql",
+      "checkScript": "migrations/C20260318_001__explain_plan_check.sql"
+    },
+    {
+      "id": "20260318_002_jurnal_oracle_text",
+      "order": 2,
+      "description": "Enable Oracle Text CONTEXT indexes for NOJURNAL and KETERANGAN.",
+      "script": "migrations/V20260318_002__jurnal_oracle_text.sql",
+      "rollbackScript": "migrations/R20260318_002__jurnal_oracle_text.sql",
+      "checkScript": "migrations/C20260318_002__oracle_text_explain_check.sql"
+    }
+  ]
+}
