@@ -72,6 +72,7 @@ Desktop.ini
 .DS_Store
 
 ## Local environment/config overrides
+Accounting/Utilities/config.json
 *.local.json
 *.local.config
 appsettings.*.local.json
