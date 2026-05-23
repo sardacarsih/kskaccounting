@@ -1,4 +1,4 @@
-﻿
+
 namespace Accounting.Form
 {
     partial class FrmJurnal
@@ -54,7 +54,6 @@ namespace Accounting.Form
             repositoryItemGridLookUpEdit1View = new DevExpress.XtraGrid.Views.Grid.GridView();
             sidePanel4 = new DevExpress.XtraEditors.SidePanel();
             leperiode = new DevExpress.XtraEditors.LookUpEdit();
-            labelControlPeriode = new DevExpress.XtraEditors.LabelControl();
             labelControl1 = new DevExpress.XtraEditors.LabelControl();
             jurnalbalik = new DevExpress.XtraEditors.CheckEdit();
             NoJurnaltxt = new DevExpress.XtraEditors.TextEdit();
@@ -177,6 +176,7 @@ namespace Accounting.Form
             gridView_inv_header = new DevExpress.XtraGrid.Views.Grid.GridView();
             LBLTOTALTRANSAKSI = new DevExpress.XtraEditors.LabelControl();
             groupControl3 = new DevExpress.XtraEditors.GroupControl();
+            checkEditInvBaru = new DevExpress.XtraEditors.CheckEdit();
             checkEditlk = new DevExpress.XtraEditors.CheckEdit();
             checkEditlt = new DevExpress.XtraEditors.CheckEdit();
             sbexportinv = new DevExpress.XtraEditors.SimpleButton();
@@ -297,6 +297,7 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)gridView_inv_header).BeginInit();
             ((System.ComponentModel.ISupportInitialize)groupControl3).BeginInit();
             groupControl3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)checkEditInvBaru.Properties).BeginInit();
             ((System.ComponentModel.ISupportInitialize)checkEditlk.Properties).BeginInit();
             ((System.ComponentModel.ISupportInitialize)checkEditlt.Properties).BeginInit();
             ((System.ComponentModel.ISupportInitialize)GC_INV).BeginInit();
@@ -357,8 +358,6 @@ namespace Accounting.Form
             GCJurnal.Size = new System.Drawing.Size(1382, 627);
             GCJurnal.TabIndex = 2;
             GCJurnal.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { JDgridView });
-            GCJurnal.DragDrop += GCJurnal_DragDrop;
-            GCJurnal.DragOver += GCJurnal_DragOver;
             // 
             // JDgridView
             // 
@@ -380,8 +379,6 @@ namespace Accounting.Form
             JDgridView.InitNewRow += JDgridView_InitNewRow;
             JDgridView.CustomColumnDisplayText += JDgridView_CustomColumnDisplayText;
             JDgridView.KeyDown += JDgridView_KeyDown;
-            JDgridView.MouseDown += JDgridView_MouseDown;
-            JDgridView.MouseMove += JDgridView_MouseMove;
             JDgridView.RowCountChanged += JDgridView_RowCountChanged;
             // 
             // NO
@@ -537,7 +534,6 @@ namespace Accounting.Form
             // sidePanel4
             // 
             sidePanel4.Controls.Add(leperiode);
-            sidePanel4.Controls.Add(labelControlPeriode);
             sidePanel4.Controls.Add(labelControl1);
             sidePanel4.Controls.Add(jurnalbalik);
             sidePanel4.Controls.Add(NoJurnaltxt);
@@ -559,14 +555,6 @@ namespace Accounting.Form
             leperiode.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
             leperiode.Size = new System.Drawing.Size(89, 24);
             leperiode.TabIndex = 13;
-            // 
-            // labelControlPeriode
-            // 
-            labelControlPeriode.Location = new System.Drawing.Point(247, 9);
-            labelControlPeriode.Name = "labelControlPeriode";
-            labelControlPeriode.Size = new System.Drawing.Size(45, 17);
-            labelControlPeriode.TabIndex = 14;
-            labelControlPeriode.Text = "Periode";
             // 
             // labelControl1
             // 
@@ -1963,13 +1951,23 @@ namespace Accounting.Form
             // 
             // groupControl3
             // 
+            groupControl3.Controls.Add(checkEditInvBaru);
             groupControl3.Controls.Add(checkEditlk);
             groupControl3.Controls.Add(checkEditlt);
             groupControl3.Location = new System.Drawing.Point(532, 0);
             groupControl3.Name = "groupControl3";
-            groupControl3.Size = new System.Drawing.Size(107, 55);
+            groupControl3.Size = new System.Drawing.Size(200, 55);
             groupControl3.TabIndex = 37;
             groupControl3.Text = "Filter by";
+            // 
+            // checkEditInvBaru
+            // 
+            checkEditInvBaru.Location = new System.Drawing.Point(102, 28);
+            checkEditInvBaru.Name = "checkEditInvBaru";
+            checkEditInvBaru.Properties.Caption = "Inv Baru";
+            checkEditInvBaru.Size = new System.Drawing.Size(84, 21);
+            checkEditInvBaru.TabIndex = 1;
+            checkEditInvBaru.CheckedChanged += checkEditInvBaru_CheckedChanged;
             // 
             // checkEditlk
             // 
@@ -1977,7 +1975,7 @@ namespace Accounting.Form
             checkEditlk.Name = "checkEditlk";
             checkEditlk.Properties.Caption = "LK";
             checkEditlk.Size = new System.Drawing.Size(45, 21);
-            checkEditlk.TabIndex = 0;
+            checkEditlk.TabIndex = 2;
             checkEditlk.CheckedChanged += checkEditlk_CheckedChanged;
             // 
             // checkEditlt
@@ -2090,8 +2088,8 @@ namespace Accounting.Form
             // FrmJurnal
             // 
             Appearance.Options.UseFont = true;
-            AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             ClientSize = new System.Drawing.Size(1384, 717);
             Controls.Add(TABJurnal);
             Font = new System.Drawing.Font("Segoe UI", 9.75F);
@@ -2216,6 +2214,7 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)gridView_inv_header).EndInit();
             ((System.ComponentModel.ISupportInitialize)groupControl3).EndInit();
             groupControl3.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)checkEditInvBaru.Properties).EndInit();
             ((System.ComponentModel.ISupportInitialize)checkEditlk.Properties).EndInit();
             ((System.ComponentModel.ISupportInitialize)checkEditlt.Properties).EndInit();
             ((System.ComponentModel.ISupportInitialize)GC_INV).EndInit();
@@ -2302,7 +2301,6 @@ namespace Accounting.Form
         private DevExpress.XtraEditors.SimpleButton sbfilterexport;
         private DevExpress.XtraEditors.SimpleButton sbfilterclear; 
         private DevExpress.XtraGrid.Views.Grid.GridView repositoryItemSearchLookUpEdit1View;
-        private DevExpress.XtraEditors.LabelControl labelControlPeriode;
         private DevExpress.XtraTab.XtraTabPage TABImportJurnal;
         private DevExpress.XtraEditors.SpinEdit sampaitahun;
         private DevExpress.XtraEditors.SpinEdit daritahun;
@@ -2342,6 +2340,7 @@ namespace Accounting.Form
         private DevExpress.XtraEditors.CheckEdit checkEditBANK;
         private DevExpress.XtraEditors.CheckEdit checkEditKAS;
         private DevExpress.XtraEditors.GroupControl groupControl3;
+        private DevExpress.XtraEditors.CheckEdit checkEditInvBaru;
         private DevExpress.XtraEditors.CheckEdit checkEditlk;
         private DevExpress.XtraEditors.CheckEdit checkEditlt;
         private DevExpress.XtraEditors.LabelControl LBLTOTALTRANSAKSI;

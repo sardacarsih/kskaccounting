@@ -3,6 +3,7 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using Oracle.ManagedDataAccess.Client;
+using Accounting.Services;
 using System;
 using System.Configuration;
 using System.Data;
@@ -20,7 +21,11 @@ namespace Accounting.Form
         }
         private void FrmCompany_Load(object sender, EventArgs e)
         {         
-           
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageCompanyMaster))
+            {
+                Close();
+                return;
+            }
             Load_Perusahaan();
             Load_IDDATA();
             Load_GroupPT();
@@ -62,6 +67,10 @@ namespace Accounting.Form
 
         private void btnsimpan_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageCompanyMaster))
+            {
+                return;
+            }
             try
             {
                 string pwd = TXTWILAYAH.Text;
@@ -150,6 +159,10 @@ namespace Accounting.Form
         }
         private void btnhapus_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageCompanyMaster))
+            {
+                return;
+            }
             string PIDDATA = "";
             try
             {
@@ -250,6 +263,10 @@ namespace Accounting.Form
 
         private void simpleButton1_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageCompanyMaster))
+            {
+                return;
+            }
             if (this.gridView2.GetFocusedRowCellValue("IDDATA") == null)
                 return;
             var rowhandle = gridView2.FocusedRowHandle;
@@ -275,6 +292,10 @@ namespace Accounting.Form
 
         private void SBSIMPAN_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageCompanyMaster))
+            {
+                return;
+            }
             try
             {
                 if (string.IsNullOrEmpty(CMBGROUP.Text)||string.IsNullOrEmpty(TXTKODEPT.Text)||string.IsNullOrEmpty(TXTNAMAPT.Text))
@@ -324,6 +345,10 @@ namespace Accounting.Form
 
         private void SBHAPUS_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageCompanyMaster))
+            {
+                return;
+            }
             string P_PT = "";
             try
             {
@@ -368,6 +393,10 @@ namespace Accounting.Form
 
         private void btnsimpan_Click_1(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageCompanyMaster))
+            {
+                return;
+            }
             try
             {
                 if (TXTIDDATA.Text.Length > 20)

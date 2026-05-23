@@ -16,7 +16,7 @@ namespace Accounting.DataLayer
         public DataTable ExportJurnalMonthly(string piddata, string periode)
         {
             string query = "select nojurnal,tanggal,baris,kode,rekening,debet,kredit,keterangan,Posted,periode from accT_jurnal_dtl "+
-                            "where iddata =:iddata and periode =:periode order by nojurnal, TANGGAL, baris asc ";
+                            "where iddata =:iddata and periode =:periode order by nojurnal asc, baris asc ";
                 using (OracleCommand _command = new OracleCommand(query, conn)
                 {
                     CommandType = CommandType.Text

@@ -1,0 +1,10 @@
+C:\Users\dharyadi\.nuget\packages\microsoft.codeanalysis.netanalyzers\8.0.0\buildTransitive\Microsoft.CodeAnalysis.NetAnalyzers.targets(648,5): warning : The .NET SDK has newer analyzers with version '9.0.0' than what version '8.0.0' of 'Microsoft.CodeAnalysis.NetAnalyzers' package provides. Update or remove this package reference. You can suppress this warning by setting the MSBuild property '_SkipUpgradeNetAnalyzersNuGetWarning' to 'true'. [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+  Accounting -> D:\VSCODE\Project\GL_MVC_Repository\Accounting\bin\Debug\net8.0-windows\Accounting.dll
+
+Build succeeded.
+
+C:\Users\dharyadi\.nuget\packages\microsoft.codeanalysis.netanalyzers\8.0.0\buildTransitive\Microsoft.CodeAnalysis.NetAnalyzers.targets(648,5): warning : The .NET SDK has newer analyzers with version '9.0.0' than what version '8.0.0' of 'Microsoft.CodeAnalysis.NetAnalyzers' package provides. Update or remove this package reference. You can suppress this warning by setting the MSBuild property '_SkipUpgradeNetAnalyzersNuGetWarning' to 'true'. [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.49

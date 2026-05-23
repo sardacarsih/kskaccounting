@@ -66,6 +66,22 @@ namespace Accounting.BusinessLayer
 
     public sealed class JurnalDaftarCariService
     {
+        private static List<JurnalDetailDTO> OrderDetailRows(IEnumerable<JurnalDetailDTO> rows)
+        {
+            return rows
+                .OrderBy(row => row.NoJurnal)
+                .ThenBy(row => row.BARIS)
+                .ToList();
+        }
+
+        private static List<JurnalHeaderDTO> OrderHeaderRows(IEnumerable<JurnalHeaderDTO> rows)
+        {
+            return rows
+                .OrderBy(row => row.NoJurnal)
+                .ThenBy(row => row.Tanggal)
+                .ToList();
+        }
+
         public MonthlySearchResult SearchMonthly(IJurnalQueryRepository repository, MonthlySearchRequest request)
         {
             if (!request.HasFilter)
@@ -76,16 +92,16 @@ namespace Accounting.BusinessLayer
                 };
             }
 
-            List<JurnalDetailDTO> detailRows = repository.SearchJurnal_Bulan(
+            List<JurnalDetailDTO> detailRows = OrderDetailRows(repository.SearchJurnal_Bulan(
                 request.IdData,
                 request.Periode,
                 request.NoJurnal.ToLower(),
                 request.Tanggal,
                 request.Kode.ToLower(),
                 request.Keterangan.ToLower(),
-                request.Jumlah).ToList();
+                request.Jumlah));
 
-            List<JurnalHeaderDTO> headerRows = detailRows
+            List<JurnalHeaderDTO> headerRows = OrderHeaderRows(detailRows
                 .GroupBy(group => new { group.REFFID, group.HIDREFF, group.NoJurnal, group.Tanggal })
                 .Select(group => new JurnalHeaderDTO
                 {
@@ -94,7 +110,7 @@ namespace Accounting.BusinessLayer
                     NoJurnal = group.Key.NoJurnal,
                     Tanggal = group.Key.Tanggal
                 })
-                .ToList();
+                .ToList());
 
             return new MonthlySearchResult
             {
@@ -121,7 +137,7 @@ namespace Accounting.BusinessLayer
                 };
             }
 
-            List<JurnalDetailDTO> detailRows = repository.SearchJurnal(
+            List<JurnalDetailDTO> detailRows = OrderDetailRows(repository.SearchJurnal(
                 request.IdData,
                 dariTahunBulan,
                 sampaiTahunBulan,
@@ -129,7 +145,7 @@ namespace Accounting.BusinessLayer
                 request.Tanggal,
                 request.Kode.ToLower(),
                 request.Keterangan.ToLower(),
-                request.Jumlah).ToList();
+                request.Jumlah));
 
             List<string> periodes = detailRows.Select(row => row.Periode).Distinct().OrderBy(row => row).ToList();
             return new YearlySearchResult
@@ -142,18 +158,18 @@ namespace Accounting.BusinessLayer
 
         public List<JurnalDetailDTO> FilterDetailRowsByHeaderId(IEnumerable<JurnalDetailDTO> rows, double jurnalId)
         {
-            return rows.Where(row => row.REFFID == jurnalId).ToList();
+            return OrderDetailRows(rows.Where(row => row.REFFID == jurnalId));
         }
 
         public List<JurnalDetailDTO> BuildMonthlyExportRows(bool exportLengkap, List<JurnalDetailDTO> detailRows, IEnumerable<JurnalDetailDTO> periodeRows, IEnumerable<JurnalHeaderDTO> filteredHeaders)
         {
             if (!exportLengkap)
             {
-                return detailRows;
+                return OrderDetailRows(detailRows);
             }
 
             HashSet<double> headerIds = filteredHeaders.Select(header => header.JURNALID).ToHashSet();
-            return periodeRows.Where(detail => headerIds.Contains(detail.REFFID)).ToList();
+            return OrderDetailRows(periodeRows.Where(detail => headerIds.Contains(detail.REFFID)));
         }
 
         public YearlyExportResult BuildYearlyExportRows(IJurnalQueryRepository repository, YearlyExportRequest request)
@@ -171,7 +187,7 @@ namespace Accounting.BusinessLayer
             {
                 return new YearlyExportResult
                 {
-                    ExportRows = exportRows.ToList(),
+                    ExportRows = OrderDetailRows(exportRows),
                     ReffIds = reffIds
                 };
             }
@@ -185,7 +201,7 @@ namespace Accounting.BusinessLayer
                 };
             }
 
-            List<JurnalDetailDTO> lengkapRows = repository.GetJurnalLengkap(reffIds).ToList();
+            List<JurnalDetailDTO> lengkapRows = OrderDetailRows(repository.GetJurnalLengkap(reffIds));
             return new YearlyExportResult
             {
                 IsAllowed = true,

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -7,6 +8,8 @@ namespace GLMigrator.Cli;
 
 internal static class Program
 {
+    private static readonly EmbeddedAssetStore AssetStore = EmbeddedAssetStore.Create();
+
     private static int Main(string[] args)
     {
         try
@@ -18,10 +21,12 @@ internal static class Program
                 return 0;
             }
 
+            options.Connection = ConnectionResolver.Resolve(options);
+
             EnsureSqlPlusAvailable();
 
             Directory.CreateDirectory(options.LogDirectory);
-            Manifest manifest = LoadManifest(options.ManifestPath);
+            Manifest manifest = LoadManifest(options);
             EnsureHistoryTable(options);
 
             switch (options.Mode)
@@ -56,8 +61,8 @@ internal static class Program
         Dictionary<string, AppliedMigration> applied = GetAppliedMigrations(options);
         foreach (MigrationItem migration in manifest.Migrations.OrderBy(m => m.Order))
         {
-            string scriptPath = ResolvePath(options.RootDirectory, migration.Script);
-            string checksum = ComputeSha256(scriptPath);
+            AssetContent script = ResolveAsset(options, migration.Script);
+            string checksum = ComputeSha256(script.Content);
 
             if (applied.TryGetValue(migration.Id, out AppliedMigration? existing))
             {
@@ -73,7 +78,7 @@ internal static class Program
 
             Console.WriteLine($"[APPLY] {migration.Id} -> {migration.Script}");
             Stopwatch sw = Stopwatch.StartNew();
-            ExecuteSqlFile(options, scriptPath, $"up_{migration.Id}");
+            ExecuteSqlAsset(options, script, $"up_{migration.Id}");
             sw.Stop();
 
             RegisterMigration(options, migration, checksum, sw.ElapsedMilliseconds);
@@ -100,9 +105,9 @@ internal static class Program
 
         foreach (MigrationItem migration in candidates)
         {
-            string rollbackPath = ResolvePath(options.RootDirectory, migration.RollbackScript!);
+            AssetContent rollback = ResolveAsset(options, migration.RollbackScript!);
             Console.WriteLine($"[ROLLBACK] {migration.Id} -> {migration.RollbackScript}");
-            ExecuteSqlFile(options, rollbackPath, $"down_{migration.Id}");
+            ExecuteSqlAsset(options, rollback, $"down_{migration.Id}");
             RemoveMigrationHistory(options, migration.Id);
             Console.WriteLine($"[DONE]     {migration.Id}");
         }
@@ -135,9 +140,9 @@ internal static class Program
                 continue;
             }
 
-            string checkPath = ResolvePath(options.RootDirectory, migration.CheckScript!);
+            AssetContent check = ResolveAsset(options, migration.CheckScript!);
             Console.WriteLine($"[VERIFY] {migration.Id} -> {migration.CheckScript}");
-            ExecuteSqlFile(options, checkPath, $"verify_{migration.Id}");
+            ExecuteSqlAsset(options, check, $"verify_{migration.Id}");
         }
 
         Console.WriteLine("[OK] Verification scripts completed.");
@@ -146,7 +151,7 @@ internal static class Program
     private static void EnsureHistoryTable(AppOptions options)
     {
         Console.WriteLine("[INFO] Ensuring GL_MIGRATION_HISTORY exists...");
-        ExecuteSqlFile(options, options.BootstrapScriptPath, "bootstrap");
+        ExecuteSqlAsset(options, ResolveBootstrapAsset(options), "bootstrap");
     }
 
     private static Dictionary<string, AppliedMigration> GetAppliedMigrations(AppOptions options)
@@ -231,15 +236,19 @@ EXIT
 
     private static SqlExecutionResult ExecuteSqlInline(AppOptions options, string sql, string logPrefix)
     {
-        string tempSqlPath = Path.Combine(Path.GetTempPath(), $"glmigrator_inline_{Guid.NewGuid():N}.sql");
-        File.WriteAllText(tempSqlPath, sql, Encoding.ASCII);
+        return ExecuteSqlAsset(options, AssetContent.FromText($"inline/{logPrefix}.sql", sql), logPrefix);
+    }
+
+    private static SqlExecutionResult ExecuteSqlAsset(AppOptions options, AssetContent asset, string logPrefix)
+    {
+        string tempFilePath = WriteAssetToTempFile(asset);
         try
         {
-            return ExecuteSqlFile(options, tempSqlPath, logPrefix);
+            return ExecuteSqlFile(options, tempFilePath, logPrefix);
         }
         finally
         {
-            TryDeleteFile(tempSqlPath);
+            TryDeleteFile(tempFilePath);
         }
     }
 
@@ -302,15 +311,26 @@ EXIT
         }
     }
 
-    private static Manifest LoadManifest(string manifestPath)
+    private static Manifest LoadManifest(AppOptions options)
     {
-        string fullPath = Path.GetFullPath(manifestPath);
-        if (!File.Exists(fullPath))
+        if (!string.IsNullOrWhiteSpace(options.ManifestPathOverride))
         {
-            throw new FileNotFoundException("Manifest not found.", fullPath);
+            string fullPath = Path.GetFullPath(options.ManifestPathOverride);
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException("Manifest not found.", fullPath);
+            }
+
+            string externalJson = File.ReadAllText(fullPath, Encoding.UTF8);
+            return DeserializeManifest(externalJson, fullPath);
         }
 
-        string json = File.ReadAllText(fullPath, Encoding.UTF8);
+        AssetContent manifestAsset = AssetStore.GetRequired("migrations.manifest.json");
+        return DeserializeManifest(manifestAsset.ReadAsString(), manifestAsset.DisplayName);
+    }
+
+    private static Manifest DeserializeManifest(string json, string displayName)
+    {
         Manifest? manifest = JsonSerializer.Deserialize<Manifest>(json, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -318,28 +338,61 @@ EXIT
 
         if (manifest is null)
         {
-            throw new InvalidOperationException("Failed to parse manifest.");
+            throw new InvalidOperationException($"Failed to parse manifest: {displayName}");
         }
 
         manifest.Migrations ??= [];
         return manifest;
     }
 
-    private static string ResolvePath(string rootDirectory, string path)
+    private static AssetContent ResolveBootstrapAsset(AppOptions options)
     {
-        if (Path.IsPathRooted(path))
+        if (!string.IsNullOrWhiteSpace(options.BootstrapScriptPathOverride))
         {
-            return Path.GetFullPath(path);
+            string path = Path.GetFullPath(options.BootstrapScriptPathOverride);
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException("Bootstrap SQL not found.", path);
+            }
+
+            return AssetContent.FromFile(path);
         }
 
-        return Path.GetFullPath(Path.Combine(rootDirectory, path));
+        return AssetStore.GetRequired("000_bootstrap_gl_migration_history.sql");
     }
 
-    private static string ComputeSha256(string filePath)
+    private static AssetContent ResolveAsset(AppOptions options, string relativePath)
     {
-        using SHA256 sha = SHA256.Create();
-        using FileStream stream = File.OpenRead(filePath);
-        byte[] hash = sha.ComputeHash(stream);
+        if (!string.IsNullOrWhiteSpace(options.RootDirectoryOverride))
+        {
+            string candidate = Path.GetFullPath(Path.Combine(options.RootDirectoryOverride, relativePath));
+            if (!File.Exists(candidate))
+            {
+                throw new FileNotFoundException("Migration file not found.", candidate);
+            }
+
+            return AssetContent.FromFile(candidate);
+        }
+
+        return AssetStore.GetRequired(relativePath);
+    }
+
+    private static string WriteAssetToTempFile(AssetContent asset)
+    {
+        string extension = Path.GetExtension(asset.DisplayName);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = ".sql";
+        }
+
+        string tempFilePath = Path.Combine(Path.GetTempPath(), $"glmigrator_asset_{Guid.NewGuid():N}{extension}");
+        File.WriteAllBytes(tempFilePath, asset.Content);
+        return tempFilePath;
+    }
+
+    private static string ComputeSha256(byte[] content)
+    {
+        byte[] hash = SHA256.HashData(content);
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
@@ -404,6 +457,184 @@ EXIT
     private sealed record SqlExecutionResult(string Output, string LogPath);
 }
 
+internal static class ConnectionResolver
+{
+    private const string ActiveServerKeyEnvironmentVariable = "ACCOUNTING_DB_ACTIVE_SERVER_KEY";
+    private const string HostEnvironmentVariable = "ACCOUNTING_DB_HOST";
+    private const string PortEnvironmentVariable = "ACCOUNTING_DB_PORT";
+    private const string ServiceNameEnvironmentVariable = "ACCOUNTING_DB_SERVICE_NAME";
+    private const string UserIdEnvironmentVariable = "ACCOUNTING_DB_USER_ID";
+    private const string PasswordEnvironmentVariable = "ACCOUNTING_DB_PASSWORD";
+
+    public static string Resolve(AppOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(options.Connection))
+        {
+            return options.Connection.Trim();
+        }
+
+        string configPath = ResolveConfigPath(options.ConfigPathOverride);
+        AppConfig config = LoadConfig(configPath);
+
+        string activeServerKey = ResolveActiveServerKey(config, options.ServerKeyOverride);
+        OracleServerConfig? serverConfig = ResolveServerConfig(config, activeServerKey);
+        if (serverConfig is null && !config.AllowEnvironmentFallback)
+        {
+            throw new InvalidOperationException($"Server key '{activeServerKey}' was not found in config '{configPath}'.");
+        }
+
+        string dbHost = serverConfig?.Host?.Trim() ?? string.Empty;
+        string dbServiceName = serverConfig?.ServiceName?.Trim() ?? string.Empty;
+        string dbUserId = serverConfig?.UserId?.Trim() ?? string.Empty;
+        string dbPassword = serverConfig?.Password ?? string.Empty;
+        int dbPort = serverConfig?.Port ?? 0;
+
+        if (config.AllowEnvironmentFallback)
+        {
+            dbHost = GetConfigValueOrFallback(dbHost, HostEnvironmentVariable);
+            dbServiceName = GetConfigValueOrFallback(dbServiceName, ServiceNameEnvironmentVariable);
+            dbUserId = GetConfigValueOrFallback(dbUserId, UserIdEnvironmentVariable);
+            dbPassword = GetConfigValueOrFallback(dbPassword, PasswordEnvironmentVariable);
+
+            if (dbPort <= 0)
+            {
+                string rawPort = GetEnvironmentValue(PortEnvironmentVariable);
+                if (!string.IsNullOrWhiteSpace(rawPort))
+                {
+                    if (!int.TryParse(rawPort, out dbPort) || dbPort <= 0)
+                    {
+                        throw new InvalidOperationException($"Environment variable {PortEnvironmentVariable} is invalid: '{rawPort}'");
+                    }
+                }
+            }
+        }
+
+        List<string> missingFields = [];
+        if (string.IsNullOrWhiteSpace(dbHost)) { missingFields.Add("Host"); }
+        if (dbPort <= 0) { missingFields.Add("Port"); }
+        if (string.IsNullOrWhiteSpace(dbServiceName)) { missingFields.Add("ServiceName"); }
+        if (string.IsNullOrWhiteSpace(dbUserId)) { missingFields.Add("UserId"); }
+        if (string.IsNullOrWhiteSpace(dbPassword)) { missingFields.Add("Password"); }
+
+        if (missingFields.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Server configuration '{activeServerKey}' is incomplete. Missing: {string.Join(", ", missingFields)}");
+        }
+
+        return $"{dbUserId}/{dbPassword}@//{dbHost}:{dbPort}/{dbServiceName}";
+    }
+
+    private static string ResolveConfigPath(string configPathOverride)
+    {
+        if (!string.IsNullOrWhiteSpace(configPathOverride))
+        {
+            string explicitPath = Path.GetFullPath(configPathOverride);
+            if (!File.Exists(explicitPath))
+            {
+                throw new FileNotFoundException("Config file not found.", explicitPath);
+            }
+
+            return explicitPath;
+        }
+
+        string[] candidates =
+        [
+            Path.Combine(AppContext.BaseDirectory, "config.json"),
+            Path.Combine(AppContext.BaseDirectory, "Utilities", "config.json"),
+            Path.Combine(AppContext.BaseDirectory, "Accounting", "Utilities", "config.json"),
+            Path.Combine(Environment.CurrentDirectory, "config.json"),
+            Path.Combine(Environment.CurrentDirectory, "Utilities", "config.json"),
+            Path.Combine(Environment.CurrentDirectory, "Accounting", "Utilities", "config.json")
+        ];
+
+        foreach (string candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            string fullPath = Path.GetFullPath(candidate);
+            if (File.Exists(fullPath))
+            {
+                return fullPath;
+            }
+        }
+
+        throw new FileNotFoundException(
+            "No config.json file was found. Use --config <path> or --connection <USER/PASS@//HOST:PORT/SERVICE>.");
+    }
+
+    private static AppConfig LoadConfig(string configPath)
+    {
+        string json = string.Join(
+            Environment.NewLine,
+            File.ReadLines(configPath).Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal)));
+
+        AppConfig? config = JsonSerializer.Deserialize<AppConfig>(
+            json,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+        return config ?? throw new InvalidOperationException($"Unable to parse config file '{configPath}'.");
+    }
+
+    private static string ResolveActiveServerKey(AppConfig config, string serverKeyOverride)
+    {
+        if (!string.IsNullOrWhiteSpace(serverKeyOverride))
+        {
+            return serverKeyOverride.Trim();
+        }
+
+        if (config.AllowEnvironmentFallback)
+        {
+            string environmentServerKey = GetEnvironmentValue(ActiveServerKeyEnvironmentVariable);
+            if (!string.IsNullOrWhiteSpace(environmentServerKey))
+            {
+                return environmentServerKey;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(config.ActiveServerKey))
+        {
+            return config.ActiveServerKey.Trim();
+        }
+
+        throw new InvalidOperationException("ActiveServerKey is missing in config and no --server-key override was provided.");
+    }
+
+    private static OracleServerConfig? ResolveServerConfig(AppConfig config, string activeServerKey)
+    {
+        if (config.Servers is null)
+        {
+            return null;
+        }
+
+        foreach ((string key, OracleServerConfig value) in config.Servers)
+        {
+            if (string.Equals(key, activeServerKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    private static string GetConfigValueOrFallback(string currentValue, string environmentVariableName)
+    {
+        if (!string.IsNullOrWhiteSpace(currentValue))
+        {
+            return currentValue.Trim();
+        }
+
+        return GetEnvironmentValue(environmentVariableName);
+    }
+
+    private static string GetEnvironmentValue(string environmentVariableName)
+    {
+        return Environment.GetEnvironmentVariable(environmentVariableName)?.Trim() ?? string.Empty;
+    }
+}
+
 internal enum MigrationMode
 {
     Up,
@@ -414,27 +645,35 @@ internal enum MigrationMode
 
 internal sealed class AppOptions
 {
-    public string Connection { get; private init; } = string.Empty;
+    public string Connection { get; set; } = string.Empty;
     public MigrationMode Mode { get; private init; } = MigrationMode.Up;
     public int Steps { get; private init; } = 1;
-    public string RootDirectory { get; private init; } = AppContext.BaseDirectory;
-    public string ManifestPath { get; private init; } = string.Empty;
-    public string BootstrapScriptPath { get; private init; } = string.Empty;
+    public string RootDirectoryOverride { get; private init; } = string.Empty;
+    public string ManifestPathOverride { get; private init; } = string.Empty;
+    public string BootstrapScriptPathOverride { get; private init; } = string.Empty;
     public string LogDirectory { get; private init; } = string.Empty;
+    public string ConfigPathOverride { get; private init; } = string.Empty;
+    public string ServerKeyOverride { get; private init; } = string.Empty;
     public bool ShowHelp { get; private init; }
 
     public static string HelpText => """
-GLMigrator.exe --connection <USER/PASS@//HOST:PORT/SERVICE> [--mode up|down|status|verify] [--steps N] [--root <folder>]
+GLMigrator.exe [--connection <USER/PASS@//HOST:PORT/SERVICE>] [--config <path>] [--server-key KEY] [--mode up|down|status|verify] [--steps N]
 
 Options:
-  --connection   Oracle SQL*Plus connection string (required unless --help)
+  --connection   Oracle SQL*Plus connection string. If omitted, the executable reads config.json.
+  --config       Optional config.json path. If omitted, the executable probes common config.json locations.
+  --server-key   Optional server key override for config.json resolution
   --mode         up (default), down, status, verify
   --steps        Number of steps for down mode (default: 1)
-  --root         Root folder containing migrations.manifest.json and migrations/
-  --manifest     Optional custom manifest path
-  --bootstrap    Optional custom bootstrap sql path
+  --root         Optional external root folder to override embedded migrations
+  --manifest     Optional custom manifest path to override embedded manifest
+  --bootstrap    Optional custom bootstrap sql path to override embedded bootstrap
   --log-dir      Optional custom log directory
   --help         Show usage
+
+Default behavior:
+  The executable uses embedded manifest/bootstrap/migration SQL resources.
+  If --connection is omitted, it resolves the Oracle connection from config.json.
 """;
 
     public static AppOptions Parse(string[] args)
@@ -462,19 +701,27 @@ Options:
         bool help = map.ContainsKey("help") || map.ContainsKey("h");
         string root = map.TryGetValue("root", out string? rootArg) && !string.IsNullOrWhiteSpace(rootArg)
             ? Path.GetFullPath(rootArg)
-            : AppContext.BaseDirectory;
+            : string.Empty;
 
         string manifest = map.TryGetValue("manifest", out string? manifestArg) && !string.IsNullOrWhiteSpace(manifestArg)
             ? Path.GetFullPath(manifestArg)
-            : Path.Combine(root, "migrations.manifest.json");
+            : string.Empty;
 
         string bootstrap = map.TryGetValue("bootstrap", out string? bootstrapArg) && !string.IsNullOrWhiteSpace(bootstrapArg)
             ? Path.GetFullPath(bootstrapArg)
-            : Path.Combine(root, "000_bootstrap_gl_migration_history.sql");
+            : string.Empty;
 
         string logDir = map.TryGetValue("log-dir", out string? logArg) && !string.IsNullOrWhiteSpace(logArg)
             ? Path.GetFullPath(logArg)
-            : Path.Combine(root, "logs");
+            : Path.Combine(AppContext.BaseDirectory, "logs");
+
+        string config = map.TryGetValue("config", out string? configArg) && !string.IsNullOrWhiteSpace(configArg)
+            ? Path.GetFullPath(configArg)
+            : string.Empty;
+
+        string serverKey = map.TryGetValue("server-key", out string? serverKeyArg) && !string.IsNullOrWhiteSpace(serverKeyArg)
+            ? serverKeyArg.Trim()
+            : string.Empty;
 
         MigrationMode mode = MigrationMode.Up;
         if (map.TryGetValue("mode", out string? modeArg) && !string.IsNullOrWhiteSpace(modeArg))
@@ -498,23 +745,36 @@ Options:
             ? connArg.Trim()
             : string.Empty;
 
-        if (!help && string.IsNullOrWhiteSpace(connection))
-        {
-            throw new ArgumentException("Missing required --connection.");
-        }
-
         return new AppOptions
         {
             Connection = connection,
             Mode = mode,
             Steps = steps,
-            RootDirectory = root,
-            ManifestPath = manifest,
-            BootstrapScriptPath = bootstrap,
+            RootDirectoryOverride = root,
+            ManifestPathOverride = manifest,
+            BootstrapScriptPathOverride = bootstrap,
             LogDirectory = logDir,
+            ConfigPathOverride = config,
+            ServerKeyOverride = serverKey,
             ShowHelp = help
         };
     }
+}
+
+internal sealed class AppConfig
+{
+    public string ActiveServerKey { get; set; } = string.Empty;
+    public bool AllowEnvironmentFallback { get; set; }
+    public Dictionary<string, OracleServerConfig> Servers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+internal sealed class OracleServerConfig
+{
+    public string Host { get; set; } = string.Empty;
+    public int Port { get; set; } = 1521;
+    public string ServiceName { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
 }
 
 internal sealed class Manifest
@@ -532,4 +792,78 @@ internal sealed class MigrationItem
     public string Script { get; set; } = string.Empty;
     public string? RollbackScript { get; set; }
     public string? CheckScript { get; set; }
+}
+
+internal sealed class EmbeddedAssetStore
+{
+    private const string ResourcePrefix = "EmbeddedAssets/";
+    private readonly Dictionary<string, AssetContent> assets;
+
+    private EmbeddedAssetStore(Dictionary<string, AssetContent> assets)
+    {
+        this.assets = assets;
+    }
+
+    public static EmbeddedAssetStore Create()
+    {
+        Assembly assembly = typeof(Program).Assembly;
+        Dictionary<string, AssetContent> assets = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string resourceName in assembly.GetManifestResourceNames())
+        {
+            if (!resourceName.StartsWith(ResourcePrefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            using Stream stream = assembly.GetManifestResourceStream(resourceName)
+                ?? throw new InvalidOperationException($"Embedded resource not found: {resourceName}");
+            using MemoryStream ms = new();
+            stream.CopyTo(ms);
+
+            string logicalPath = resourceName[ResourcePrefix.Length..];
+            logicalPath = logicalPath.Replace('\\', '/');
+            assets[logicalPath] = new AssetContent(logicalPath, ms.ToArray());
+        }
+
+        return new EmbeddedAssetStore(assets);
+    }
+
+    public AssetContent GetRequired(string logicalPath)
+    {
+        string normalized = logicalPath.Replace('\\', '/');
+        if (assets.TryGetValue(normalized, out AssetContent? asset))
+        {
+            return asset;
+        }
+
+        throw new FileNotFoundException("Embedded asset not found.", normalized);
+    }
+}
+
+internal sealed class AssetContent
+{
+    public AssetContent(string displayName, byte[] content)
+    {
+        DisplayName = displayName;
+        Content = content;
+    }
+
+    public string DisplayName { get; }
+    public byte[] Content { get; }
+
+    public static AssetContent FromFile(string path)
+    {
+        return new AssetContent(path, File.ReadAllBytes(path));
+    }
+
+    public static AssetContent FromText(string displayName, string text)
+    {
+        return new AssetContent(displayName, Encoding.ASCII.GetBytes(text));
+    }
+
+    public string ReadAsString()
+    {
+        return Encoding.UTF8.GetString(Content);
+    }
 }

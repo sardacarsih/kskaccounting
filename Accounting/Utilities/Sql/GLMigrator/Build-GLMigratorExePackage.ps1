@@ -61,28 +61,11 @@ if (-not (Test-Path -LiteralPath $exePath)) {
 
 $stagingRoot = Join-Path $OutputDir $bundleName
 New-Item -Path $stagingRoot -ItemType Directory -Force | Out-Null
-New-Item -Path (Join-Path $stagingRoot "migrations") -ItemType Directory -Force | Out-Null
 
 Get-ChildItem -Path $publishDir -File | ForEach-Object {
     Copy-Item $_.FullName (Join-Path $stagingRoot $_.Name) -Force
 }
-Copy-Item (Join-Path $PSScriptRoot "migrations.manifest.json") $stagingRoot -Force
-Copy-Item (Join-Path $PSScriptRoot "000_bootstrap_gl_migration_history.sql") $stagingRoot -Force
 Copy-Item (Join-Path $PSScriptRoot "README.md") $stagingRoot -Force
-
-foreach ($migration in $manifest.migrations) {
-    foreach ($key in @("script", "rollbackScript", "checkScript")) {
-        if (-not $migration.$key) { continue }
-        $src = Join-Path $PSScriptRoot $migration.$key
-        if (-not (Test-Path -LiteralPath $src)) {
-            throw "Migration file missing: $src"
-        }
-        $dst = Join-Path $stagingRoot $migration.$key
-        $dstDir = Split-Path -Path $dst -Parent
-        New-Item -Path $dstDir -ItemType Directory -Force | Out-Null
-        Copy-Item $src $dst -Force
-    }
-}
 
 $zipPath = Join-Path $OutputDir "$bundleName.zip"
 if (Test-Path -LiteralPath $zipPath) {

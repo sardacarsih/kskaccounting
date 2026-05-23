@@ -11,25 +11,43 @@ using DevExpress.XtraPrinting;
 using DevExpress.XtraReports.UI;
 using DevExpress.XtraSplashScreen;
 using OfficeOpenXml;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.IO.Packaging;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
     public partial class FrmAkunEF : DevExpress.XtraEditors.XtraForm
     {
+        private const int ToolbarControlHeight = 34;
 
         int pbulan, p_sampaibulan, ptahun, x;
-        string fileName;
+        private readonly Timer recalcStatusTimer = new() { Interval = 3000 };
+        private readonly SimpleButton refreshManualButton = new();
+        private readonly FlowLayoutPanel toolbarFlow = new();
+        private bool isApplyingToolbarLayout;
+        private long? monitoredRecalcJobId;
+        private DateTime monitoredRecalcJobStartUtc;
+        private bool isStatusCheckInProgress;
+        private const int RecalcPollingTimeoutSeconds = 180;
+
         public FrmAkunEF()
         {
             InitializeComponent();
+            InitializeManualRefreshButton();
+            ConfigureResponsiveLayout();
+            recalcStatusTimer.Tick += RecalcStatusTimer_Tick;
+            JurnalRekalkulasiNotifier.JobQueued += OnJurnalRekalkulasiJobQueued;
+            FormClosed += FrmAkunEF_FormClosed;
         }
         DataSet DSGL;
 
@@ -41,10 +59,25 @@ namespace Accounting.Form
         {
             Load_COA();
         }
+
+        private void ApplyAuthorizationState()
+        {
+            sbadd.Enabled = AuthorizationService.CanCreateCoa();
+            sbubah.Enabled = AuthorizationService.CanUpdateCoa();
+            sbhapus.Enabled = AuthorizationService.CanDeleteCoa();
+            sbexport.Enabled = AuthorizationService.CanExportCoa();
+            sbexpadvanced.Enabled = AuthorizationService.CanExportCoa();
+        }
+
         private void FrmAkunEF_Load(object sender, EventArgs e)
         {
             try
             {
+                if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanViewCoaWorkspace))
+                {
+                    Close();
+                    return;
+                }
                 Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
                 cmbbulan.Properties.Items.AddRange(new[] { "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" });
                 if (Acct.PeriodeMax.ToString().Length > 0)
@@ -58,12 +91,277 @@ namespace Accounting.Form
                 setahun.Value = Acct.TahunMax;
                 Load_TipeAkun();
                 Load_COA();
+                ApplyAuthorizationState();
             }
             catch (SystemException ex)
             {
                 XtraMessageBox.Show(ex.Message, "Error Load", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
             }
            
+        }
+
+        private void InitializeManualRefreshButton()
+        {
+            refreshManualButton.Name = "sbRefreshManual";
+            refreshManualButton.Text = "Refresh";
+            refreshManualButton.Appearance.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            refreshManualButton.Appearance.Options.UseFont = true;
+            refreshManualButton.Size = new System.Drawing.Size(96, 34);
+            if (imageCollection1.Images.Count > 1)
+            {
+                refreshManualButton.ImageOptions.Image = imageCollection1.Images[1];
+            }
+            refreshManualButton.Click += (_, _) => Load_COA();
+        }
+
+        private void ConfigureResponsiveLayout()
+        {
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MinimumSize = new Size(1120, 680);
+            panelControl1.Dock = DockStyle.Fill;
+            gridControl1.Dock = DockStyle.Fill;
+            toolbarFlow.Dock = DockStyle.Fill;
+            toolbarFlow.FlowDirection = FlowDirection.LeftToRight;
+            toolbarFlow.WrapContents = true;
+            toolbarFlow.AutoScroll = false;
+            toolbarFlow.Padding = new Padding(8, 8, 8, 8);
+            toolbarFlow.Margin = Padding.Empty;
+            toolbarFlow.AutoSize = false;
+
+            sidePanel1.Controls.Clear();
+            sidePanel1.Controls.Add(toolbarFlow);
+
+            ConfigureToolbarLabel(labelControl3);
+            ConfigureToolbarControl(cmbbulan, 132, ToolbarControlHeight);
+            ConfigureToolbarControl(setahun, 96, ToolbarControlHeight);
+            ConfigureToolbarButton(sbadd, 92);
+            ConfigureToolbarButton(sbubah, 92);
+            ConfigureToolbarButton(sbhapus, 92);
+            ConfigureToolbarButton(sbexport, 96);
+            ConfigureToolbarButton(sbexpadvanced, 132);
+            ConfigureToolbarButton(refreshManualButton, 108);
+
+            ConfigureToolbarCheck(AkunNeraca);
+            ConfigureToolbarCheck(AkunLabaRugi);
+            ConfigureToolbarCheck(cetbm);
+            ConfigureToolbarCheck(cetm);
+            ConfigureToolbarCheck(CEMUTASI);
+            ConfigureToolbarCheck(NilaiSaldo);
+            ConfigureToolbarCheck(cegroup);
+            ConfigureToolbarCheck(cedetail);
+            ConfigureToolbarLabel(labelControl1);
+            ConfigureToolbarControl(lookUpEdit1, 188, ToolbarControlHeight);
+
+            toolbarFlow.Controls.AddRange(new Control[]
+            {
+                refreshManualButton,
+                labelControl3, cmbbulan, setahun,
+                sbadd, sbubah, sbhapus, sbexport, sbexpadvanced,
+                AkunNeraca, AkunLabaRugi, cetbm, cetm, CEMUTASI, NilaiSaldo, cegroup, cedetail,
+                labelControl1, lookUpEdit1
+            });
+            toolbarFlow.SetFlowBreak(sbexpadvanced, true);
+
+            Resize += (_, _) => ApplyResponsiveToolbarLayout();
+            sidePanel1.SizeChanged += (_, _) => ApplyResponsiveToolbarLayout();
+            ApplyResponsiveToolbarLayout();
+        }
+
+        private static void ConfigureToolbarControl(Control control, int width, int height, bool autoSize = false)
+        {
+            control.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            control.Margin = new Padding(4);
+            control.AutoSize = autoSize;
+            if (!autoSize)
+            {
+                control.Size = new Size(width, height);
+            }
+        }
+
+        private static void ConfigureToolbarLabel(LabelControl label)
+        {
+            label.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            label.Margin = new Padding(6, 8, 2, 2);
+            label.AutoSizeMode = LabelAutoSizeMode.Vertical;
+        }
+
+        private static void ConfigureToolbarCheck(CheckEdit check)
+        {
+            check.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            check.Margin = new Padding(2, 6, 6, 2);
+            check.AutoSize = true;
+            check.Properties.AutoWidth = true;
+            check.MinimumSize = new Size(0, ToolbarControlHeight);
+        }
+
+        private static void ConfigureToolbarButton(SimpleButton button, int minWidth)
+        {
+            int measured = TextRenderer.MeasureText(button.Text ?? string.Empty, button.Font).Width;
+            int iconPadding = button.ImageOptions?.Image != null ? 42 : 24;
+            int width = Math.Max(minWidth, measured + iconPadding);
+            button.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            button.Margin = new Padding(2, 2, 6, 2);
+            button.Size = new Size(width, ToolbarControlHeight);
+        }
+
+        private void ApplyResponsiveToolbarLayout()
+        {
+            if (sidePanel1.IsDisposed || isApplyingToolbarLayout)
+            {
+                return;
+            }
+
+            int targetWidth = Math.Max(640, sidePanel1.ClientSize.Width - 16);
+            isApplyingToolbarLayout = true;
+            try
+            {
+                Size preferred = toolbarFlow.GetPreferredSize(new Size(targetWidth, 0));
+                int desiredHeight = Math.Max(60, preferred.Height + 8);
+                sidePanel1.Height = desiredHeight;
+            }
+            finally
+            {
+                isApplyingToolbarLayout = false;
+            }
+        }
+
+        private void FrmAkunEF_FormClosed(object? sender, FormClosedEventArgs e)
+        {
+            recalcStatusTimer.Stop();
+            recalcStatusTimer.Tick -= RecalcStatusTimer_Tick;
+            JurnalRekalkulasiNotifier.JobQueued -= OnJurnalRekalkulasiJobQueued;
+        }
+
+        private void OnJurnalRekalkulasiJobQueued(object? sender, JurnalRekalkulasiQueuedEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => OnJurnalRekalkulasiJobQueued(sender, e)));
+                return;
+            }
+
+            if (!string.Equals(e.IdData, CompanyInfo.IDDATA, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (!IsPeriodeMatch(e.Periode))
+            {
+                Log.Debug(
+                    "COA AutoRefresh skipped_context_mismatch form=FrmAkunEF job_id={JobId} event_periode={EventPeriode} active_bulan={ActiveBulan} active_tahun={ActiveTahun}",
+                    e.JobId,
+                    e.Periode,
+                    cmbbulan.SelectedIndex + 1,
+                    Convert.ToInt32(setahun.Value));
+                return;
+            }
+
+            monitoredRecalcJobId = e.JobId;
+            monitoredRecalcJobStartUtc = DateTime.UtcNow;
+            Log.Information(
+                "COA AutoRefresh watch_started form=FrmAkunEF job_id={JobId} periode={Periode} impacted_count={ImpactedCount}",
+                e.JobId,
+                e.Periode,
+                e.ImpactedAccountCodes?.Count ?? 0);
+            recalcStatusTimer.Start();
+        }
+
+        private bool IsPeriodeMatch(string periode)
+        {
+            if (string.IsNullOrWhiteSpace(periode))
+            {
+                return false;
+            }
+
+            if (!DateTime.TryParseExact(periode, "MM/yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime parsedPeriode))
+            {
+                return false;
+            }
+
+            int bulanAktif = cmbbulan.SelectedIndex + 1;
+            int tahunAktif = Convert.ToInt32(setahun.Value);
+            return parsedPeriode.Month == bulanAktif && parsedPeriode.Year == tahunAktif;
+        }
+
+        private async void RecalcStatusTimer_Tick(object? sender, EventArgs e)
+        {
+            if (isStatusCheckInProgress)
+            {
+                return;
+            }
+
+            if (!monitoredRecalcJobId.HasValue)
+            {
+                recalcStatusTimer.Stop();
+                return;
+            }
+
+            if ((DateTime.UtcNow - monitoredRecalcJobStartUtc).TotalSeconds > RecalcPollingTimeoutSeconds)
+            {
+                recalcStatusTimer.Stop();
+                long timeoutJobId = monitoredRecalcJobId.Value;
+                monitoredRecalcJobId = null;
+                Log.Warning(
+                    "COA AutoRefresh watch_timeout form=FrmAkunEF job_id={JobId} timeout_seconds={TimeoutSeconds}",
+                    timeoutJobId,
+                    RecalcPollingTimeoutSeconds);
+                XtraMessageBox.Show(
+                    "Rekalkulasi belum selesai dalam batas waktu. Silakan gunakan tombol Refresh.",
+                    "Info Rekalkulasi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+
+            isStatusCheckInProgress = true;
+            try
+            {
+                long jobId = monitoredRecalcJobId.Value;
+                RekalkulasiJobStatusSnapshot? status = await Task.Run(() => JurnalInputOperationService.GetRekalkulasiJobStatus(jobId));
+                if (status == null)
+                {
+                    Log.Debug("COA AutoRefresh status_not_found form=FrmAkunEF job_id={JobId}", jobId);
+                    return;
+                }
+
+                string normalizedStatus = (status.Status ?? string.Empty).Trim().ToUpperInvariant();
+                Log.Debug(
+                    "COA AutoRefresh status_polled form=FrmAkunEF job_id={JobId} status={Status}",
+                    jobId,
+                    normalizedStatus);
+                if (normalizedStatus == "DONE")
+                {
+                    recalcStatusTimer.Stop();
+                    monitoredRecalcJobId = null;
+                    Log.Information("COA AutoRefresh status_done form=FrmAkunEF job_id={JobId}", jobId);
+                    Load_COA();
+                    return;
+                }
+
+                if (normalizedStatus == "FAILED")
+                {
+                    recalcStatusTimer.Stop();
+                    monitoredRecalcJobId = null;
+                    Log.Warning(
+                        "COA AutoRefresh status_failed form=FrmAkunEF job_id={JobId} error={LastError}",
+                        jobId,
+                        status.LastError);
+                    string pesan = string.IsNullOrWhiteSpace(status.LastError)
+                        ? "Rekalkulasi gagal. Silakan refresh manual."
+                        : $"Rekalkulasi gagal: {status.LastError}";
+                    XtraMessageBox.Show(pesan, "Info Rekalkulasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            finally
+            {
+                isStatusCheckInProgress = false;
+            }
         }
 
         private void Load_COA()
@@ -113,7 +411,43 @@ namespace Accounting.Form
             lookUpEdit1.Properties.DataSource = data;
             lookUpEdit1.Properties.ValueMember = "ID";
             lookUpEdit1.Properties.DisplayMember = "TIPE_AKUN";
+            ConfigureTipeAkunLookup();
             lookUpEdit1.ItemIndex = 0;
+        }
+
+        private void ConfigureTipeAkunLookup()
+        {
+            var props = lookUpEdit1.Properties;
+            props.PopulateColumns();
+            props.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            props.PopupWidthMode = DevExpress.XtraEditors.PopupWidthMode.ContentWidth;
+            props.QueryPopUp -= LookUpEditTipeAkun_QueryPopUp;
+            props.QueryPopUp += LookUpEditTipeAkun_QueryPopUp;
+
+            foreach (DevExpress.XtraEditors.Controls.LookUpColumnInfo column in props.Columns)
+            {
+                string fieldName = column.FieldName ?? string.Empty;
+                bool isVisible = string.Equals(fieldName, "ID", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(fieldName, "TIPE_AKUN", StringComparison.OrdinalIgnoreCase);
+                column.Visible = isVisible;
+            }
+
+            if (props.Columns["ID"] != null)
+            {
+                props.Columns["ID"].Width = 56;
+            }
+
+            if (props.Columns["TIPE_AKUN"] != null)
+            {
+                props.Columns["TIPE_AKUN"].Width = 320;
+            }
+
+            props.BestFit();
+        }
+
+        private void LookUpEditTipeAkun_QueryPopUp(object? sender, System.ComponentModel.CancelEventArgs e)
+        {
+            lookUpEdit1.Properties.BestFit();
         }
         private void lookUpEdit1_EditValueChanged(object sender, EventArgs e)
         {
@@ -140,6 +474,10 @@ namespace Accounting.Form
   
         private void sbexport_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanExportCoa))
+            {
+                return;
+            }
             IOverlaySplashScreenHandle handle = null;
             try
             {
@@ -273,6 +611,10 @@ namespace Accounting.Form
 
         private void sbadd_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanCreateCoa))
+            {
+                return;
+            }
             //try
             //{
                 ////2 kode buka kode perkiraan
@@ -298,6 +640,10 @@ namespace Accounting.Form
         }
         private void sbubah_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                return;
+            }
             try
             {
                 ////2 kode buka kode perkiraan
@@ -343,6 +689,10 @@ namespace Accounting.Form
         }
         private void sbhapus_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanDeleteCoa))
+            {
+                return;
+            }
             try
             {
                 ////2 kode buka kode perkiraan
@@ -646,6 +996,10 @@ namespace Accounting.Form
 
         private void OnDetailClick(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanViewReports))
+            {
+                return;
+            }
             try
             {
                 if (this.gridView1.GetFocusedRowCellValue("GD") == null) return;
@@ -789,13 +1143,7 @@ namespace Accounting.Form
         }
         private void simpleButton1_Click(object sender, EventArgs e)
         {
-            //2 kode buka kode perkiraan
-            bool akses = LevelAksesServices.CetakExport(2, LoginInfo.userID);
-            if (akses == false)
-            {
-                XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            _ = AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanExportCoa);
         }
     }
 }

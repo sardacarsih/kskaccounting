@@ -1,5 +1,6 @@
 using Accounting._1.Interface;
 using Accounting.Model;
+using Accounting.Services;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,8 @@ namespace Accounting.BusinessLayer
     {
         public void ExportJurnalDetails(IEnumerable<JurnalDetailDTO> rows, string fileNamePrefix)
         {
+            AuthorizationService.EnsureCanExportJurnal();
+
             List<JurnalDetailDTO> data = rows.ToList();
             if (data.Count == 0)
             {
@@ -37,6 +40,8 @@ namespace Accounting.BusinessLayer
 
         public void ExportAisJurnal(IEnumerable<AIS_JURNAL_FINAL> rows, string fileNamePrefix)
         {
+            AuthorizationService.EnsureCanExportJurnal();
+
             List<AIS_JURNAL_FINAL> data = rows.ToList();
             if (data.Count == 0)
             {
@@ -59,6 +64,8 @@ namespace Accounting.BusinessLayer
 
         public void ExportKasirDataTable(DataTable source, string fileNamePrefix)
         {
+            AuthorizationService.EnsureCanExportJurnal();
+
             if (source == null || source.Rows.Count == 0)
             {
                 throw new InvalidOperationException("Data tidak ditemukan");

@@ -46,6 +46,10 @@ namespace Accounting.BusinessLayer
         {
             return repository.CekAkunMaster(ptahun);
         }
+        public static DataTable CekAkunMasterScoped(int ptahun, string piddata, string periode, string userid)
+        {
+            return repository.CekAkunMasterScoped(ptahun, piddata, periode, userid);
+        }
         public static DataTable CekDuplikasiJurnal()
         {
             return repository.CekDuplikasiJurnal();
@@ -53,6 +57,10 @@ namespace Accounting.BusinessLayer
         public static DataTable CekNoJurnalExist()
         {
             return repository.CekNoJurnalExist();
+        }
+        public static DataTable CekNoJurnalExistScoped(string piddata, string periode, string userid)
+        {
+            return repository.CekNoJurnalExistScoped(piddata, periode, userid);
         }
         public static bool ValidateColumnNames(DataTable dataTable, string[] NamaKolom)
         {
@@ -63,6 +71,11 @@ namespace Accounting.BusinessLayer
         public static bool CekNoJurnalExist_input(string piddata, string p_nomor, string periode)
         {
             return repository.CekNoJurnalExist_input(piddata, p_nomor, periode);
+        }
+
+        public static bool CekNoJurnalExistExceptJurnalId(string piddata, string p_nomor, string periode, double exceptJurnalId)
+        {
+            return repository.CekNoJurnalExistExceptJurnalId(piddata, p_nomor, periode, exceptJurnalId);
         }
         public static string GetLockStatus(string piddata, string periode)
         {
@@ -89,6 +102,10 @@ namespace Accounting.BusinessLayer
         {
             return repository.ImportJurnalParsial(piddata, p_bulan, p_tahun, periode);
         }
+        public static int ImportJurnalParsialScoped(string piddata, int p_bulan, int p_tahun, string periode, string userid)
+        {
+            return repository.ImportJurnalParsialScoped(piddata, p_bulan, p_tahun, periode, userid);
+        }
         public static DataTable PeriodeList(string iddata, string ptahun)
         {
             return repository.PeriodeList(iddata, ptahun);
@@ -96,6 +113,10 @@ namespace Accounting.BusinessLayer
         public static DataTable CekJurnal_KODENULL()
         {
             return repository.CekJurnal_KODENULL();
+        }
+        public static DataTable CekJurnal_KODENULL_Scoped(string piddata, string periode, string userid)
+        {
+            return repository.CekJurnal_KODENULL_Scoped(piddata, periode, userid);
         }
         public static int CekPeriodeExist(string piddata, string p_periode)
         {
@@ -108,6 +129,10 @@ namespace Accounting.BusinessLayer
         public static void SaveUsingOracleBulkCopy(string destTableName, DataTable dt)
         {
             repository.SaveUsingOracleBulkCopy(destTableName, dt);
+        }
+        public static void DeleteJurnalTmpByScope(string piddata, string periode, string userid)
+        {
+            repository.DeleteJurnalTmpByScope(piddata, periode, userid);
         }
 
 
@@ -142,17 +167,17 @@ namespace Accounting.BusinessLayer
             return repository.CekjURNALRJE(p_jurnalID);
         }
 
-        public static void InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
+        public static JurnalPersistResult InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
         {
-              repository.InsertJurnalMasterDetail(jurnalHeader, jurnalDetail);
+              return repository.InsertJurnalMasterDetail(jurnalHeader, jurnalDetail);
         }
-        public static void UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
+        public static JurnalPersistResult UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail, DateTime? expectedHeaderVersionUtc)
         {
-              repository.UpdateJurnalMasterDetail(oldJurnalId, jurnalHeader, jurnalDetail);
+              return repository.UpdateJurnalMasterDetail(oldJurnalId, jurnalHeader, jurnalDetail, expectedHeaderVersionUtc);
         }
-        public static void HapusJurnal(double p_JurnalID)
+        public static JurnalPersistResult HapusJurnal(double p_JurnalID)
         {
-              repository.HapusJurnal(p_JurnalID);
+              return repository.HapusJurnal(p_JurnalID);
         }
         public static void HapusJurnalRange(List<double> selectedValues)
         {
@@ -165,6 +190,21 @@ namespace Accounting.BusinessLayer
         public static List<DTOCOAAktif> KodeUntukJurnal(string piddata, int ptahun)
         {
             return repository.KodeUntukJurnal(piddata, ptahun);
+        }
+
+        public static List<JurnalAuditSummary> SearchAuditTrail(string iddata, DateTime fromDate, DateTime toDate, string actionType, string userId, string nojurnal)
+        {
+            return repository.SearchAuditTrail(iddata, fromDate, toDate, actionType, userId, nojurnal);
+        }
+
+        public static List<JurnalAuditLog> GetAuditByJurnal(string nojurnal, string periode, string iddata, DateTime fromDate, DateTime toDate)
+        {
+            return repository.GetAuditByJurnal(nojurnal, periode, iddata, fromDate, toDate);
+        }
+
+        public static List<JurnalAuditDetailDTO> GetAuditDetail(double auditId)
+        {
+            return repository.GetAuditDetail(auditId);
         }
     }
 }

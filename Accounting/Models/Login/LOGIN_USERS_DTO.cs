@@ -11,5 +11,6 @@
         public string NAMAPT { get; set; } 
         public string WILAYAH { get; set; }
         public string JENIS_AKUNTANSI { get; set; }
+        public bool IsLegacyAccessPath { get; set; }
     }
 }

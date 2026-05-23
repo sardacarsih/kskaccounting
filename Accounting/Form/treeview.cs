@@ -14,9 +14,9 @@ using System.Windows.Forms;
 
 namespace Accounting.Form
 {
-    public partial class treeview : DevExpress.XtraEditors.XtraForm
+    public partial class TreeviewForm : DevExpress.XtraEditors.XtraForm
     {
-        public treeview()
+        public TreeviewForm()
         {
             InitializeComponent();
         }

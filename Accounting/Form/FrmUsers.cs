@@ -1,11 +1,14 @@
-﻿using DevExpress.Utils.Menu;
+using DevExpress.Utils.Menu;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Views.Grid;
+using DevExpress.XtraBars.Alerter;
+using DevExpress.XtraBars.Docking2010;
 using System;
 using Accounting.Services;
 using System.Windows.Forms;
 using Accounting._3.Services;
+using System.Linq;
 
 namespace Accounting.Form
 {
@@ -18,6 +21,17 @@ namespace Accounting.Form
         }
         private void FrmUsers_Load(object sender, EventArgs e)
         {
+            try
+            {
+                AuthorizationService.EnsureCanViewUserManagement();
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                BeginInvoke(new Action(Close));
+                return;
+            }
+
             Load_Lokasi_Akses();
             load_user();
             lblmodule.Text = LoginInfo.MODULE;
@@ -33,14 +47,27 @@ namespace Accounting.Form
             }
 
             layoutControlItem15.ContentVisible = false;
-
+            ApplyAuthorizationState();
         }
 
         private void load_user()
         {
             gridControl1.DataSource = UserManager_Services.GetAllUsers();
-            gridView1.Columns["PASSWORD"].Visible = false;
-            gridView1.Columns["AKTIF"].Width = 30;
+
+            // Sembunyikan semua kolom security/audit — hanya tampilkan data esensial
+            string[] visibleColumns = { "USERID", "NAMA", "DEPT", "JABATAN", "AKTIF" };
+            foreach (DevExpress.XtraGrid.Columns.GridColumn col in gridView1.Columns)
+            {
+                col.Visible = Array.Exists(visibleColumns, c => c == col.FieldName);
+            }
+            gridView1.Columns["AKTIF"].Width = 50;
+            gridView1.BestFitColumns();
+            
+            // UI UX Enhancements for GridView
+            gridView1.RowHeight = 35;
+            gridView1.Appearance.Row.Font = new System.Drawing.Font("Segoe UI", 10F);
+            gridView1.Appearance.HeaderPanel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            gridView1.OptionsView.ShowIndicator = false;
 
             GridFormatRule gridFormatRule = new();
             FormatConditionRuleExpression formatConditionRuleExpression = new FormatConditionRuleExpression();
@@ -54,6 +81,80 @@ namespace Accounting.Form
 
             gridFormatRule.Rule = formatConditionRuleExpression;
             gridView1.FormatRules.Add(gridFormatRule);
+        }
+
+        private void ApplyAuthorizationState()
+        {
+            bool canManageUsers = AuthorizationService.CanManageUsers();
+            bool canResetPasswords = AuthorizationService.CanResetPasswords();
+
+            // WindowsUIButtonPanel state management
+            SetWUIButtonEnabled("SIMPAN", canManageUsers);
+            SetWUIButtonEnabled("BARU", canManageUsers);
+            btnaddestate.Enabled = canManageUsers;
+        }
+
+        // ── Toast Notification Helpers ──────────────────────────────────
+        private void ShowToast(string caption, string message)
+        {
+            alertControl1.Show(this, caption, message);
+        }
+
+        private void ShowToastError(string caption, string message)
+        {
+            alertControl1.Show(this, caption, message);
+        }
+
+        // ── WindowsUIButtonPanel Helpers ────────────────────────────────
+        private void SetWUIButtonVisible(string tag, bool visible)
+        {
+            foreach (var btn in windowsUIButtonPanel1.Buttons.OfType<WindowsUIButton>())
+            {
+                if (btn.Tag?.ToString() == tag)
+                    btn.Visible = visible;
+            }
+            windowsUIButtonPanel1.Refresh();
+        }
+
+        private void SetWUIButtonEnabled(string tag, bool enabled)
+        {
+            foreach (var btn in windowsUIButtonPanel1.Buttons.OfType<WindowsUIButton>())
+            {
+                if (btn.Tag?.ToString() == tag)
+                    btn.Enabled = enabled;
+            }
+            windowsUIButtonPanel1.Refresh();
+        }
+
+        private void SetWUIButtonCaption(string tag, string caption)
+        {
+            foreach (var btn in windowsUIButtonPanel1.Buttons.OfType<WindowsUIButton>())
+            {
+                if (btn.Tag?.ToString() == tag)
+                    btn.Caption = caption;
+            }
+            windowsUIButtonPanel1.Refresh();
+        }
+
+        // ── WindowsUIButtonPanel Click Router ──────────────────────────
+        private void windowsUIButtonPanel1_ButtonClick(object sender, ButtonEventArgs e)
+        {
+            string tag = (e.Button as WindowsUIButton)?.Tag?.ToString() ?? "";
+            switch (tag)
+            {
+                case "BARU":
+                    sbbaru_Click(sender, EventArgs.Empty);
+                    break;
+                case "SIMPAN":
+                    btnsimpan_Click(sender, EventArgs.Empty);
+                    break;
+                case "HAPUS":
+                    btnhapus_Click(sender, EventArgs.Empty);
+                    break;
+                case "RESETPWD":
+                    btnResetPassword_Click(sender, EventArgs.Empty);
+                    break;
+            }
         }
 
         private void Load_Lokasi_Akses()
@@ -91,11 +192,18 @@ namespace Accounting.Form
                 string savePasswordHash = null;
                 if (!string.IsNullOrEmpty(pwd))
                 {
+                    if (!UserManager_Services.TryValidatePasswordPolicy(pwd, out string validationMessage))
+                    {
+                        XtraMessageBox.Show(validationMessage, "Info", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        pASSWORDTextEdit.Focus();
+                        return;
+                    }
+
                     var p = new PasswordCryptographyPbkdf2();
                     savePasswordHash = p.GetHashPassword(pwd);
                 }
                 string p_aktive = "T";
-                if (checkEditaktif.Checked == true)
+                if (checkEditaktif.IsOn == true)
                 {
                     p_aktive = "Y";
                 }
@@ -132,7 +240,7 @@ namespace Accounting.Form
                 }
                 else
                 {
-                    if (p_aktive == "Y")
+                    if (!string.IsNullOrWhiteSpace(pASSWORDTextEdit.Text) || !string.IsNullOrWhiteSpace(confirmasi.Text))
                     {
                         if (string.IsNullOrEmpty(uSERIDTextEdit.Text) || string.IsNullOrEmpty(pASSWORDTextEdit.Text))
                         {
@@ -140,6 +248,7 @@ namespace Accounting.Form
                             uSERIDTextEdit.Focus();
                             return;
                         }
+
                         if (pASSWORDTextEdit.Text != confirmasi.Text)
                         {
                             XtraMessageBox.Show("Konfirmasi Password tidak cocok", "Info", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -152,7 +261,7 @@ namespace Accounting.Form
 
                 Bersihkan();
                 load_user();
-                XtraMessageBox.Show("UserID Saved", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowToast("✅ Sukses", "UserID berhasil disimpan");
 
             }
             catch (Exception ex)
@@ -180,9 +289,10 @@ namespace Accounting.Form
             layoutControlItem15.ContentVisible = false;
             checkEditaktif.Visible = false;
             btnsimpan.Text = "Add";
+            SetWUIButtonCaption("SIMPAN", "Simpan");
             uSERIDTextEdit.ReadOnly = false;
-            btnhapus.Visible = false;
-            btnResetPassword.Visible = false;
+            SetWUIButtonVisible("HAPUS", false);
+            SetWUIButtonVisible("RESETPWD", false);
             lbluser.Text = "";
 
         }
@@ -208,11 +318,11 @@ namespace Accounting.Form
                 layoutControlItem15.ContentVisible = true;
                 if (selectedItem.AKTIF == "Y")
                 {
-                    checkEditaktif.Checked = true;
+                    checkEditaktif.IsOn = true;
                 }
                 else
                 {
-                    checkEditaktif.Checked = false;
+                    checkEditaktif.IsOn = false;
                 }
 
                 if (LoginInfo.MODULE == "FINANCE")
@@ -227,9 +337,10 @@ namespace Accounting.Form
 
                
                 btnsimpan.Text = "Update";
+                SetWUIButtonCaption("SIMPAN", "Update");
                 uSERIDTextEdit.ReadOnly = true;
-                btnhapus.Visible = true;
-                btnResetPassword.Visible = true;
+                SetWUIButtonVisible("HAPUS", AuthorizationService.CanManageUsers());
+                SetWUIButtonVisible("RESETPWD", AuthorizationService.CanResetPasswords());
             }
 
         }
@@ -245,13 +356,25 @@ namespace Accounting.Form
         private void btnhapus_Click(object sender, EventArgs e)
         {
             if (this.gridView1.GetFocusedRowCellValue("USERID") == null)
+            {
                 return;
+            }
 
             if (XtraMessageBox.Show("Hapus UserID ? : " + lbluser.Text, "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+            {
                 return;
-            UserManager_Services.DeleteUser(lbluser.Text);
-            XtraMessageBox.Show(lbluser.Text + " Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            gridControl1.DataSource = UserManager_Services.GetAllUsers();
+            }
+
+            try
+            {
+                UserManager_Services.DeleteUser(lbluser.Text);
+                ShowToast("🗑️ Dihapus", lbluser.Text + " berhasil dihapus");
+                gridControl1.DataSource = UserManager_Services.GetAllUsers();
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void uSERIDTextEdit_KeyDown(object sender, KeyEventArgs e)
@@ -320,7 +443,7 @@ namespace Accounting.Form
             if (XtraMessageBox.Show("Hapus Akses ke Lokasi Data ? : " + P_IDDATA, "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
-            XtraMessageBox.Show("Akses ke lokasi pembukuan " + P_IDDATA + " Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ShowToast("🗑️ Dihapus", "Akses ke lokasi pembukuan " + P_IDDATA + " berhasil dihapus");
             LoadUsersAkses();
         }
       
@@ -373,40 +496,39 @@ namespace Accounting.Form
         {
             var rowhandle = gridView2.FocusedRowHandle;
 
-            if (LoginInfo.MODULE == "FINANCE")
+            try
             {
-                var estateid = Convert.ToInt16(gridView2.GetRowCellValue(rowhandle, "ESTATE_ID").ToString());
-
-                var lokasi = gridView2.GetRowCellValue(rowhandle, "ESTATEID").ToString();
-                // Show a confirmation dialog before deleting
-                DialogResult result = MessageBox.Show("Anda yakin akan menghapus Akses ke ? : " + lokasi + "\n" +
-                    "atas nama :" + lbluser.Text + " ", "Hapus Akses", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                if (result == DialogResult.Yes)
+                if (LoginInfo.MODULE == "FINANCE")
                 {
-                    // Remove the item from the list
-                    UserManager_Services.DeleteAksesEstate(lbluser.Text, estateid);
-                    Load_Akses_Estate(lbluser.Text);
+                    var estateid = Convert.ToInt16(gridView2.GetRowCellValue(rowhandle, "ESTATE_ID").ToString());
 
+                    var lokasi = gridView2.GetRowCellValue(rowhandle, "ESTATEID").ToString();
+                    DialogResult result = MessageBox.Show("Anda yakin akan menghapus Akses ke ? : " + lokasi + "\n" +
+                        "atas nama :" + lbluser.Text + " ", "Hapus Akses", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        UserManager_Services.DeleteAksesEstate(lbluser.Text, estateid);
+                        Load_Akses_Estate(lbluser.Text);
+                    }
+                }
+                else if (LoginInfo.MODULE == "ACCOUNTING")
+                {
+                    var iddata = gridView2.GetRowCellValue(rowhandle, "IDDATA").ToString();
+                    DialogResult result = MessageBox.Show("Anda yakin akan menghapus Akses ke ? : " + iddata + "\n" +
+                        "atas nama :" + lbluser.Text + " ", "Hapus Akses", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        UserManager_Services.DeleteIDData(lbluser.Text, iddata);
+                        Load_Akses_IDDATA(lbluser.Text);
+                    }
                 }
             }
-            else if (LoginInfo.MODULE == "ACCOUNTING")
+            catch (Exception ex)
             {
-
-                var iddata = gridView2.GetRowCellValue(rowhandle, "IDDATA").ToString();
-                // Show a confirmation dialog before deleting
-                DialogResult result = MessageBox.Show("Anda yakin akan menghapus Akses ke ? : " + iddata + "\n" +
-                    "atas nama :" + lbluser.Text + " ", "Hapus Akses", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                if (result == DialogResult.Yes)
-                {
-                    // Remove the item from the list
-                    UserManager_Services.DeleteIDData(lbluser.Text, iddata);
-                    Load_Akses_IDDATA(lbluser.Text);
-
-                }
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
         }
 
         private void sbbaru_Click(object sender, EventArgs e)
@@ -423,10 +545,6 @@ namespace Accounting.Form
             }
 
             string userId = lbluser.Text;
-            string newPassword = XtraInputBox.Show("Masukkan password baru:", "Reset Password", "");
-
-            if (string.IsNullOrEmpty(newPassword))
-                return;
 
             if (XtraMessageBox.Show($"Reset password untuk user '{userId}'?", "Konfirmasi",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
@@ -434,8 +552,12 @@ namespace Accounting.Form
 
             try
             {
-                UserManager_Services.ResetPassword(userId, newPassword);
-                XtraMessageBox.Show($"Password user '{userId}' berhasil direset.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                string temporaryPassword = UserManager_Services.AdminResetPassword(userId, LoginInfo.MODULE);
+                XtraMessageBox.Show(
+                    $"Password sementara untuk user '{userId}': {temporaryPassword}\n\nPassword ini wajib diganti saat login berikutnya.",
+                    "Sukses",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -462,7 +584,7 @@ namespace Accounting.Form
                 }
 
                 LoadUsersAkses();
-                XtraMessageBox.Show(lookUpEdit1.Text + " Saved", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowToast("✅ Sukses", "Akses " + lookUpEdit1.Text + " berhasil ditambahkan");
 
             }
             catch (Exception ex)

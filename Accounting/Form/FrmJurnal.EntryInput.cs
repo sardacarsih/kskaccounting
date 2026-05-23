@@ -2,6 +2,7 @@ using Accounting._1.Interface;
 using Accounting._2.DataAcces;
 using Accounting.BusinessLayer;
 using Accounting.Model;
+using Accounting.Services;
 using Accounting.UC.Jurnal;
 using DevExpress.Data;
 using DevExpress.Data.ODataLinq.Helpers;
@@ -40,9 +41,19 @@ namespace Accounting.Form
         {
 
             InputJurnalDetail = new BindingList<JurnalDetailAdd>
-            {new JurnalDetailAdd
+            {
+                new JurnalDetailAdd
                 {
                     BARIS = 1,
+                    Kode = "",
+                    Rekening = "",
+                    Debet = 0,
+                    Kredit = 0,
+                    Keterangan = ""
+                },
+                new JurnalDetailAdd
+                {
+                    BARIS = 2,
                     Kode = "",
                     Rekening = "",
                     Debet = 0,
@@ -52,6 +63,7 @@ namespace Accounting.Form
             };
             InputJurnalDetail.AllowNew = true;
             GCJurnal.DataSource = InputJurnalDetail;
+            x = Math.Max(0, InputJurnalDetail.Count - 1);
         }
 
         private void Load_PeriodeList(string piddata, string ptahun)
@@ -85,13 +97,15 @@ namespace Accounting.Form
         {
             try
             {
-                var n = x++;
-                var ket = JDgridView.GetRowCellValue(n, JDgridView.Columns[5]);
-
                 if (sender is not GridView view)
                 {
                     return;
                 }
+
+                int previousRowHandle = e.RowHandle - 1;
+                string ket = previousRowHandle >= 0
+                    ? Convert.ToString(view.GetRowCellValue(previousRowHandle, "Keterangan")) ?? string.Empty
+                    : string.Empty;
 
                 view.SetRowCellValue(e.RowHandle, view.Columns["Kode"], "");
                 view.SetRowCellValue(e.RowHandle, view.Columns["Rekening"], "");
@@ -105,10 +119,36 @@ namespace Accounting.Form
             }
         }
 
-        private void SBSimpan_Click(object sender, EventArgs e)
+        private async void SBSimpan_Click(object sender, EventArgs e)
         {
+            if (isSaveOrUpdateInProgress)
+            {
+                return;
+            }
+
+            if (!TryEnsureJurnalAccess(editjurnal
+                    ? AuthorizationService.EnsureCanUpdateJurnal
+                    : AuthorizationService.EnsureCanCreateJurnal))
+            {
+                return;
+            }
+
+            if (!ValidateDetailRowsBeforeSave())
+            {
+                return;
+            }
+
+            string perfDetails = $"isEdit={editjurnal};detailCount={InputJurnalDetail?.Count ?? 0};periode={leperiode.Text}";
+            using var perf = BeginPerfMeasurement(
+                "FrmJurnal.SBSimpan_Click",
+                () => perfDetails);
             try
             {
+                isSaveOrUpdateInProgress = true;
+                SBSimpan.Enabled = false;
+                ReindexBarisInInputOrder();
+                List<JurnalDetailAdd> normalizedDetails = InputJurnalDetail?.ToList() ?? new List<JurnalDetailAdd>();
+
                 JurnalSaveRequest request = new()
                 {
                     IdData = CompanyInfo.IDDATA,
@@ -119,46 +159,49 @@ namespace Accounting.Form
                     IsJurnalBalik = jurnalbalik.Checked,
                     IsEdit = editjurnal,
                     OldJurnalId = old_JurnalID,
+                    ExpectedHeaderVersionUtc = old_HeaderVersionUtc,
+                    ClientRequestId = Guid.NewGuid(),
                     FromModuleAis = importModule == ImportModule.AIS,
                     FromModuleKasir = importModule == ImportModule.Kasir,
                     FromModuleInv = importModule == ImportModule.Inventory,
                     DebetTotal = GetGridSummaryTotal("Debet"),
                     KreditTotal = GetGridSummaryTotal("Kredit"),
-                    Details = InputJurnalDetail.ToList(),
+                    Details = normalizedDetails,
                     UserId = LoginInfo.userID
                 };
 
-                SBSimpan.Enabled = false;
                 var loadingScope = BeginGlobalLoadingScope();
-
-                Task.Run(() => jurnalInputOperationService.Save(request))
-                    .ContinueWith(t =>
+                try
+                {
+                    JurnalSaveResult saveResult = await jurnalInputOperationService.SaveAsync(request);
+                    if (!saveResult.IsSuccess)
                     {
-                        loadingScope?.Dispose();
-                        SBSimpan.Enabled = true;
+                        string caption = saveResult.ErrorCode == JurnalSaveErrorCodes.ConcurrencyConflict
+                            ? "Konflik Update"
+                            : "Perhatian";
+                        XtraMessageBox.Show(saveResult.Message, caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        HandleSaveFocus(saveResult.FocusTarget);
+                        return;
+                    }
 
-                        if (t.IsFaulted)
-                        {
-                            XtraMessageBox.Show(t.Exception!.InnerException!.Message, "Error on Simpan", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
-
-                        var saveResult = t.Result;
-                        if (!saveResult.IsSuccess)
-                        {
-                            XtraMessageBox.Show(saveResult.Message, "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            HandleSaveFocus(saveResult.FocusTarget);
-                            return;
-                        }
-
-                        editjurnal = false;
-                        importModule = ImportModule.None;
-                        PilihanPeriodeAkuntansi();
-                        bersih();
-                    }, TaskScheduler.FromCurrentSynchronizationContext());
+                    editjurnal = false;
+                    importModule = ImportModule.None;
+                    SetSaveButtonMode(isEdit: false);
+                    PublishCoaRekalkulasiNotification(saveResult.RecalcJobId, request.Periode, saveResult.ImpactedAccountCodes);
+                    bersih();
+                    RefreshDaftarJurnalIfVisible();
+                }
+                finally
+                {
+                    loadingScope?.Dispose();
+                    isSaveOrUpdateInProgress = false;
+                    ApplyJurnalAuthorizationState();
+                }
             }
             catch (SystemException ex)
             {
+                isSaveOrUpdateInProgress = false;
+                ApplyJurnalAuthorizationState();
                 XtraMessageBox.Show(ex.Message, "Error on Simpan", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -268,27 +311,98 @@ namespace Accounting.Form
 
         private void sbhapus_Click(object sender, EventArgs e)
         {
+            if (GetSelectedHeaderRowHandles().Count > 0)
+            {
+                Hapus_Jurnal_Selected();
+                return;
+            }
+
             Hapus_jurnal();
         }
 
 
         private void sbbatal_Click(object sender, EventArgs e)
         {
+            if (!IsInputJurnalDirty())
+            {
+                bersih();
+                return;
+            }
+
             if (XtraMessageBox.Show("Batalkan Transaksi Jurnal ? ", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
             bersih();
 
         }
+
+        private bool ValidateDetailRowsBeforeSave()
+        {
+            if (HasMeaningfulDetailRows())
+            {
+                return true;
+            }
+
+            XtraMessageBox.Show(
+                "Detail jurnal masih kosong. Isi minimal satu baris detail sebelum simpan/update.",
+                "Perhatian",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+
+            TABJurnal.SelectedTabPage = xtraTabPage1;
+            FocusFirstInputCell();
+            return false;
+        }
+
+        private bool HasMeaningfulDetailRows()
+        {
+            if (InputJurnalDetail == null || InputJurnalDetail.Count == 0)
+            {
+                return false;
+            }
+
+            return InputJurnalDetail.Any(detail =>
+                detail != null &&
+                (!string.IsNullOrWhiteSpace(detail.Kode)
+                || !string.IsNullOrWhiteSpace(detail.Rekening)
+                || !string.IsNullOrWhiteSpace(detail.Keterangan)
+                || detail.Debet != 0
+                || detail.Kredit != 0));
+        }
+
+        private bool IsInputJurnalDirty()
+        {
+            return editjurnal
+                || !string.IsNullOrWhiteSpace(NoJurnaltxt.Text)
+                || jurnalbalik.Checked
+                || HasMeaningfulDetailRows();
+        }
+
         private void bersih()
         {
             PopulateList();
             NoJurnaltxt.Text = "";
 
             editjurnal = false;
+            old_HeaderVersionUtc = null;
+            SetSaveButtonMode(isEdit: false);
             x = 0;
-            SBSimpan.Enabled = true;
+            isSaveOrUpdateInProgress = false;
             jurnalbalik.Checked = false;
             NoJurnaltxt.Select();
+        }
+
+        private void SetSaveButtonMode(bool isEdit)
+        {
+            SBSimpan.Text = isEdit ? "&Update F4" : "&Simpan F4";
+            ApplyJurnalAuthorizationState();
+        }
+
+        private void RefreshDaftarJurnalIfVisible()
+        {
+            if (TABJurnal.SelectedTabPage == xtraTabPage2 || TABJurnal.SelectedTabPage == xtraTabPage3)
+            {
+                PilihanPeriodeAkuntansi();
+            }
         }
 
     }

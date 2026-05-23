@@ -22,14 +22,19 @@ namespace Accounting
 
             try
             {
-                // Command-line password reset: --reset-password <userid> <newpassword>
-                if (args.Length == 3 && args[0].Equals("--reset-password", StringComparison.OrdinalIgnoreCase))
+                if (args.Length == 2 && args[0].Equals("--reset-password", StringComparison.OrdinalIgnoreCase))
                 {
                     string userId = args[1];
-                    string newPassword = args[2];
-                    UserManager_Services.ResetPassword(userId, newPassword);
+                    string temporaryPassword = UserManager_Services.AdminResetPassword(userId, LoginInfo.MODULE, bypassAuthorization: true);
                     Log.Information("Password reset for user {UserId}", userId);
-                    Console.WriteLine($"Password berhasil direset untuk user: {userId}");
+                    Console.WriteLine($"Password sementara untuk user '{userId}': {temporaryPassword}");
+                    Console.WriteLine("Password ini wajib diganti saat login berikutnya.");
+                    return;
+                }
+
+                if (args.Length >= 1 && args[0].Equals("--reset-password", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Gunakan format: --reset-password <userid>");
                     return;
                 }
 

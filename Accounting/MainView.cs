@@ -2,7 +2,9 @@
 using Accounting.BusinessLayer;
 using Accounting.Form;
 using Accounting.Laporan;
+using Accounting.Services;
 using Accounting.UC;
+using DevExpress.XtraBars;
 using DevExpress.LookAndFeel;
 using DevExpress.XtraBars.Docking2010;
 using DevExpress.XtraBars.Docking2010.Views.Tabbed;
@@ -18,6 +20,16 @@ namespace Accounting
 {
     public partial class MainView : DevExpress.XtraEditors.XtraForm
     {
+        private enum FixedAssetMenuAction
+        {
+            MasterData,
+            Cip,
+            Reports,
+            DepreciationRun,
+            LifecycleTransaction,
+            ApprovalAction
+        }
+
         public MainView()
         {
             InitializeComponent();
@@ -85,20 +97,121 @@ namespace Accounting
                 View = new TabbedView()
             };
         }
+
+        private void OnFixedAssetMasterClick(object sender, ItemClickEventArgs e)
+        {
+            if (!EnsureFixedAssetAccess(FixedAssetMenuAction.MasterData))
+            {
+                return;
+            }
+
+            OpenMDI<FrmFixedAssetMaster>(false);
+        }
+
+        private void OnFixedAssetCipClick(object sender, ItemClickEventArgs e)
+        {
+            if (!EnsureFixedAssetAccess(FixedAssetMenuAction.Cip))
+            {
+                return;
+            }
+
+            OpenMDI<FrmFixedAssetCip>(false);
+        }
+
+        private void OnFixedAssetReportsClick(object sender, ItemClickEventArgs e)
+        {
+            if (!EnsureFixedAssetAccess(FixedAssetMenuAction.Reports))
+            {
+                return;
+            }
+
+            OpenMDI<FrmFixedAssetReports>(false);
+        }
+
+        private void OnFixedAssetLifecycleClick(object sender, ItemClickEventArgs e)
+        {
+            if (!EnsureFixedAssetAccess(FixedAssetMenuAction.LifecycleTransaction))
+            {
+                return;
+            }
+
+            OpenMDI<FrmFixedAssetLifecycle>(false);
+        }
+
+        private void OnFixedAssetDepreciationClick(object sender, ItemClickEventArgs e)
+        {
+            if (!EnsureFixedAssetAccess(FixedAssetMenuAction.DepreciationRun))
+            {
+                return;
+            }
+
+            OpenMDI<FrmFixedAssetDepreciation>(false);
+        }
+
+        private void OnFixedAssetApprovalClick(object sender, ItemClickEventArgs e)
+        {
+            if (!EnsureFixedAssetAccess(FixedAssetMenuAction.ApprovalAction))
+            {
+                return;
+            }
+
+            OpenMDI<FrmFixedAssetApproval>(false);
+        }
+
+        private bool EnsureFixedAssetAccess(FixedAssetMenuAction action)
+        {
+            bool isAllowed = action switch
+            {
+                FixedAssetMenuAction.MasterData => AuthorizationService.CanViewFixedAssetWorkspace(),
+                FixedAssetMenuAction.Cip => AuthorizationService.CanViewFixedAssetWorkspace(),
+                FixedAssetMenuAction.Reports => AuthorizationService.CanViewFixedAssetWorkspace(),
+                FixedAssetMenuAction.DepreciationRun => AuthorizationService.CanRunFixedAssetDepreciation(),
+                FixedAssetMenuAction.LifecycleTransaction => AuthorizationService.CanCreateFixedAssetLifecycle(),
+                FixedAssetMenuAction.ApprovalAction => AuthorizationService.CanApproveFixedAssetTransaction(),
+                _ => false
+            };
+            if (isAllowed)
+            {
+                return true;
+            }
+
+            string actionName = action switch
+            {
+                FixedAssetMenuAction.MasterData => "Data Master Aset",
+                FixedAssetMenuAction.Cip => "Konstruksi Dalam Pengerjaan",
+                FixedAssetMenuAction.Reports => "Laporan Aset Tetap",
+                FixedAssetMenuAction.DepreciationRun => "Proses Penyusutan",
+                FixedAssetMenuAction.LifecycleTransaction => "Transaksi Siklus Aset",
+                FixedAssetMenuAction.ApprovalAction => "Persetujuan",
+                _ => "Menu Aset Tetap"
+            };
+            string role = string.IsNullOrWhiteSpace(LoginInfo.role) ? "-" : LoginInfo.role.Trim();
+            XtraMessageBox.Show(
+                $"Role '{role}' tidak memiliki akses ke menu {actionName}.",
+                "Akses Ditolak",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return false;
+        }
+
+        private bool EnsureAccess(Func<bool> accessCheck, string message)
+        {
+            if (accessCheck())
+            {
+                return true;
+            }
+
+            XtraMessageBox.Show(message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return false;
+        }
         private void barButtonItem35_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             try
             {
-                //using var handle = SplashScreenManager.ShowOverlayForm(this);
-                //handle.QueueFocus(IntPtr.Zero);
-                ////2 kode buka kode perkiraan
-                //bool akses = LevelAksesServices.OpenForm(2, LoginInfo.userID);
-                //if (akses == false)
-                //{
-                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //    return;
-                //}
-                
+                if (!EnsureAccess(AuthorizationService.CanViewCoaWorkspace, "Anda tidak memiliki izin membuka workspace chart of account."))
+                {
+                    return;
+                }
 
                 OpenMDI<FrmAkunEF>(false);
             }
@@ -137,13 +250,10 @@ namespace Accounting
         {
             try
             {
-                ////17 kode buka input jurnal
-                //bool akses = LevelAksesServices.OpenForm(17, LoginInfo.userID);
-                //if (akses == false)
-                //{
-                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //    return;
-                //}
+                if (!EnsureAccess(AuthorizationService.CanImportJurnal, "Anda tidak memiliki izin membuka import jurnal."))
+                {
+                    return;
+                }
 
                 OpenMDI<FrmImportJurnal_Parsial>(false);
             }
@@ -157,11 +267,8 @@ namespace Accounting
         {
             try
             {
-                //4 kode buka daftar jurnal
-                bool akses = LevelAksesServices.OpenForm(4, LoginInfo.userID);
-                if (akses == false)
+                if (!EnsureAccess(AuthorizationService.CanViewJurnalWorkspace, "Anda tidak memiliki izin membuka daftar jurnal."))
                 {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 
@@ -175,17 +282,13 @@ namespace Accounting
 
         private void barButtonItem18_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-           
+            if (!EnsureAccess(AuthorizationService.CanViewJurnalWorkspace, "Anda tidak memiliki izin membuka input jurnal."))
+            {
+                return;
+            }
+
                 using var handle = SplashScreenManager.ShowOverlayForm(this);
                 handle.QueueFocus(IntPtr.Zero);
-                ////16 kode buka input jurnal
-                //bool akses = LevelAksesServices.OpenForm(16, LoginInfo.userID);
-                //if (akses == false)
-                //{
-                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //    return;
-                //}
-                ////OpenMDI<FrmJurnal>(true);
                 FrmJurnal fjurnal = new();
                 fjurnal.Show(this);   
             
@@ -259,10 +362,8 @@ namespace Accounting
         private void barButtonItem19_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             //24 kode buka laporan history gl
-            bool akses = LevelAksesServices.OpenForm(24, LoginInfo.userID);
-            if (akses == false)
+            if (!EnsureAccess(AuthorizationService.CanViewReports, "Anda tidak memiliki izin membuka laporan history GL."))
             {
-                XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
         }
@@ -280,6 +381,11 @@ namespace Accounting
                 //    return;
                 //}
               
+                if (!EnsureAccess(AuthorizationService.CanImportCoa, "Anda tidak memiliki izin membuka import chart of account."))
+                {
+                    return;
+                }
+
                 OpenMDI<FrmImportCOA>(false);
             }
             catch (SystemException ex)
@@ -324,6 +430,11 @@ namespace Accounting
                 //    return;
                 //}
              
+                if (!EnsureAccess(AuthorizationService.CanUpdateCoa, "Anda tidak memiliki izin membuka pengaturan blok."))
+                {
+                    return;
+                }
+
                 OpenMDI<FrmMasterBlok>(false);
             }
             catch (SystemException ex)
@@ -334,21 +445,12 @@ namespace Accounting
 
         private void BSETUSER_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            //string permissionName = "USER_AKSES";
+            if (!AuthorizationService.CanViewUserManagement())
+            {
+                XtraMessageBox.Show("Anda tidak memiliki izin membuka manajemen user.", "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            ////bool canCreate = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanCreate);
-            //bool canRead = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanRead);
-            ////bool canUpdate = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanUpdate);
-            ////bool canDelete = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanDelete);
-            //if (canRead)
-            //{
-            //    OpenMDI<FrmUsers>(false);
-            //}
-            //else
-            //{
-            //    XtraMessageBox.Show("Anda tidak memiliki Akses untuk membuka Pengaturan Akses User.", "Stop", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-
-            //}
             OpenMDI<FrmUsers>(false);
         }
 
@@ -363,6 +465,11 @@ namespace Accounting
                 //    return;
                 //}
            
+                if (!EnsureAccess(AuthorizationService.CanManageAccountingPeriods, "Anda tidak memiliki izin membuka pengaturan periode akuntansi."))
+                {
+                    return;
+                }
+
                 OpenMDI<FrmPeriode>(false);
             }
             catch (SystemException ex)
@@ -373,21 +480,12 @@ namespace Accounting
 
         private void BSETAKSES_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            //string permissionName = "USER_AKSES";
+            if (!AuthorizationService.CanViewRoleManagement())
+            {
+                XtraMessageBox.Show("Anda tidak memiliki izin membuka pengaturan role dan permission.", "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            ////bool canCreate = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanCreate);
-            //bool canRead = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanRead);
-            ////bool canUpdate = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanUpdate);
-            ////bool canDelete = Permission_Services.CanUserPerformAction(LoginInfo.userID, LoginInfo.MODULE, permissionName, p => p.CanDelete);
-            //if (canRead)
-            //{
-            //    AddUserControlTab(typeof(uc_Level_Akses), "Pengaturan Akses User");
-            //}
-            //else
-            //{
-            //    XtraMessageBox.Show("Anda tidak memiliki Akses untuk membuka Pengaturan Akses User.", "Stop", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-
-            //}
             AddUserControlTab(typeof(uc_Level_Akses), "Pengaturan Akses User");
         }
         private void AddUserControlTab(Type userControlType, string tabText)
@@ -477,6 +575,11 @@ namespace Accounting
                 //}
 
         
+                if (!EnsureAccess(AuthorizationService.CanViewReports, "Anda tidak memiliki izin membuka laporan."))
+                {
+                    return;
+                }
+
                 OpenMDI<FrmReportParam>(false);
             }
             catch (SystemException ex)
@@ -490,10 +593,8 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(33, LoginInfo.userID);
-                if (akses == false)
+                if (!EnsureAccess(AuthorizationService.CanViewReports, "Anda tidak memiliki izin membuka laporan."))
                 {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 OpenMDI<FrmReportParam>(false);
@@ -520,6 +621,11 @@ namespace Accounting
                 //    return;
                 //}
              
+                if (!EnsureAccess(AuthorizationService.CanManageCompanyProfile, "Anda tidak memiliki izin membuka profil company."))
+                {
+                    return;
+                }
+
                 OpenMDI<FrmCompanyProfile>(false);
             }
             catch (SystemException ex)
@@ -539,6 +645,11 @@ namespace Accounting
                 //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 //    return;
                 //}
+                if (!EnsureAccess(AuthorizationService.CanManageProfitLossSetup, "Anda tidak memiliki izin membuka pengaturan laba rugi."))
+                {
+                    return;
+                }
+
                 OpenMDI<FrmSettingRL>(false);
 
             }
@@ -552,13 +663,11 @@ namespace Accounting
         {
             try
             {
-                ////17 kode buka input jurnal
-                //bool akses = LevelAksesServices.OpenForm(17, LoginInfo.userID);
-                //if (akses == false)
-                //{
-                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //    return;
-                //}
+                if (!EnsureAccess(AuthorizationService.CanExportJurnal, "Anda tidak memiliki izin membuka export jurnal."))
+                {
+                    return;
+                }
+
                 OpenMDI<FrmExportJurnal>(false);
             }
             catch (SystemException ex)
@@ -582,6 +691,11 @@ namespace Accounting
                 if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
                 {
                     XtraMessageBox.Show("Laporan Estate hanya Berlaku untuk Lokasi Kebun", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                if (!EnsureAccess(AuthorizationService.CanViewEstateReports, "Anda tidak memiliki izin membuka laporan estate."))
+                {
                     return;
                 }
 
@@ -685,12 +799,19 @@ namespace Accounting
 
         private void barButtonItem10_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            //bool akses = LevelAksesServices.OpenForm(46, LoginInfo.userID);
-            //if (akses == false)
-            //{
-            //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //    return;
-            //}
+            try
+            {
+                if (!EnsureAccess(AuthorizationService.CanViewAuditTrail, "Anda tidak memiliki izin membuka audit trail."))
+                {
+                    return;
+                }
+
+                OpenMDI<FrmAuditTrail>(false);
+            }
+            catch (SystemException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void barButtonItem19_ItemClick_1(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
@@ -746,6 +867,11 @@ namespace Accounting
                 //}
            
 
+                if (!EnsureAccess(AuthorizationService.CanManageCompanyMaster, "Anda tidak memiliki izin membuka master company."))
+                {
+                    return;
+                }
+
                 OpenMDI<FrmCompany>(false);
             }
             catch (SystemException ex)
@@ -758,11 +884,8 @@ namespace Accounting
         {
             try
             {
-                //16 kode buka input jurnal
-                bool akses = LevelAksesServices.OpenForm(16, LoginInfo.userID);
-                if (akses == false)
+                if (!EnsureAccess(AuthorizationService.CanViewJurnalWorkspace, "Anda tidak memiliki izin membuka input jurnal."))
                 {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                
@@ -778,10 +901,8 @@ namespace Accounting
         {
             try
             {
-                bool akses = LevelAksesServices.OpenForm(42, LoginInfo.userID);
-                if (akses == false)
+                if (!EnsureAccess(AuthorizationService.CanUpdateCoa, "Anda tidak memiliki izin membuka pengaturan blok."))
                 {
-                    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
@@ -808,6 +929,11 @@ namespace Accounting
                 //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 //    return;
                 //}
+                if (!EnsureAccess(AuthorizationService.CanUpdateCoa, "Anda tidak memiliki izin membuka pengaturan divisi."))
+                {
+                    return;
+                }
+
                 if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
                 {
                     XtraMessageBox.Show("Module ini hanya dapat digunakan untuk COA berjenis kebun...!!!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -838,6 +964,11 @@ namespace Accounting
                 //    return;
                 //}
                  
+                if (!EnsureAccess(AuthorizationService.CanUpdateCoa, "Anda tidak memiliki izin membuka master akun blok."))
+                {
+                    return;
+                }
+
                 OpenMDI<FrmMasterAkun>(false);
             }
             catch (SystemException ex)
@@ -896,11 +1027,21 @@ namespace Accounting
 
         private void barButtonItem15_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            if (!EnsureAccess(AuthorizationService.CanViewCoaWorkspace, "Anda tidak memiliki izin membuka workspace chart of account."))
+            {
+                return;
+            }
+
             OpenMDI<FrmAkunEF_Luas>(false);
         }
 
         private void barButtonItem40_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            if (!EnsureAccess(AuthorizationService.CanAccessDeveloperTools, "Anda tidak memiliki izin membuka developer tools."))
+            {
+                return;
+            }
+
             OpenMDI<FrmDeveloper>(false);
         }
 
@@ -949,6 +1090,78 @@ namespace Accounting
         private void bbiupdatesaldo_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             OpenMDI<FrmUpdateSaldoAwal>(false);
+        }
+
+        private void barButtonItem48_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                OnFixedAssetDepreciationClick(sender, e);
+            }
+            catch (SystemException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void barButtonItem49_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                OnFixedAssetLifecycleClick(sender, e);
+            }
+            catch (SystemException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void barButtonItem50_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                OnFixedAssetApprovalClick(sender, e);
+            }
+            catch (SystemException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void barButtonItem51_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                OnFixedAssetMasterClick(sender, e);
+            }
+            catch (SystemException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void barButtonItem52_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                OnFixedAssetCipClick(sender, e);
+            }
+            catch (SystemException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void barButtonItem53_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                OnFixedAssetReportsClick(sender, e);
+            }
+            catch (SystemException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ using Accounting._1.Interface;
 using Accounting._2.DataAcces;
 using Accounting.BusinessLayer;
 using Accounting.Model;
+using Accounting.Services;
 using Accounting.UC.Jurnal;
 using DevExpress.Data;
 using DevExpress.Data.ODataLinq.Helpers;
@@ -71,9 +72,12 @@ namespace Accounting.Form
         string periodetujuan = string.Empty, p_iddata = string.Empty;
         int pbulan, ptahun;
         double selisihD, selisihK, nilai, nilai2, old_JurnalID;
+        DateTime? old_HeaderVersionUtc;
         private SoundPlayer? _player;
         private SoundPlayer Player => _player ??= new SoundPlayer();
         private bool suppressKodeLeaveValidation;
+        private bool isSaveOrUpdateInProgress;
+        private bool isReindexingBaris;
         private bool kasirLoaded, aisLoaded, inventoryLoaded, hrisLoaded;
         private bool isInitializing;
         DataTable dtJurnalKasir = new(), dtAISDetail = new(), dtJurnalInventory = new();
@@ -143,6 +147,57 @@ namespace Accounting.Form
 
         internal static string FormatPeriod(int month, int year) => $"{month:00}/{year}";
 
+        private static bool HasJurnalInputWriteAccess()
+        {
+            return AuthorizationService.CanCreateJurnal() || AuthorizationService.CanUpdateJurnal();
+        }
+
+        private bool CanSaveCurrentJurnal()
+        {
+            return editjurnal
+                ? AuthorizationService.CanUpdateJurnal()
+                : AuthorizationService.CanCreateJurnal();
+        }
+
+        private bool TryEnsureJurnalAccess(Action ensureAction)
+        {
+            try
+            {
+                ensureAction();
+                return true;
+            }
+            catch (InvalidOperationException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+        }
+
+        private void ApplyJurnalAuthorizationState()
+        {
+            if (JDgridView != null)
+            {
+                bool canEditInput = HasJurnalInputWriteAccess();
+                JDgridView.OptionsBehavior.Editable = canEditInput;
+                Hapus.OptionsColumn.AllowEdit = canEditInput;
+            }
+
+            if (sbubah != null)
+            {
+                sbubah.Enabled = AuthorizationService.CanUpdateJurnal();
+            }
+
+            if (sbhapus != null)
+            {
+                sbhapus.Enabled = AuthorizationService.CanDeleteJurnal();
+            }
+
+            if (SBSimpan != null)
+            {
+                SBSimpan.Enabled = !isSaveOrUpdateInProgress && CanSaveCurrentJurnal();
+            }
+        }
+
         private bool ValidatePeriodNotLocked(string iddata, string periode, string periodeDisplay)
         {
             Acct.KunciPeriode = jurnalRepository.GetLockStatus(iddata, periode);
@@ -187,6 +242,11 @@ namespace Accounting.Form
 
         private void ExecuteImportJurnal(DataTable sourceData, int month, int year, int yearControlValue, string moduleLabel)
         {
+            if (!TryEnsureJurnalAccess(AuthorizationService.EnsureCanImportJurnal))
+            {
+                return;
+            }
+
             string p_periode = FormatPeriod(month, year);
             int sourceRows = sourceData?.Rows.Count ?? 0;
             using var perf = BeginPerfMeasurement(

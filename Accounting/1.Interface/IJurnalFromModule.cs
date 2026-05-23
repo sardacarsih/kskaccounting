@@ -11,6 +11,7 @@ namespace Accounting.DataLayer
     {
         IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int p_periode_int, string p_ptlokasi, string p_estate);
         IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_Inventory(int p_periode_int, string p_ptlokasi);
+        IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int p_periode_int, string p_ptlokasi, string? p_source_filter = null);
         DataTable JurnalKasirDetail_DapperKasir(
             DateTime p_dari,
             DateTime p_sampai,
@@ -24,7 +25,11 @@ namespace Accounting.DataLayer
         IEnumerable<JurnalInventoryDetailDTO> GetJurnalDetails_Inventory(
         int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted,
         string p_periode_str, string p_userid, int p_glyear, int p_glmonth);
+        IEnumerable<JurnalInventoryDetailDTO> GetJurnalDetails_InventoryBaru(
+        int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted,
+        string p_periode_str, string p_userid, int p_glyear, int p_glmonth, string? p_source_filter = null);
         DataTable Jurnal_Inventori(int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth);
+        DataTable Jurnal_InventoriBaru(int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth, string? p_source_filter = null);
         DataTable AIS_Jurnal_Header(int p_periode, string p_ptlokasi, string p_estate, int p_remise);
         DataTable AIS_Jurnal_Detail_BOR(string p_NOBUKTI, DateTime TanggalJurnal, int p_periode, string p_periode_str, string p_ptlokasi, string p_estate, int p_remise, string p_iddata, string p_divisi);       
         DataTable AIS_Jurnal_Detail_HARIAN(string p_NOBUKTI,DateTime TanggalJurnal,int p_periode, string p_periode_str,string p_ptlokasi, string p_estate, int p_remise, string p_iddata, string p_divisi);

@@ -19,8 +19,6 @@ namespace Accounting.Form
 {
     public partial class FrmSetAkunAgronomy : XtraForm
     {
-        bool editkerja;
-
         readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmSetAkunAgronomy()
         {
@@ -29,7 +27,7 @@ namespace Accounting.Form
         }
 
 
-        int P_KERJAID, kodekerja;
+        int P_KERJAID;
         private void SBUpdate_Click(object sender, EventArgs e)
         {
             if(string.IsNullOrEmpty(searchLookUpEditkodegl.Text))
@@ -328,7 +326,6 @@ namespace Accounting.Form
                     if (row != null)
                     {
                         TXTREKENING.Text = row["PERKIRAAN"].ToString().Trim();
-                        editkerja = false;
                     }
                    
                 }

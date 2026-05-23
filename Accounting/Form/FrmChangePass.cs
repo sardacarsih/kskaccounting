@@ -1,19 +1,18 @@
-﻿using Accounting.BusinessLayer;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Data;
 using System.Windows.Forms;
+using Accounting.Services;
 
 namespace Accounting
 {
     public partial class FrmChangePass : DevExpress.XtraEditors.XtraForm
     {
-        private OracleConnection con;
-        private OracleDataAdapter UserDA;
-        private DataSet UserDS;
-        private string oldpasswd;
+        private readonly OracleConnection con;
+        private OracleDataAdapter? userDA;
+        private DataSet? userDS;
 
         public FrmChangePass()
         {
@@ -21,34 +20,52 @@ namespace Accounting
             con = new OracleConnection(LoginInfo.OracleConnString);
         }
 
+        public bool RequireCurrentPassword { get; set; } = true;
+        public bool ForcePasswordChange { get; set; }
+
         private void FrmChangePass_Load(object sender, EventArgs e)
         {
             lbluserid.Text = LoginInfo.userID;
             lblrole.Text = LoginInfo.role;
-            Load_ProfileUser();
+            txtnama.Properties.ReadOnly = true;
+            txtdept.Properties.ReadOnly = true;
+            txtjab.Properties.ReadOnly = true;
+            LoadProfileUser();
+            ApplyMode();
         }
 
-        private void Load_ProfileUser()
+        private void ApplyMode()
         {
-            string query = "select nama, dept, jabatan, password from master_login WHERE userid = :p_userid";
+            labelControl3.Visible = RequireCurrentPassword;
+            txtoldpass.Visible = RequireCurrentPassword;
 
-            using (OracleCommand cmd = new(query, con))
+            if (ForcePasswordChange)
             {
-                cmd.CommandType = CommandType.Text;
-                cmd.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;
-                UserDA = new OracleDataAdapter(cmd);
-                UserDS = new DataSet();
-                UserDA.Fill(UserDS);
-
-                if (UserDS.Tables[0].Rows.Count > 0)
-                {
-                    DataRow userRow = UserDS.Tables[0].Rows[0];
-                    txtnama.Text = userRow.Field<string>("NAMA");
-                    txtdept.Text = userRow.Field<string>("DEPT");
-                    txtjab.Text = userRow.Field<string>("JABATAN");
-                    oldpasswd = userRow.Field<string>("PASSWORD");
-                }
+                Text = "Ganti Password Sementara";
+                simpleButton1.Text = "Update Password";
             }
+        }
+
+        private void LoadProfileUser()
+        {
+            const string query = "SELECT nama, dept, jabatan FROM master_login WHERE userid = :p_userid";
+
+            using OracleCommand cmd = new(query, con);
+            cmd.CommandType = CommandType.Text;
+            cmd.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;
+            userDA = new OracleDataAdapter(cmd);
+            userDS = new DataSet();
+            userDA.Fill(userDS);
+
+            if (userDS.Tables.Count == 0 || userDS.Tables[0].Rows.Count == 0)
+            {
+                return;
+            }
+
+            DataRow userRow = userDS.Tables[0].Rows[0];
+            txtnama.Text = userRow.Field<string>("NAMA");
+            txtdept.Text = userRow.Field<string>("DEPT");
+            txtjab.Text = userRow.Field<string>("JABATAN");
         }
 
         private IOverlaySplashScreenHandle ShowProgressPanel()
@@ -56,15 +73,17 @@ namespace Accounting
             return SplashScreenManager.ShowOverlayForm(this);
         }
 
-        private void CloseProgressPanel(IOverlaySplashScreenHandle handle)
+        private void CloseProgressPanel(IOverlaySplashScreenHandle? handle)
         {
             if (handle != null)
+            {
                 SplashScreenManager.CloseOverlayForm(handle);
+            }
         }
 
         private void simpleButton1_Click(object sender, EventArgs e)
         {
-            IOverlaySplashScreenHandle handle = null;
+            IOverlaySplashScreenHandle? handle = null;
 
             try
             {
@@ -79,46 +98,42 @@ namespace Accounting
 
         private void ValidateAndChangePassword()
         {
-            var p = new PasswordCryptographyPbkdf2();
-            string opwd = txtoldpass.Text;
-            bool isValid = p.IsValidPassword(opwd, oldpasswd);
-
-            if (isValid)
+            if (!txtnewpass.Text.Equals(txtpassconf.Text, StringComparison.Ordinal))
             {
-                if (txtnewpass.Text.Equals(txtpassconf.Text))
-                {
-                    string newhashsaltpwd = p.GetHashPassword(txtnewpass.Text);
-                    UpdateProfile(txtnama.Text, txtdept.Text, txtjab.Text, newhashsaltpwd);
-                    XtraMessageBox.Show("New Password Updated.", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    XtraMessageBox.Show("Konfirmasi Password tidak sama.", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
+                XtraMessageBox.Show("Konfirmasi password tidak sama.", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                txtpassconf.Focus();
+                return;
+            }
+
+            bool changed;
+            string validationMessage;
+            if (RequireCurrentPassword)
+            {
+                changed = UserManager_Services.TryChangePassword(LoginInfo.userID, txtoldpass.Text, txtnewpass.Text, out validationMessage);
             }
             else
             {
-                XtraMessageBox.Show("Password Lama tidak valid", "Message", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                changed = UserManager_Services.TryChangePasswordAfterVerifiedLogin(LoginInfo.userID, txtnewpass.Text, out validationMessage);
             }
-        }
 
-        private void UpdateProfile(string nama, string dept, string jabatan, string newhashsaltpwd)
-        {
-            string query = "update master_login set nama = :pnama, dept = :pdept, jabatan = :pjab, password = :pwd WHERE userid = :p_userid";
-
-            using (OracleCommand cmd = new OracleCommand(query, con))
+            if (!changed)
             {
-                cmd.CommandType = CommandType.Text;
-                cmd.Parameters.Add(":pnama", OracleDbType.Varchar2, 20).Value = nama;
-                cmd.Parameters.Add(":pdept", OracleDbType.Varchar2, 20).Value = dept;
-                cmd.Parameters.Add(":pjab", OracleDbType.Varchar2, 20).Value = jabatan;
-                cmd.Parameters.Add(":pwd", OracleDbType.Varchar2, 100).Value = newhashsaltpwd;
-                cmd.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;
+                XtraMessageBox.Show(validationMessage, "Message", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (RequireCurrentPassword)
+                {
+                    txtoldpass.Focus();
+                }
+                else
+                {
+                    txtnewpass.Focus();
+                }
 
-                con.Open();
-                cmd.ExecuteNonQuery();
-                con.Close();
+                return;
             }
+
+            XtraMessageBox.Show("Password berhasil diperbarui.", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            DialogResult = DialogResult.OK;
+            Close();
         }
 
         private void TextBox_KeyDown(object sender, KeyEventArgs e)

@@ -1,4 +1,4 @@
-﻿using Accounting.Form;
+using Accounting.Form;
 
 namespace Accounting
 {
@@ -107,6 +107,12 @@ namespace Accounting
             barButtonItem40 = new DevExpress.XtraBars.BarButtonItem();
             bbialokasikerja = new DevExpress.XtraBars.BarButtonItem();
             bbiupdatesaldo = new DevExpress.XtraBars.BarButtonItem();
+            barButtonItem48 = new DevExpress.XtraBars.BarButtonItem();
+            barButtonItem49 = new DevExpress.XtraBars.BarButtonItem();
+            barButtonItem50 = new DevExpress.XtraBars.BarButtonItem();
+            barButtonItem51 = new DevExpress.XtraBars.BarButtonItem();
+            barButtonItem52 = new DevExpress.XtraBars.BarButtonItem();
+            barButtonItem53 = new DevExpress.XtraBars.BarButtonItem();
             ribbonPage5 = new DevExpress.XtraBars.Ribbon.RibbonPage();
             ribbonPageGroup25 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             ribbonPageGroup13 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
@@ -118,6 +124,7 @@ namespace Accounting
             ribbonPage1 = new DevExpress.XtraBars.Ribbon.RibbonPage();
             ribbonPageGroup1 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             ribbonPageGroup5 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
+            ribbonPageGroupFaDaftarRuntime = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             ribbonPage2 = new DevExpress.XtraBars.Ribbon.RibbonPage();
             ribbonPageGroup2 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             ribbonPageGroup12 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
@@ -136,7 +143,6 @@ namespace Accounting
             ribbonPageGroup22 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             ribbonPageGroup4 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             ribbonStatusBar1 = new DevExpress.XtraBars.Ribbon.RibbonStatusBar();
-            barButtonItem48 = new DevExpress.XtraBars.BarButtonItem();
             ((System.ComponentModel.ISupportInitialize)ribbonControl1).BeginInit();
             SuspendLayout();
             // 
@@ -150,15 +156,15 @@ namespace Accounting
             ribbonControl1.EmptyAreaImageOptions.ImagePadding = new System.Windows.Forms.Padding(175, 184, 175, 184);
             ribbonControl1.ExpandCollapseItem.Id = 0;
             ribbonControl1.ExpandCollapseItem.ShowItemShortcut = DevExpress.Utils.DefaultBoolean.False;
-            ribbonControl1.Items.AddRange(new DevExpress.XtraBars.BarItem[] { ribbonControl1.ExpandCollapseItem, barButtonItem1, barButtonItem2, barButtonItem3, barButtonItem4, barButtonItem5, barButtonItem6, barButtonItem7, barButtonItem8, barButtonItem9, barButtonItem11, barButtonItem12, barButtonItem13, barButtonItem14, barButtonItem15, barButtonItem16, barButtonItem17, barButtonItem18, barButtonItem23, barButtonItem27, barStaticItem1, barListItem1, barButtonItem28, barButtonItem29, barButtonItem30, barButtonItem31, barButtonItem33, barButtonItem34, barButtonItem35, bbiinit, bbinamapt, bbiuserid, bbiperiode, bbiwilayah, barButtonItem39, barButtonItem41, BSETIMPORTCOA, BSETIMPORTJUR, BSETPERIODE, BSETAKSES, BSETUSER, skinRibbonGalleryBarItem1, skinRibbonGalleryBarItem2, skinPaletteDropDownButtonItem1, BSETGENERATE, barButtonItem36, barButtonItem37, barButtonItem42, bbirreportlr, barButtonItem45, barButtonItem10, barButtonItem32, barButtonItem43, barButtonItem44, bbiestate, barButtonItem46, barButtonItem47, barButtonItem26, barButtonItem19, barButtonItem20, barButtonItem22, barButtonItem21, barButtonItem24, barButtonItem25, bsversion, barButtonItem38, bbcheckupdate, barButtonItem40, bbialokasikerja, bbiupdatesaldo, barButtonItem48 });
+            ribbonControl1.Items.AddRange(new DevExpress.XtraBars.BarItem[] { ribbonControl1.ExpandCollapseItem, barButtonItem1, barButtonItem2, barButtonItem3, barButtonItem4, barButtonItem5, barButtonItem6, barButtonItem7, barButtonItem8, barButtonItem9, barButtonItem11, barButtonItem12, barButtonItem13, barButtonItem14, barButtonItem15, barButtonItem16, barButtonItem17, barButtonItem18, barButtonItem23, barButtonItem27, barStaticItem1, barListItem1, barButtonItem28, barButtonItem29, barButtonItem30, barButtonItem31, barButtonItem33, barButtonItem34, barButtonItem35, bbiinit, bbinamapt, bbiuserid, bbiperiode, bbiwilayah, barButtonItem39, barButtonItem41, BSETIMPORTCOA, BSETIMPORTJUR, BSETPERIODE, BSETAKSES, BSETUSER, skinRibbonGalleryBarItem1, skinRibbonGalleryBarItem2, skinPaletteDropDownButtonItem1, BSETGENERATE, barButtonItem36, barButtonItem37, barButtonItem42, bbirreportlr, barButtonItem45, barButtonItem10, barButtonItem32, barButtonItem43, barButtonItem44, bbiestate, barButtonItem46, barButtonItem47, barButtonItem26, barButtonItem19, barButtonItem20, barButtonItem22, barButtonItem21, barButtonItem24, barButtonItem25, bsversion, barButtonItem38, bbcheckupdate, barButtonItem40, bbialokasikerja, bbiupdatesaldo, barButtonItem48, barButtonItem49, barButtonItem50, barButtonItem51, barButtonItem52, barButtonItem53 });
             ribbonControl1.Location = new System.Drawing.Point(0, 0);
             ribbonControl1.Margin = new System.Windows.Forms.Padding(17, 19, 17, 19);
-            ribbonControl1.MaxItemId = 110;
+            ribbonControl1.MaxItemId = 115;
             ribbonControl1.Name = "ribbonControl1";
             ribbonControl1.OptionsMenuMinWidth = 1947;
             ribbonControl1.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] { ribbonPage5, ribbonPage1, ribbonPage2, ribbonPage3, ribbonPage4 });
             ribbonControl1.QuickToolbarItemLinks.Add(skinRibbonGalleryBarItem1);
-            ribbonControl1.Size = new System.Drawing.Size(1199, 153);
+            ribbonControl1.Size = new System.Drawing.Size(1199, 253);
             ribbonControl1.StatusBar = ribbonStatusBar1;
             // 
             // barButtonItem1
@@ -710,6 +716,54 @@ namespace Accounting
             bbiupdatesaldo.Name = "bbiupdatesaldo";
             bbiupdatesaldo.ItemClick += bbiupdatesaldo_ItemClick;
             // 
+            // barButtonItem48
+            // 
+            barButtonItem48.Caption = "Proses Penyusutan";
+            barButtonItem48.Id = 109;
+            barButtonItem48.ImageOptions.SvgImage = (DevExpress.Utils.Svg.SvgImage)resources.GetObject("barButtonItem48.ImageOptions.SvgImage");
+            barButtonItem48.Name = "barButtonItem48";
+            barButtonItem48.ItemClick += barButtonItem48_ItemClick;
+            // 
+            // barButtonItem49
+            // 
+            barButtonItem49.Caption = "Transaksi Siklus Aset";
+            barButtonItem49.Id = 110;
+            barButtonItem49.ImageOptions.SvgImage = (DevExpress.Utils.Svg.SvgImage)resources.GetObject("barButtonItem49.ImageOptions.SvgImage");
+            barButtonItem49.Name = "barButtonItem49";
+            barButtonItem49.ItemClick += barButtonItem49_ItemClick;
+            // 
+            // barButtonItem50
+            // 
+            barButtonItem50.Caption = "Persetujuan";
+            barButtonItem50.Id = 111;
+            barButtonItem50.ImageOptions.SvgImage = (DevExpress.Utils.Svg.SvgImage)resources.GetObject("barButtonItem50.ImageOptions.SvgImage");
+            barButtonItem50.Name = "barButtonItem50";
+            barButtonItem50.ItemClick += barButtonItem50_ItemClick;
+            // 
+            // barButtonItem51
+            // 
+            barButtonItem51.Caption = "Data Master Aset";
+            barButtonItem51.Id = 112;
+            barButtonItem51.ImageOptions.SvgImage = (DevExpress.Utils.Svg.SvgImage)resources.GetObject("barButtonItem50.ImageOptions.SvgImage");
+            barButtonItem51.Name = "barButtonItem51";
+            barButtonItem51.ItemClick += barButtonItem51_ItemClick;
+            // 
+            // barButtonItem52
+            // 
+            barButtonItem52.Caption = "Konstruksi Dalam Pengerjaan";
+            barButtonItem52.Id = 113;
+            barButtonItem52.ImageOptions.SvgImage = (DevExpress.Utils.Svg.SvgImage)resources.GetObject("barButtonItem50.ImageOptions.SvgImage");
+            barButtonItem52.Name = "barButtonItem52";
+            barButtonItem52.ItemClick += barButtonItem52_ItemClick;
+            // 
+            // barButtonItem53
+            // 
+            barButtonItem53.Caption = "Laporan Aset Tetap";
+            barButtonItem53.Id = 114;
+            barButtonItem53.ImageOptions.SvgImage = (DevExpress.Utils.Svg.SvgImage)resources.GetObject("barButtonItem50.ImageOptions.SvgImage");
+            barButtonItem53.Name = "barButtonItem53";
+            barButtonItem53.ItemClick += barButtonItem53_ItemClick;
+            // 
             // ribbonPage5
             // 
             ribbonPage5.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] { ribbonPageGroup25, ribbonPageGroup13, ribbonPageGroup20, ribbonPageGroup17, ribbonPageGroup18, ribbonPageGroup21, ribbonPageGroup10 });
@@ -762,7 +816,7 @@ namespace Accounting
             // 
             // ribbonPage1
             // 
-            ribbonPage1.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] { ribbonPageGroup1, ribbonPageGroup5 });
+            ribbonPage1.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] { ribbonPageGroup1, ribbonPageGroup5, ribbonPageGroupFaDaftarRuntime });
             ribbonPage1.ImageOptions.Image = Properties.Resources.listbullets_16x16;
             ribbonPage1.Name = "ribbonPage1";
             reduceOperation1.Behavior = DevExpress.XtraBars.Ribbon.ReduceOperationBehavior.Single;
@@ -792,6 +846,17 @@ namespace Accounting
             ribbonPageGroup5.ItemLinks.Add(barButtonItem17);
             ribbonPageGroup5.Name = "ribbonPageGroup5";
             ribbonPageGroup5.Text = "Kas & Bank";
+            // 
+            // ribbonPageGroupFaDaftarRuntime
+            // 
+            ribbonPageGroupFaDaftarRuntime.ItemLinks.Add(barButtonItem51);
+            ribbonPageGroupFaDaftarRuntime.ItemLinks.Add(barButtonItem52);
+            ribbonPageGroupFaDaftarRuntime.ItemLinks.Add(barButtonItem49);
+            ribbonPageGroupFaDaftarRuntime.ItemLinks.Add(barButtonItem48);
+            ribbonPageGroupFaDaftarRuntime.ItemLinks.Add(barButtonItem50);
+            ribbonPageGroupFaDaftarRuntime.ItemLinks.Add(barButtonItem53);
+            ribbonPageGroupFaDaftarRuntime.Name = "ribbonPageGroupFaDaftarRuntime";
+            ribbonPageGroupFaDaftarRuntime.Text = "Aset Tetap";
             // 
             // ribbonPage2
             // 
@@ -892,7 +957,6 @@ namespace Accounting
             // ribbonPageGroup19
             // 
             ribbonPageGroup19.ItemLinks.Add(barButtonItem24);
-            ribbonPageGroup19.ItemLinks.Add(barButtonItem48);
             ribbonPageGroup19.ItemLinks.Add(BSETGENERATE);
             ribbonPageGroup19.ItemLinks.Add(barButtonItem21);
             ribbonPageGroup19.ItemLinks.Add(bbialokasikerja);
@@ -920,18 +984,11 @@ namespace Accounting
             ribbonStatusBar1.ItemLinks.Add(bbiuserid);
             ribbonStatusBar1.ItemLinks.Add(bbiperiode);
             ribbonStatusBar1.ItemLinks.Add(bbiwilayah);
-            ribbonStatusBar1.Location = new System.Drawing.Point(0, 607);
+            ribbonStatusBar1.Location = new System.Drawing.Point(0, 590);
             ribbonStatusBar1.Margin = new System.Windows.Forms.Padding(17, 19, 17, 19);
             ribbonStatusBar1.Name = "ribbonStatusBar1";
             ribbonStatusBar1.Ribbon = ribbonControl1;
-            ribbonStatusBar1.Size = new System.Drawing.Size(1199, 27);
-            // 
-            // barButtonItem48
-            // 
-            barButtonItem48.Caption = "Blok";
-            barButtonItem48.Id = 109;
-            barButtonItem48.ImageOptions.SvgImage = (DevExpress.Utils.Svg.SvgImage)resources.GetObject("barButtonItem48.ImageOptions.SvgImage");
-            barButtonItem48.Name = "barButtonItem48";
+            ribbonStatusBar1.Size = new System.Drawing.Size(1199, 44);
             // 
             // MainView
             // 
@@ -941,7 +998,7 @@ namespace Accounting
             ClientSize = new System.Drawing.Size(1199, 634);
             Controls.Add(ribbonStatusBar1);
             Controls.Add(ribbonControl1);
-            Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            Font = new System.Drawing.Font("Segoe UI", 9.75F);
             IsMdiContainer = true;
             Name = "MainView";
             Text = "GENERAL LEDGER";
@@ -1054,6 +1111,12 @@ namespace Accounting
         private DevExpress.XtraBars.BarButtonItem bbialokasikerja;
         private DevExpress.XtraBars.BarButtonItem bbiupdatesaldo;
         private DevExpress.XtraBars.BarButtonItem barButtonItem48;
+        private DevExpress.XtraBars.BarButtonItem barButtonItem49;
+        private DevExpress.XtraBars.BarButtonItem barButtonItem50;
+        private DevExpress.XtraBars.BarButtonItem barButtonItem51;
+        private DevExpress.XtraBars.BarButtonItem barButtonItem52;
+        private DevExpress.XtraBars.BarButtonItem barButtonItem53;
+        private DevExpress.XtraBars.Ribbon.RibbonPageGroup ribbonPageGroupFaDaftarRuntime;
     }
 }
 

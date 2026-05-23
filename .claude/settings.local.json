@@ -8,7 +8,9 @@
       "Bash(grep -n \"HandleBehaviorDragDropEvents\\\\|Load_Kode_AIS\\\\|Load_Kode_Inv\\\\|Load_Kode_HRIS\\\\|PopulatePeriode\" D:VSCODEProjectGL_MVC_RepositoryAccountingFormFrmJurnal*.cs)",
       "Bash(find D:/VSCODE/Project/GL_MVC_Repository/Accounting/1.Interface D:/VSCODE/Project/GL_MVC_Repository/Accounting/2.DataAcces D:/VSCODE/Project/GL_MVC_Repository/Accounting/3.Services D:/VSCODE/Project/GL_MVC_Repository/Accounting/Helper -name *.cs)",
       "Bash(grep -n \"\\\\.CREATED\\\\|\\\\.MODIFIED\\\\|new.*JurnalHeaderAdd\" /d/VSCODE/Project/GL_MVC_Repository/Accounting/Form/*.cs)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(mkdir -p .tmp-build/gen-template)",
+      "Bash(dotnet new:*)"
     ]
   }
 }

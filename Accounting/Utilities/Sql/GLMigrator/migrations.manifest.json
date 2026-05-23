@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.03.19.1",
+  "version": "2026.04.28.1",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -25,6 +25,134 @@
       "script": "migrations/V20260319_001__audit_trail.sql",
       "rollbackScript": "migrations/R20260319_001__audit_trail.sql",
       "checkScript": "migrations/C20260319_001__audit_trail_check.sql"
+    },
+    {
+      "id": "20260319_002_jurnal_keep_baris_gtt",
+      "order": 4,
+      "description": "Create GTT ACCT_JURNAL_KEEP_BARIS_TMP and index to prevent ORA-01795 for >1000 BARIS update.",
+      "script": "migrations/V20260319_002__jurnal_keep_baris_gtt.sql",
+      "rollbackScript": "migrations/R20260319_002__jurnal_keep_baris_gtt.sql",
+      "checkScript": "migrations/C20260319_002__jurnal_keep_baris_gtt_check.sql"
+    },
+    {
+      "id": "20260319_003_jurnal_stage_and_recalc_job",
+      "order": 5,
+      "description": "Add ACCT_JURNAL_DTL_STAGE_TMP for set-based upsert and ACCT_RECALC_JOB durable queue with retry support.",
+      "script": "migrations/V20260319_003__jurnal_stage_and_recalc_job.sql",
+      "rollbackScript": "migrations/R20260319_003__jurnal_stage_and_recalc_job.sql",
+      "checkScript": "migrations/C20260319_003__jurnal_stage_and_recalc_job_check.sql"
+    },
+    {
+      "id": "20260319_004_recalc_job_telemetry",
+      "order": 6,
+      "description": "Add delta recalc telemetry columns and index on ACCT_RECALC_JOB.",
+      "script": "migrations/V20260319_004__recalc_job_telemetry.sql",
+      "rollbackScript": "migrations/R20260319_004__recalc_job_telemetry.sql",
+      "checkScript": "migrations/C20260319_004__recalc_job_telemetry_check.sql"
+    },
+    {
+      "id": "20260319_005_recalc_v2_wrapper",
+      "order": 7,
+      "description": "Add wrapper package ACCT_RECALLCULATIONS_V2.ReCalcByJurnalID for current app while keeping legacy recalc entrypoint.",
+      "script": "migrations/V20260319_005__recalc_v2_wrapper.sql",
+      "rollbackScript": "migrations/R20260319_005__recalc_v2_wrapper.sql",
+      "checkScript": "migrations/C20260319_005__recalc_v2_wrapper_check.sql"
+    },
+    {
+      "id": "20260319_006_recalc_v2_atomic_body",
+      "order": 8,
+      "description": "Upgrade ACCT_RECALLCULATIONS_V2 body to atomic processing (no per-row commit).",
+      "script": "migrations/V20260319_006__recalc_v2_atomic_body.sql",
+      "rollbackScript": "migrations/R20260319_006__recalc_v2_atomic_body.sql",
+      "checkScript": "migrations/C20260319_006__recalc_v2_atomic_body_check.sql"
+    },
+    {
+      "id": "20260319_007_jurnal_import_scoped_v2",
+      "order": 9,
+      "description": "Add ACCT_JURNAL_IMPORT_V2 package for user-scoped import validation and partial import processing.",
+      "script": "migrations/V20260319_007__jurnal_import_scoped_v2.sql",
+      "rollbackScript": "migrations/R20260319_007__jurnal_import_scoped_v2.sql",
+      "checkScript": "migrations/C20260319_007__jurnal_import_scoped_v2_check.sql"
+    },
+    {
+      "id": "20260319_008_fixed_asset_core",
+      "order": 10,
+      "description": "Add Fixed Asset module core schema: master, lifecycle, approval, depreciation run/history, CIP, attachment, and audit tables.",
+      "script": "migrations/V20260319_008__fixed_asset_core.sql",
+      "rollbackScript": "migrations/R20260319_008__fixed_asset_core.sql",
+      "checkScript": "migrations/C20260319_008__fixed_asset_core_check.sql"
+    },
+    {
+      "id": "20260319_009_jurnal_update_reffid_baris_index",
+      "order": 11,
+      "description": "Add REFFID+BARIS index on ACCT_JURNAL_DTL to speed update MERGE/DELETE paths.",
+      "script": "migrations/V20260319_009__jurnal_update_reffid_baris_index.sql",
+      "rollbackScript": "migrations/R20260319_009__jurnal_update_reffid_baris_index.sql",
+      "checkScript": "migrations/C20260319_009__jurnal_update_reffid_baris_index_check.sql"
+    },
+    {
+      "id": "20260320_001_jurnal_did_key_for_upsert",
+      "order": 12,
+      "description": "Use DID as unique detail key for jurnal upsert by extending stage table and adding DID indexes.",
+      "script": "migrations/V20260320_001__jurnal_did_key_for_upsert.sql",
+      "rollbackScript": "migrations/R20260320_001__jurnal_did_key_for_upsert.sql",
+      "checkScript": "migrations/C20260320_001__jurnal_did_key_for_upsert_check.sql"
+    },
+    {
+      "id": "20260320_002_jurnal_trigger_bypass_async_recalc",
+      "order": 13,
+      "description": "Add CLIENT_IDENTIFIER-based bypass on legacy COA update/delete triggers for async recalc save path.",
+      "script": "migrations/V20260320_002__jurnal_trigger_bypass_async_recalc.sql",
+      "rollbackScript": "migrations/R20260320_002__jurnal_trigger_bypass_async_recalc.sql",
+      "checkScript": "migrations/C20260320_002__jurnal_trigger_bypass_async_recalc_check.sql"
+    },
+    {
+      "id": "20260320_003_jurnal_disable_legacy_coa_triggers",
+      "order": 14,
+      "description": "Disable legacy ACCT_JURNAL_DTL update/delete triggers; saldo updates rely on async ACCT_RECALLCULATIONS_V2.",
+      "script": "migrations/V20260320_003__jurnal_disable_legacy_coa_triggers.sql",
+      "rollbackScript": "migrations/R20260320_003__jurnal_disable_legacy_coa_triggers.sql",
+      "checkScript": "migrations/C20260320_003__jurnal_disable_legacy_coa_triggers_check.sql"
+    },
+    {
+      "id": "20260412_001_login_security_hardening",
+      "order": 15,
+      "description": "Add persistent login security columns on MASTER_LOGIN and ACCT_LOGIN_AUDIT for lockout, password reset enforcement, and auth audit trail.",
+      "script": "migrations/V20260412_001__login_security_hardening.sql",
+      "rollbackScript": "migrations/R20260412_001__login_security_hardening.sql",
+      "checkScript": "migrations/C20260412_001__login_security_hardening_check.sql"
+    },
+    {
+      "id": "20260413_001_jurnal_rbac_permissions",
+      "order": 16,
+      "description": "Seed GL jurnal permissions and default role-permission mappings for centralized RBAC enforcement.",
+      "script": "migrations/V20260413_001__jurnal_rbac_permissions.sql",
+      "rollbackScript": "migrations/R20260413_001__jurnal_rbac_permissions.sql",
+      "checkScript": "migrations/C20260413_001__jurnal_rbac_permissions_check.sql"
+    },
+    {
+      "id": "20260413_002_coa_reports_settings_rbac_permissions",
+      "order": 17,
+      "description": "Seed GL COA, report, and settings permissions and default role-permission mappings for centralized RBAC enforcement.",
+      "script": "migrations/V20260413_002__coa_reports_settings_rbac_permissions.sql",
+      "rollbackScript": "migrations/R20260413_002__coa_reports_settings_rbac_permissions.sql",
+      "checkScript": "migrations/C20260413_002__coa_reports_settings_rbac_permissions_check.sql"
+    },
+    {
+      "id": "20260413_003_accounting_runtime_rbac_alignment",
+      "order": 18,
+      "description": "Mirror GL RBAC permissions and mappings into ACCOUNTING so runtime role-management and current-module fallback stay aligned.",
+      "script": "migrations/V20260413_003__accounting_runtime_rbac_alignment.sql",
+      "rollbackScript": "migrations/R20260413_003__accounting_runtime_rbac_alignment.sql",
+      "checkScript": "migrations/C20260413_003__accounting_runtime_rbac_alignment_check.sql"
+    },
+    {
+      "id": "20260413_004_standard_role_catalog_alignment",
+      "order": 19,
+      "description": "Normalize standard RBAC role names, create missing standard roles, and sync GL plus ACCOUNTING role-permission mappings.",
+      "script": "migrations/V20260413_004__standard_role_catalog_alignment.sql",
+      "rollbackScript": "migrations/R20260413_004__standard_role_catalog_alignment.sql",
+      "checkScript": "migrations/C20260413_004__standard_role_catalog_alignment_check.sql"
     }
   ]
 }

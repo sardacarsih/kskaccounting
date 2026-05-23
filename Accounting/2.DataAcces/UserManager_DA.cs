@@ -18,8 +18,7 @@ namespace Accounting.DataAccess
             using IDbConnection dbConnection = new OracleConnection(ConnectionManager.GetOracleConnection());
 
             dbConnection.Open();
-            // Use parameterized queries to prevent SQL injection
-            string insertMasterQuery = "INSERT INTO MASTER_LOGIN (USERID, NAMA, DEPT, PASSWORD, JABATAN) VALUES (:USERID, :NAMA, :DEPT, :PASSWORD, :JABATAN)";
+            string insertMasterQuery = "INSERT INTO MASTER_LOGIN (USERID, NAMA, DEPT, PASSWORD, JABATAN, AKTIF) VALUES (:USERID, :NAMA, :DEPT, :PASSWORD, :JABATAN, :AKTIF)";
             dbConnection.Execute(insertMasterQuery, user);
         }
 
@@ -140,7 +139,15 @@ namespace Accounting.DataAccess
             dbConnection.Open();
 
             const string query = @"
-                SELECT USERID, PASSWORD, AKTIF
+                SELECT USERID,
+                       PASSWORD,
+                       AKTIF,
+                       NVL(FAILED_LOGIN_COUNT, 0) AS FAILED_LOGIN_COUNT,
+                       LOCKOUT_UNTIL_UTC,
+                       LAST_LOGIN_AT_UTC,
+                       LAST_FAILED_LOGIN_AT_UTC,
+                       PASSWORD_CHANGED_AT_UTC,
+                       NVL(PASSWORD_RESET_REQUIRED, 'N') AS PASSWORD_RESET_REQUIRED
                 FROM MASTER_LOGIN
                 WHERE LOWER(USERID) = LOWER(:p_userid)
                   AND ROWNUM = 1";
@@ -149,6 +156,11 @@ namespace Accounting.DataAccess
         }
 
         public bool HasModuleAccess(string userId, string modulename)
+        {
+            return HasRbacModuleAccess(userId, modulename) || HasLegacyModuleAccess(userId, modulename);
+        }
+
+        public bool HasRbacModuleAccess(string userId, string modulename)
         {
             using IDbConnection dbConnection = new OracleConnection(ConnectionManager.GetOracleConnection());
             dbConnection.Open();
@@ -159,6 +171,24 @@ namespace Accounting.DataAccess
                 JOIN MASTER_MODULES M ON M.MODULE_ID = UR.MODULE_ID
                 WHERE UR.USER_ID = :p_userid
                   AND M.MODULE_NAME = :p_module
+                  AND ROWNUM = 1";
+
+            int? found = dbConnection.QueryFirstOrDefault<int?>(query, new { p_userid = userId, p_module = modulename });
+            return found.HasValue;
+        }
+
+        public bool HasLegacyModuleAccess(string userId, string modulename)
+        {
+            using IDbConnection dbConnection = new OracleConnection(ConnectionManager.GetOracleConnection());
+            dbConnection.Open();
+
+            const string query = @"
+                SELECT 1
+                FROM MASTER_LOGIN U
+                JOIN MASTER_APPS_DETAIL D ON D.USERID = U.USERID
+                WHERE LOWER(D.USERID) = LOWER(:p_userid)
+                  AND D.APPID = :p_module
+                  AND U.AKTIF = 'Y'
                   AND ROWNUM = 1";
 
             int? found = dbConnection.QueryFirstOrDefault<int?>(query, new { p_userid = userId, p_module = modulename });
@@ -346,7 +376,35 @@ namespace Accounting.DataAccess
             // Use Dapper to execute the query and map the results to the LOGIN_USERS_DTO class
             List<LOGIN_USERS_DTO> userDataList = dbConnection.Query<LOGIN_USERS_DTO>(query, new { p_userid = userId, p_MODULE = appName }).ToList();
 
+            if (userDataList.Count == 0)
+            {
+                userDataList = GetLegacyUserLoginByIdData(dbConnection, userId, appName);
+            }
+
             return userDataList;
+        }
+
+        private static List<LOGIN_USERS_DTO> GetLegacyUserLoginByIdData(IDbConnection dbConnection, string userId, string appName)
+        {
+            const string query = @"
+                SELECT U.USERID,
+                       U.NAMA,
+                       L.NAMA AS LEVEL_USER,
+                       D.IDDATA,
+                       PM.NAMAPT,
+                       PD.WILAYAH,
+                       PD.JENIS_AKUNTANSI,
+                       1 AS IsLegacyAccessPath
+                FROM MASTER_LOGIN U
+                JOIN MASTER_APPS_DETAIL D ON D.USERID = U.USERID
+                JOIN MASTER_LOGIN_LEVEL L ON L.APPSID = D.APPID AND L.LEVELID = D.LEVELID
+                JOIN MASTER_PT_DTL PD ON PD.IDDATA = D.IDDATA
+                JOIN MASTER_PT_HDR PM ON PM.IDPT = PD.IDPT
+                WHERE LOWER(D.USERID) = LOWER(:p_userid)
+                  AND D.APPID = :p_module
+                  AND U.AKTIF = 'Y'";
+
+            return dbConnection.Query<LOGIN_USERS_DTO>(query, new { p_userid = userId, p_module = appName }).ToList();
         }
 
         public List<WILAYAH_IDDATA_DTO> GetListIDDATA()
@@ -436,8 +494,92 @@ namespace Accounting.DataAccess
             using OracleConnection dbConnection = new(ConnectionManager.GetOracleConnection());
             dbConnection.Open();
 
-            string updateQuery = "UPDATE MASTER_LOGIN SET PASSWORD = :p_password WHERE LOWER(USERID) = LOWER(:p_userid)";
+            string updateQuery = @"
+                UPDATE MASTER_LOGIN
+                SET PASSWORD = :p_password,
+                    PASSWORD_CHANGED_AT_UTC = CAST(SYS_EXTRACT_UTC(SYSTIMESTAMP) AS TIMESTAMP)
+                WHERE LOWER(USERID) = LOWER(:p_userid)";
             dbConnection.Execute(updateQuery, new { p_password = newHashedPassword, p_userid = userId });
+        }
+
+        public void SetPasswordResetRequired(string userId, bool required)
+        {
+            using OracleConnection dbConnection = new(ConnectionManager.GetOracleConnection());
+            dbConnection.Open();
+
+            const string updateQuery = @"
+                UPDATE MASTER_LOGIN
+                SET PASSWORD_RESET_REQUIRED = :p_required
+                WHERE LOWER(USERID) = LOWER(:p_userid)";
+
+            dbConnection.Execute(updateQuery, new { p_required = required ? "Y" : "N", p_userid = userId });
+        }
+
+        public void RegisterFailedLoginAttempt(string userId, int maxFailedAttempts, int lockoutMinutes)
+        {
+            using OracleConnection dbConnection = new(ConnectionManager.GetOracleConnection());
+            dbConnection.Open();
+
+            const string updateQuery = @"
+                UPDATE MASTER_LOGIN
+                SET FAILED_LOGIN_COUNT = NVL(FAILED_LOGIN_COUNT, 0) + 1,
+                    LAST_FAILED_LOGIN_AT_UTC = CAST(SYS_EXTRACT_UTC(SYSTIMESTAMP) AS TIMESTAMP),
+                    LOCKOUT_UNTIL_UTC = CASE
+                        WHEN NVL(FAILED_LOGIN_COUNT, 0) + 1 >= :p_max_failed_attempts
+                            THEN CAST(SYS_EXTRACT_UTC(SYSTIMESTAMP) AS TIMESTAMP) + NUMTODSINTERVAL(:p_lockout_minutes, 'MINUTE')
+                        ELSE NULL
+                    END
+                WHERE LOWER(USERID) = LOWER(:p_userid)";
+
+            dbConnection.Execute(updateQuery, new
+            {
+                p_max_failed_attempts = maxFailedAttempts,
+                p_lockout_minutes = lockoutMinutes,
+                p_userid = userId
+            });
+        }
+
+        public void ResetLoginFailures(string userId)
+        {
+            using OracleConnection dbConnection = new(ConnectionManager.GetOracleConnection());
+            dbConnection.Open();
+
+            const string updateQuery = @"
+                UPDATE MASTER_LOGIN
+                SET FAILED_LOGIN_COUNT = 0,
+                    LOCKOUT_UNTIL_UTC = NULL
+                WHERE LOWER(USERID) = LOWER(:p_userid)";
+
+            dbConnection.Execute(updateQuery, new { p_userid = userId });
+        }
+
+        public void UpdateSuccessfulLogin(string userId)
+        {
+            using OracleConnection dbConnection = new(ConnectionManager.GetOracleConnection());
+            dbConnection.Open();
+
+            const string updateQuery = @"
+                UPDATE MASTER_LOGIN
+                SET FAILED_LOGIN_COUNT = 0,
+                    LOCKOUT_UNTIL_UTC = NULL,
+                    LAST_LOGIN_AT_UTC = CAST(SYS_EXTRACT_UTC(SYSTIMESTAMP) AS TIMESTAMP)
+                WHERE LOWER(USERID) = LOWER(:p_userid)";
+
+            dbConnection.Execute(updateQuery, new { p_userid = userId });
+        }
+
+        public void RecordLoginAudit(LoginAuditRecord record)
+        {
+            using OracleConnection dbConnection = new(ConnectionManager.GetOracleConnection());
+            dbConnection.Open();
+
+            const string insertQuery = @"
+                INSERT INTO ACCT_LOGIN_AUDIT
+                    (EVENT_AT_UTC, USERID, MODULE_NAME, EVENT_TYPE, SUCCESS_FLAG, CLIENT_MACHINE, DETAIL_MESSAGE, LOCKOUT_UNTIL_UTC, IDDATA)
+                VALUES
+                    (CAST(SYS_EXTRACT_UTC(SYSTIMESTAMP) AS TIMESTAMP), :USERID, :MODULE_NAME, :EVENT_TYPE, :SUCCESS_FLAG, :CLIENT_MACHINE, :DETAIL_MESSAGE, :LOCKOUT_UNTIL_UTC, :IDDATA)";
+
+            dbConnection.Execute(insertQuery, record);
         }
 
         public void DeleteAksesEstate(string userid, int estateid)

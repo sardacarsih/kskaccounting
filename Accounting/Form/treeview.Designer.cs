@@ -1,6 +1,6 @@
 ﻿namespace Accounting.Form
 {
-    partial class treeview
+    partial class TreeviewForm
     {
         /// <summary>
         /// Required designer variable.
@@ -39,15 +39,15 @@
             this.treeView1.Size = new System.Drawing.Size(650, 424);
             this.treeView1.TabIndex = 1;
             // 
-            // treeview
+            // TreeviewForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(650, 424);
             this.Controls.Add(this.treeView1);
-            this.Name = "treeview";
+            this.Name = "TreeviewForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "treeview";
+            this.Text = "Treeview";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.treeview_Load);
             this.ResumeLayout(false);

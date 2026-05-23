@@ -4,6 +4,7 @@ namespace Accounting.Model
 {
     public class JurnalAuditLog
     {
+        public double AUDIT_ID { get; set; }
         public double JURNALID { get; set; }
         public string ACTION_TYPE { get; set; }
         public DateTime ACTION_DATE { get; set; }

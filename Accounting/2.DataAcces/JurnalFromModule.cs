@@ -352,6 +352,39 @@ namespace Accounting.DataLayer
             }
         }
 
+        public IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int p_periode_int, string p_ptlokasi, string? p_source_filter = null)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("p_periode_int", p_periode_int, DbType.Int32);
+            parameters.Add("p_ptlokasi", p_ptlokasi, DbType.String);
+            parameters.Add("p_source_filter", NormalizeInventorySourceFilter(p_source_filter), DbType.String);
+
+            const string sql = @"
+        SELECT NOJURNAL AS NOMOR,
+               MIN(TANGGAL) AS TANGGAL
+        FROM INV_BARU
+        WHERE PERIODE = :p_periode_int
+          AND PTLOKASI = :p_ptlokasi
+          AND (:p_source_filter IS NULL OR UPPER(NOJURNAL) LIKE :p_source_filter)
+        GROUP BY NOJURNAL
+        ORDER BY NOMOR, TANGGAL";
+
+            using var connection = new OracleConnection(LoginInfo.OracleConnString);
+            if (connection.State == ConnectionState.Closed)
+            {
+                connection.Open();
+            }
+
+            try
+            {
+                return connection.Query<JurnalInventoryHeaderDTO>(sql, parameters, commandType: CommandType.Text);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Gagal mengambil data jurnal inventory baru", ex);
+            }
+        }
+
         public IEnumerable<JurnalInventoryDetailDTO> GetJurnalDetails_Inventory(
         int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted,
         string p_periode_str, string p_userid, int p_glyear, int p_glmonth)
@@ -407,6 +440,141 @@ namespace Accounting.DataLayer
             }
 
             return result;
+        }
+
+        public IEnumerable<JurnalInventoryDetailDTO> GetJurnalDetails_InventoryBaru(
+        int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted,
+        string p_periode_str, string p_userid, int p_glyear, int p_glmonth, string? p_source_filter = null)
+        {
+            var result = new List<JurnalInventoryDetailDTO>();
+
+            const string sql = @"
+        SELECT NOJURNAL,
+               TANGGAL,
+               BARIS,
+               KODE,
+               REKENING,
+               DEBET,
+               KREDIT,
+               KETERANGAN,
+               :p_posted AS POSTED,
+               :p_periode_str AS PERIODE,
+               :p_iddata AS IDDATA,
+               :p_userid AS USERID,
+               :p_glyear AS GLYEAR,
+               :p_glmonth AS GLMONTH
+        FROM INV_BARU
+        WHERE PERIODE = :p_periode_int
+          AND PTLOKASI = :p_ptlokasi
+          AND (:p_source_filter IS NULL OR UPPER(NOJURNAL) LIKE :p_source_filter)
+        ORDER BY NOJURNAL, BARIS";
+
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            using OracleCommand command = new(sql, connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName = true
+            };
+
+            try
+            {
+                connection.Open();
+                command.Parameters.Add(":p_posted", OracleDbType.Varchar2, 20).Value = p_posted;
+                command.Parameters.Add(":p_periode_str", OracleDbType.Varchar2, 20).Value = p_periode_str;
+                command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
+                command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_userid;
+                command.Parameters.Add(":p_glyear", OracleDbType.Int16).Value = p_glyear;
+                command.Parameters.Add(":p_glmonth", OracleDbType.Int16).Value = p_glmonth;
+                command.Parameters.Add(":p_periode_int", OracleDbType.Int16).Value = p_periode_int;
+                command.Parameters.Add(":p_ptlokasi", OracleDbType.Varchar2, 20).Value = p_ptlokasi;
+                command.Parameters.Add(":p_source_filter", OracleDbType.Varchar2, 100).Value = (object?)NormalizeInventorySourceFilter(p_source_filter) ?? DBNull.Value;
+
+                using OracleDataReader reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    var item = new JurnalInventoryDetailDTO
+                    {
+                        NOJURNAL = reader["NOJURNAL"]?.ToString(),
+                        TANGGAL = Convert.ToDateTime(reader["TANGGAL"]),
+                        BARIS = Convert.ToInt16(reader["BARIS"]),
+                        KODE = reader["KODE"]?.ToString(),
+                        REKENING = reader["REKENING"]?.ToString(),
+                        DEBET = Convert.ToDouble(reader["DEBET"]),
+                        KREDIT = Convert.ToDouble(reader["KREDIT"]),
+                        KETERANGAN = reader["KETERANGAN"]?.ToString(),
+                        POSTED = reader["POSTED"]?.ToString(),
+                        PERIODE = reader["PERIODE"]?.ToString(),
+                        IDDATA = reader["IDDATA"]?.ToString(),
+                        USERID = reader["USERID"]?.ToString(),
+                        GLYEAR = Convert.ToInt16(reader["GLYEAR"]),
+                        GLMONTH = Convert.ToInt16(reader["GLMONTH"])
+                    };
+                    result.Add(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Gagal mengambil detail jurnal inventory baru", ex);
+            }
+
+            return result;
+        }
+
+        public DataTable Jurnal_InventoriBaru(int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth, string? p_source_filter = null)
+        {
+            const string sql = @"
+        SELECT NOJURNAL,
+               TANGGAL,
+               BARIS,
+               KODE,
+               REKENING,
+               DEBET,
+               KREDIT,
+               KETERANGAN,
+               :p_posted AS POSTED,
+               :p_periode_str AS PERIODE,
+               :p_iddata AS IDDATA,
+               :p_userid AS USERID,
+               :p_glyear AS GLYEAR,
+               :p_glmonth AS GLMONTH
+        FROM INV_BARU
+        WHERE PERIODE = :p_periode_int
+          AND PTLOKASI = :p_ptlokasi
+          AND (:p_source_filter IS NULL OR UPPER(NOJURNAL) LIKE :p_source_filter)
+        ORDER BY NOJURNAL, BARIS";
+
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            using OracleCommand command = new(sql, connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName = true
+            };
+
+            connection.Open();
+            command.Parameters.Add(":p_posted", OracleDbType.Varchar2, 20).Value = p_posted;
+            command.Parameters.Add(":p_periode_str", OracleDbType.Varchar2, 20).Value = p_periode_str;
+            command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
+            command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_userid;
+            command.Parameters.Add(":p_glyear", OracleDbType.Int16).Value = p_glyear;
+            command.Parameters.Add(":p_glmonth", OracleDbType.Int16).Value = p_glmonth;
+            command.Parameters.Add(":p_periode_int", OracleDbType.Int16).Value = p_periode_int;
+            command.Parameters.Add(":p_ptlokasi", OracleDbType.Varchar2, 20).Value = p_ptlokasi;
+            command.Parameters.Add(":p_source_filter", OracleDbType.Varchar2, 100).Value = (object?)NormalizeInventorySourceFilter(p_source_filter) ?? DBNull.Value;
+
+            using OracleDataReader reader = command.ExecuteReader();
+            DataTable dataTable = new();
+            dataTable.Load(reader);
+            return dataTable;
+        }
+
+        private static string? NormalizeInventorySourceFilter(string? p_source_filter)
+        {
+            if (string.IsNullOrWhiteSpace(p_source_filter))
+            {
+                return null;
+            }
+
+            return "%" + p_source_filter.Trim().ToUpperInvariant() + "%";
         }
 
         public IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int p_periode_int, string p_ptlokasi, string p_estate)

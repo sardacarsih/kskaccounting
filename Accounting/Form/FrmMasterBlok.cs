@@ -13,6 +13,7 @@ using System.Configuration;
 using System.Data;
 using System.Diagnostics;
 using System.Windows.Forms;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
@@ -25,7 +26,11 @@ namespace Accounting.Form
         }
         private void FrmBlok_Load(object sender, EventArgs e)
         {
-          
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                Close();
+                return;
+            }
             Load_Status();     
             Load_Divisi();
             Load_BlokList();
@@ -58,6 +63,10 @@ namespace Accounting.Form
         string p_blokid = "New";
         private void btnsimpan_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                return;
+            }
             try
             {
                
@@ -290,6 +299,10 @@ namespace Accounting.Form
 
         private void btnhapus_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanDeleteCoa))
+            {
+                return;
+            }
             var ada = ToolsServices.CekAkunBlok(CompanyInfo.IDDATA, Acct.TahunMax, divisi, blok);
             if (ada > 0)
             {
@@ -322,6 +335,10 @@ namespace Accounting.Form
 
         private void BTNTM_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                return;
+            }
             try
             {
                 var p_IDDATA =CompanyInfo.IDDATA;
@@ -418,6 +435,10 @@ namespace Accounting.Form
 
         private void btndisable_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                return;
+            }
             try
             {
                 var p_IDDATA =CompanyInfo.IDDATA;
@@ -449,6 +470,10 @@ namespace Accounting.Form
 
         private void btnenable_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                return;
+            }
             try
             {
                 var p_IDDATA =CompanyInfo.IDDATA;
@@ -486,6 +511,10 @@ namespace Accounting.Form
 
         private void sbexport_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanExportCoa))
+            {
+                return;
+            }
             IOverlaySplashScreenHandle handle = null;
             try
             {
@@ -514,6 +543,10 @@ namespace Accounting.Form
 
         private void BTNTBM_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                return;
+            }
             try
             {
                 var p_IDDATA =CompanyInfo.IDDATA;

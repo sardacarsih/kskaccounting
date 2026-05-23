@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
@@ -19,6 +20,11 @@ namespace Accounting.Form
         }
         private void FrmMasterAkun_Load(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                Close();
+                return;
+            }
             string KEL,KATEGORI;
             if (radioGroup1.SelectedIndex == 0)
             {
@@ -66,6 +72,10 @@ namespace Accounting.Form
         string p_kategori;
         private void btnsimpan_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                return;
+            }
             try
             {
                
