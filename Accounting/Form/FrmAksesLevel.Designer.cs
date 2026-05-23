@@ -1,4 +1,6 @@
-﻿
+
+using DevExpress.XtraBars.Alerter;
+
 namespace Accounting.Form
 {
     partial class FrmAksesLevel
@@ -62,21 +64,29 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)(this.lookUpEditLevel.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TXTNEWROLE.Properties)).BeginInit();
             this.SuspendLayout();
+            this.alertControl1 = new AlertControl(this.components);
+            this.splitContainerControl1 = new DevExpress.XtraEditors.SplitContainerControl();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerControl1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerControl1.Panel1)).BeginInit();
+            this.splitContainerControl1.Panel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerControl1.Panel2)).BeginInit();
+            this.splitContainerControl1.Panel2.SuspendLayout();
+            this.splitContainerControl1.SuspendLayout();
             // 
             // labelControl1
             // 
-            this.labelControl1.Location = new System.Drawing.Point(12, 8);
+            this.labelControl1.Location = new System.Drawing.Point(12, 10);
             this.labelControl1.Name = "labelControl1";
             this.labelControl1.Size = new System.Drawing.Size(36, 19);
             this.labelControl1.TabIndex = 4;
-            this.labelControl1.Text = "Level";
+            this.labelControl1.Text = "Pilih Role";
             // 
             // gridControl1
             // 
             this.gridControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.gridControl1.Location = new System.Drawing.Point(12, 38);
+            this.gridControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gridControl1.MainView = this.gridView1;
             this.gridControl1.Name = "gridControl1";
             this.gridControl1.RepositoryItems.AddRange(new DevExpress.XtraEditors.Repository.RepositoryItem[] {
@@ -105,6 +115,11 @@ namespace Accounting.Form
             this.gridView1.Name = "gridView1";
             this.gridView1.OptionsSelection.MultiSelect = true;
             this.gridView1.OptionsView.ShowGroupPanel = false;
+            this.gridView1.OptionsView.ShowIndicator = false;
+            this.gridView1.RowHeight = 35;
+            this.gridView1.Appearance.Row.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.gridView1.Appearance.HeaderPanel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.gridView1.Appearance.HeaderPanel.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
             this.gridView1.RowUpdated += new DevExpress.XtraGrid.Views.Base.RowObjectEventHandler(this.gridView1_RowUpdated);
             // 
             // BUKA
@@ -242,77 +257,121 @@ namespace Accounting.Form
             // 
             // simpleButton2
             // 
-            this.simpleButton2.Location = new System.Drawing.Point(937, 5);
+            this.simpleButton2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.simpleButton2.Location = new System.Drawing.Point(12, 420);
             this.simpleButton2.Name = "simpleButton2";
-            this.simpleButton2.Size = new System.Drawing.Size(82, 31);
+            this.simpleButton2.Size = new System.Drawing.Size(200, 35);
             this.simpleButton2.TabIndex = 3;
             this.simpleButton2.Text = "Tutup";
+            this.simpleButton2.Appearance.BackColor = System.Drawing.Color.FromArgb(108, 117, 125);
+            this.simpleButton2.Appearance.ForeColor = System.Drawing.Color.White;
+            this.simpleButton2.Appearance.Options.UseBackColor = true;
+            this.simpleButton2.Appearance.Options.UseForeColor = true;
             this.simpleButton2.Click += new System.EventHandler(this.simpleButton2_Click);
           
             // 
             // lookUpEditLevel
             // 
-            this.lookUpEditLevel.Location = new System.Drawing.Point(57, 3);
+            this.lookUpEditLevel.Location = new System.Drawing.Point(12, 35);
             this.lookUpEditLevel.Name = "lookUpEditLevel";
             this.lookUpEditLevel.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.lookUpEditLevel.Size = new System.Drawing.Size(172, 26);
+            this.lookUpEditLevel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.lookUpEditLevel.Size = new System.Drawing.Size(200, 26);
             this.lookUpEditLevel.TabIndex = 5;
             this.lookUpEditLevel.EditValueChanged += new System.EventHandler(this.lookUpEditLevel_EditValueChanged);
             // 
             // labelControl2
             // 
-            this.labelControl2.Location = new System.Drawing.Point(341, 9);
+            this.labelControl2.Location = new System.Drawing.Point(12, 95);
             this.labelControl2.Name = "labelControl2";
             this.labelControl2.Size = new System.Drawing.Size(157, 19);
             this.labelControl2.TabIndex = 4;
-            this.labelControl2.Text = "Duplikat ke Level Baru";
+            this.labelControl2.Text = "Duplikat ke Role Baru";
             // 
             // TXTNEWROLE
             // 
-            this.TXTNEWROLE.Location = new System.Drawing.Point(504, 6);
+            this.TXTNEWROLE.Location = new System.Drawing.Point(12, 120);
             this.TXTNEWROLE.Name = "TXTNEWROLE";
-            this.TXTNEWROLE.Size = new System.Drawing.Size(150, 26);
+            this.TXTNEWROLE.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.TXTNEWROLE.Size = new System.Drawing.Size(200, 26);
+            this.TXTNEWROLE.Properties.NullValuePrompt = "Nama Role Baru...";
             this.TXTNEWROLE.TabIndex = 6;
             // 
             // btnduplikatnewrole
             // 
             this.btnduplikatnewrole.ImageOptions.Image = global::Accounting.Properties.Resources.copy_16x16;
-            this.btnduplikatnewrole.Location = new System.Drawing.Point(235, 2);
+            this.btnduplikatnewrole.Location = new System.Drawing.Point(12, 155);
             this.btnduplikatnewrole.Name = "btnduplikatnewrole";
-            this.btnduplikatnewrole.Size = new System.Drawing.Size(100, 31);
+            this.btnduplikatnewrole.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnduplikatnewrole.Size = new System.Drawing.Size(200, 35);
             this.btnduplikatnewrole.TabIndex = 3;
-            this.btnduplikatnewrole.Text = "Duplikat";
+            this.btnduplikatnewrole.Text = "Duplikat Role";
+            this.btnduplikatnewrole.Appearance.BackColor = System.Drawing.Color.FromArgb(13, 110, 253);
+            this.btnduplikatnewrole.Appearance.ForeColor = System.Drawing.Color.White;
+            this.btnduplikatnewrole.Appearance.Options.UseBackColor = true;
+            this.btnduplikatnewrole.Appearance.Options.UseForeColor = true;
             this.btnduplikatnewrole.Click += new System.EventHandler(this.btnduplikatnewrole_Click);
             // 
             // btnhapus
             // 
             this.btnhapus.ImageOptions.Image = global::Accounting.Properties.Resources.removepivotfield_16x161;
-            this.btnhapus.Location = new System.Drawing.Point(839, 5);
+            this.btnhapus.Location = new System.Drawing.Point(12, 200);
             this.btnhapus.Name = "btnhapus";
-            this.btnhapus.Size = new System.Drawing.Size(82, 31);
+            this.btnhapus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnhapus.Size = new System.Drawing.Size(200, 35);
             this.btnhapus.TabIndex = 3;
-            this.btnhapus.Text = "Hapus";
+            this.btnhapus.Text = "Hapus Role";
+            this.btnhapus.Appearance.BackColor = System.Drawing.Color.FromArgb(220, 53, 69);
+            this.btnhapus.Appearance.ForeColor = System.Drawing.Color.White;
+            this.btnhapus.Appearance.Options.UseBackColor = true;
+            this.btnhapus.Appearance.Options.UseForeColor = true;
             this.btnhapus.Click += new System.EventHandler(this.btnhapus_Click);
+            //
+            // splitContainerControl1
+            //
+            this.splitContainerControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainerControl1.Name = "splitContainerControl1";
+            this.splitContainerControl1.Horizontal = true;
+            //
+            // splitContainerControl1.Panel1 (Role Selector & Actions)
+            //
+            this.splitContainerControl1.Panel1.Controls.Add(this.labelControl1);
+            this.splitContainerControl1.Panel1.Controls.Add(this.lookUpEditLevel);
+            this.splitContainerControl1.Panel1.Controls.Add(this.labelControl2);
+            this.splitContainerControl1.Panel1.Controls.Add(this.TXTNEWROLE);
+            this.splitContainerControl1.Panel1.Controls.Add(this.btnduplikatnewrole);
+            this.splitContainerControl1.Panel1.Controls.Add(this.btnhapus);
+            this.splitContainerControl1.Panel1.Controls.Add(this.simpleButton2);
+            this.splitContainerControl1.Panel1.MinSize = 220;
+            this.splitContainerControl1.Panel1.Text = "Role Selector";
+            //
+            // splitContainerControl1.Panel2 (Permission Matrix)
+            //
+            this.splitContainerControl1.Panel2.Controls.Add(this.gridControl1);
+            this.splitContainerControl1.Panel2.MinSize = 500;
+            this.splitContainerControl1.Panel2.Text = "Permission Matrix";
+            this.splitContainerControl1.SplitterPosition = 230;
+            this.splitContainerControl1.TabIndex = 10;
             // 
             // FrmAksesLevel
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1033, 487);
+            this.ClientSize = new System.Drawing.Size(1100, 550);
             this.ControlBox = false;
-            this.Controls.Add(this.TXTNEWROLE);
-            this.Controls.Add(this.lookUpEditLevel);
-            this.Controls.Add(this.btnhapus);
-            this.Controls.Add(this.btnduplikatnewrole);
-            this.Controls.Add(this.simpleButton2);
-            this.Controls.Add(this.gridControl1);
-            this.Controls.Add(this.labelControl2);
-            this.Controls.Add(this.labelControl1);
+            this.Controls.Add(this.splitContainerControl1);
             this.Name = "FrmAksesLevel";
-            this.Text = "Akses Level";
+            this.Text = "  \uD83D\uDD12  Role Builder — Akses Level";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.FrmAksesLevel_Load);
+            //
+            // alertControl1
+            //
+            this.alertControl1.AutoFormDelay = 3000;
+            this.alertControl1.FormShowingEffect = AlertFormShowingEffect.SlideHorizontal;
+            this.alertControl1.FormLocation = AlertFormLocation.TopRight;
+            this.alertControl1.AutoHeight = true;
             ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridView1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.repositoryItemToggleSwitch1)).EndInit();
@@ -321,6 +380,13 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)(this.imageCollection1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lookUpEditLevel.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TXTNEWROLE.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerControl1.Panel1)).EndInit();
+            this.splitContainerControl1.Panel1.ResumeLayout(false);
+            this.splitContainerControl1.Panel1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerControl1.Panel2)).EndInit();
+            this.splitContainerControl1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerControl1)).EndInit();
+            this.splitContainerControl1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -349,5 +415,7 @@ namespace Accounting.Form
         private DevExpress.XtraEditors.TextEdit TXTNEWROLE;
         private DevExpress.XtraEditors.SimpleButton btnduplikatnewrole;
         private DevExpress.XtraEditors.SimpleButton btnhapus;
+        private DevExpress.XtraEditors.SplitContainerControl splitContainerControl1;
+        private AlertControl alertControl1;
     }
 }

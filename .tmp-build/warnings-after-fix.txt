@@ -1,0 +1,14 @@
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\PasswordCryptographyPbkdf2.cs(19,17): warning SYSLIB0023: 'RNGCryptoServiceProvider' is obsolete: 'RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead.' (https://aka.ms/dotnet-warnings/SYSLIB0023) [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\PasswordCryptographyPbkdf2.cs(22,26): warning SYSLIB0041: 'Rfc2898DeriveBytes.Rfc2898DeriveBytes(string, byte[], int)' is obsolete: 'The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.' (https://aka.ms/dotnet-warnings/SYSLIB0041) [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\PasswordCryptographyPbkdf2.cs(52,26): warning SYSLIB0041: 'Rfc2898DeriveBytes.Rfc2898DeriveBytes(string, byte[], int)' is obsolete: 'The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.' (https://aka.ms/dotnet-warnings/SYSLIB0041) [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+  Accounting -> D:\VSCODE\Project\GL_MVC_Repository\Accounting\bin\Debug\net8.0-windows\Accounting.dll
+
+Build succeeded.
+
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\PasswordCryptographyPbkdf2.cs(19,17): warning SYSLIB0023: 'RNGCryptoServiceProvider' is obsolete: 'RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead.' (https://aka.ms/dotnet-warnings/SYSLIB0023) [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\PasswordCryptographyPbkdf2.cs(22,26): warning SYSLIB0041: 'Rfc2898DeriveBytes.Rfc2898DeriveBytes(string, byte[], int)' is obsolete: 'The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.' (https://aka.ms/dotnet-warnings/SYSLIB0041) [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+D:\VSCODE\Project\GL_MVC_Repository\Accounting\PasswordCryptographyPbkdf2.cs(52,26): warning SYSLIB0041: 'Rfc2898DeriveBytes.Rfc2898DeriveBytes(string, byte[], int)' is obsolete: 'The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.' (https://aka.ms/dotnet-warnings/SYSLIB0041) [D:\VSCODE\Project\GL_MVC_Repository\Accounting\Accounting.csproj]
+    3 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.50

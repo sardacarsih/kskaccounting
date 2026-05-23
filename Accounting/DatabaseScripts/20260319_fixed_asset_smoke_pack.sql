@@ -1,0 +1,73 @@
+-- Fixed Asset smoke pack for pre-release / post-deploy validation.
+-- Run with SQL*Plus:
+-- sqlplus user/pass@db @20260319_fixed_asset_smoke_pack.sql
+
+DEFINE P_IDDATA = 'MSLKEBUN'
+DEFINE P_PERIOD = '12/2020'
+
+SET VERIFY OFF
+SET SERVEROUTPUT ON
+
+PROMPT === Object existence check ===
+SELECT TABLE_NAME
+FROM USER_TABLES
+WHERE TABLE_NAME IN
+(
+    'ACCT_FA_ASSET',
+    'ACCT_FA_TRX_HDR',
+    'ACCT_FA_APPROVAL_DTL',
+    'ACCT_FA_DEPR_RUN',
+    'ACCT_FA_DEPR_RUN_DTL',
+    'ACCT_FA_DEPR_HISTORY',
+    'ACCT_FA_AUDIT_LOG',
+    'ACCT_FA_ACCOUNT_MAP'
+)
+ORDER BY TABLE_NAME;
+
+PROMPT === Index existence check ===
+SELECT INDEX_NAME
+FROM USER_INDEXES
+WHERE INDEX_NAME IN
+(
+    'IDX_FA_AST_SCOPE',
+    'IDX_FA_TRX_SCOPE',
+    'IDX_FA_RUN_SCOPE',
+    'IDX_FA_HIST_SCOPE',
+    'IDX_FA_AUDIT_SCOPE'
+)
+ORDER BY INDEX_NAME;
+
+PROMPT === Run smoke test ===
+@@20260319_fixed_asset_smoke_test.sql
+
+PROMPT === Query regression check: asset card datasets ===
+SELECT COUNT(*) AS ASSET_MASTER_ROWS
+FROM ACCT_FA_ASSET
+WHERE IDDATA = '&P_IDDATA'
+  AND NVL(IS_DELETED, 'N') = 'N';
+
+SELECT COUNT(*) AS DEPR_HISTORY_ROWS
+FROM ACCT_FA_DEPR_HISTORY
+WHERE IDDATA = '&P_IDDATA';
+
+SELECT COUNT(*) AS LIFECYCLE_ROWS
+FROM ACCT_FA_TRX_HDR
+WHERE IDDATA = '&P_IDDATA';
+
+PROMPT === Query regression check: approval inbox candidates ===
+SELECT
+    COUNT(*) AS PENDING_APPROVAL_ROWS
+FROM ACCT_FA_TRX_HDR
+WHERE IDDATA = '&P_IDDATA'
+  AND STATUS = 'SUBMITTED'
+  AND TRX_TYPE IN ('REVALUATION', 'FULL_DISPOSAL', 'SALE', 'WRITE_OFF');
+
+PROMPT === Query regression check: report datasets ===
+SELECT
+    TRX_TYPE,
+    STATUS,
+    COUNT(*) AS TRX_COUNT
+FROM ACCT_FA_TRX_HDR
+WHERE IDDATA = '&P_IDDATA'
+GROUP BY TRX_TYPE, STATUS
+ORDER BY TRX_TYPE, STATUS;

@@ -21,6 +21,12 @@ namespace Accounting.BusinessLayer
         {
             return repository.GetJurnalHeader_Inventory(p_periode_int, p_ptlokasi);
         }
+
+        public static IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int p_periode_int, string p_ptlokasi, string? p_source_filter = null)
+        {
+            return repository.GetJurnalHeader_InventoryBaru(p_periode_int, p_ptlokasi, p_source_filter);
+        }
+
         public static IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int p_periode_int, string p_ptlokasi,string p_estate)
         {
             return repository.GetJurnalHeader_Kasir( p_periode_int,  p_ptlokasi, p_estate);
@@ -29,6 +35,12 @@ namespace Accounting.BusinessLayer
         {
             return repository.GetJurnalDetails_Inventory(p_periode_int, p_ptlokasi, p_iddata, p_posted, p_periode_str, p_userid, p_glyear, p_glmonth);
         }
+
+        public static IEnumerable<JurnalInventoryDetailDTO> GetJurnalDetails_InventoryBaru(int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth, string? p_source_filter = null)
+        {
+            return repository.GetJurnalDetails_InventoryBaru(p_periode_int, p_ptlokasi, p_iddata, p_posted, p_periode_str, p_userid, p_glyear, p_glmonth, p_source_filter);
+        }
+
         public static DataTable JurnalKasirDetail_DapperKasir(DateTime p_dari, DateTime p_sampai, string p_iddata, string p_estate, string p_posted, string p_periode, string p_userid, int p_glyear, int p_glmonth)
         {
             return repository.JurnalKasirDetail_DapperKasir( p_dari,  p_sampai, p_iddata,  p_estate,  p_posted,  p_periode,  p_userid,  p_glyear,  p_glmonth);
@@ -57,6 +69,12 @@ namespace Accounting.BusinessLayer
         {
             return repository.Jurnal_Inventori(  p_periode_int,   p_ptlokasi,   p_iddata,   p_posted,   p_periode_str,   p_userid,   p_glyear,   p_glmonth);
         }
+
+        public static DataTable Jurnal_InventoriBaru(int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth, string? p_source_filter = null)
+        {
+            return repository.Jurnal_InventoriBaru(p_periode_int, p_ptlokasi, p_iddata, p_posted, p_periode_str, p_userid, p_glyear, p_glmonth, p_source_filter);
+        }
+
         public static void InserJurnal_FromKasir(List<JurnalKasirDetailDTO> JurnalFromKasir)
         {
             repository.InserJurnal_FromKasir( JurnalFromKasir);

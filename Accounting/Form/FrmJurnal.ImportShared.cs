@@ -37,7 +37,7 @@ namespace Accounting.Form
                 {
                     NoJurnal = row.Field<string>("NOJURNAL") ?? string.Empty,
                     Tanggal = row.Field<DateTime>("TANGGAL"),
-                    BARIS = Convert.ToInt32(row.Field<decimal>("BARIS")),
+                    BARIS = row["BARIS"] == DBNull.Value ? 0 : Convert.ToInt32(row["BARIS"]),
                     Kode = row.Field<string>("KODE") ?? string.Empty,
                     Rekening = row.Field<string>("REKENING") ?? string.Empty,
                     Debet = row.Field<decimal>("DEBET"),
@@ -46,6 +46,8 @@ namespace Accounting.Form
                     Posted = row.Field<string>("POSTED") ?? string.Empty,
                     Periode = row.Field<string>("PERIODE") ?? string.Empty
                 })
+                .OrderBy(row => row.NoJurnal)
+                .ThenBy(row => row.BARIS)
                 .ToList();
         }
 
@@ -76,6 +78,89 @@ namespace Accounting.Form
             GCJurnal.DataSource = InputJurnalDetail;
             InputJurnalDetail.AllowNew = true;
             TABJurnal.SelectedTabPageIndex = 0;
+        }
+
+        private static List<JurnalDetailDTO> NormalizeJurnalExportOrder(IEnumerable<JurnalDetailDTO> rows)
+        {
+            return rows
+                .OrderBy(row => row.NoJurnal)
+                .ThenBy(row => row.BARIS)
+                .ToList();
+        }
+
+        private List<JurnalDetailDTO> GetActiveDetailRowsForExport()
+        {
+            if (GVDetail?.DataSource is IEnumerable<JurnalDetailDTO> detailRows)
+            {
+                return NormalizeJurnalExportOrder(detailRows);
+            }
+
+            if (GVHeader?.FocusedRowHandle >= 0
+                && GVHeader.GetRowCellValue(GVHeader.FocusedRowHandle, "JURNALID") != null
+                && double.TryParse(GVHeader.GetRowCellValue(GVHeader.FocusedRowHandle, "JURNALID")?.ToString(), out double jurnalId))
+            {
+                IEnumerable<JurnalDetailDTO> fallbackRows = (JurnalDetail ?? Enumerable.Empty<JurnalDetailDTO>())
+                    .Where(row => row.REFFID == jurnalId);
+                return NormalizeJurnalExportOrder(fallbackRows);
+            }
+
+            return [];
+        }
+
+        private void ReindexBarisInInputOrder()
+        {
+            if (isReindexingBaris || InputJurnalDetail == null)
+            {
+                return;
+            }
+
+            isReindexingBaris = true;
+            try
+            {
+                bool hasBarisChanges = false;
+                for (int i = 0; i < InputJurnalDetail.Count; i++)
+                {
+                    int expectedBaris = i + 1;
+                    if (InputJurnalDetail[i].BARIS != expectedBaris)
+                    {
+                        InputJurnalDetail[i].BARIS = expectedBaris;
+                        hasBarisChanges = true;
+                    }
+                }
+
+                if (hasBarisChanges)
+                {
+                    JDgridView.RefreshData();
+                }
+            }
+            finally
+            {
+                isReindexingBaris = false;
+            }
+
+        }
+
+        private static void DisableUserSorting(GridView gridView)
+        {
+            if (gridView == null)
+            {
+                return;
+            }
+
+            gridView.OptionsCustomization.AllowSort = false;
+            foreach (GridColumn column in gridView.Columns)
+            {
+                column.OptionsColumn.AllowSort = DevExpress.Utils.DefaultBoolean.False;
+            }
+        }
+
+        private void ApplyExportGridSortPolicy()
+        {
+            DisableUserSorting(GVHeader);
+            DisableUserSorting(GVDetail);
+            DisableUserSorting(gridView1);
+            DisableUserSorting(gridView_KasirHeader);
+            DisableUserSorting(gridView_inv_header);
         }
 
 

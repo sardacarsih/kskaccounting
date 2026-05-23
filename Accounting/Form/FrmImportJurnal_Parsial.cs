@@ -1,14 +1,15 @@
 ﻿using Accounting.BusinessLayer;
 using Accounting.Model;
+using Accounting.Services;
 using DevExpress.Mvvm.Native;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 using ExcelDataReader;
-using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Media;
@@ -18,8 +19,7 @@ namespace Accounting.Form
 {
     public partial class FrmImportJurnal_Parsial : DevExpress.XtraEditors.XtraForm
     {
-       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
-        private SoundPlayer Player = new SoundPlayer();
+        private readonly SoundPlayer Player = new SoundPlayer();
         public FrmImportJurnal_Parsial()
         {
             InitializeComponent();
@@ -32,6 +32,17 @@ namespace Accounting.Form
         readonly string[] KolomWajib = { "NoJurnal", "Tanggal", "RowNo", "Kode", "Rekening", "Debet", "Kredit", "Keterangan", "Posted", "Periode" };
         private void FrmImportJurnal_Parsial_Load(object sender, EventArgs e)
         {
+            try
+            {
+                AuthorizationService.EnsureCanImportJurnal();
+            }
+            catch (InvalidOperationException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                BeginInvoke(new MethodInvoker(Close));
+                return;
+            }
+
             try
             {
                 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -94,15 +105,22 @@ namespace Accounting.Form
 
         private void SBImport_Click(object sender, EventArgs e)
         {
+            bool stagedRowsLoaded = false;
             try
             {
-               
+                AuthorizationService.EnsureCanImportJurnal();
 
                 pbulan = cmbbulan.SelectedIndex + 1;
                 ptahun = Convert.ToInt32(setahun.Value);
+                periodetujuan = pbulan.ToString("0#") + "/" + ptahun;
+
+                if (dt == null || dt.Rows.Count == 0)
+                {
+                    XtraMessageBox.Show("Data excel belum dipilih atau kosong.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
 
                 //jika periode telah dikunci,  batalkan proses import jurnal
-                periodetujuan = pbulan.ToString("0#") + "/" + ptahun.ToString();
                 Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.IDDATA, periodetujuan);
                 var Periode = cmbbulan.Text + " - " + setahun.Value.ToString();
                 if (Acct.KunciPeriode == "Y")
@@ -121,60 +139,53 @@ namespace Accounting.Form
                 var Bulan = cmbbulan.Text + " - " + setahun.Value.ToString();
                 if (XtraMessageBox.Show("Lanjutkan Proses Import Jurnal ? " +
                     "\n\nPeriode : " + Bulan + " " +
-                    "\nLokasi Data :" +CompanyInfo.IDDATA
+                    "\nLokasi Data :" + CompanyInfo.IDDATA
                     , "Confirm Proses", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                     return;
+
                 using var handle = SplashScreenManager.ShowOverlayForm(this);
                 handle.QueueFocus(IntPtr.Zero);
 
                 Stopwatch watch = new();
                 watch.Start();
-                // cek periode is null
 
-                // Assuming you have a DataTable named "myDataTable" with a column named "Period"
-
-                foreach (DataRow row in dt.Rows)
+                if (!TryGetSinglePeriodeFromData(dt, out string periodeAsal, out string periodeError))
                 {
-                    object periodValue = row["Periode"];
-
-                    if (periodValue == DBNull.Value)
-                    {
-                        // The period is null
-                        // Perform your desired actions here
-                        XtraMessageBox.Show("Import Jurnal di Batalkan \nKolom Periode WAJIB diisi ", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+                    XtraMessageBox.Show(
+                        "Import Jurnal dibatalkan.\n" + periodeError,
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    return;
                 }
 
-
-                string PeriodeAsal = (string)dt.AsEnumerable().Max(x => x["Periode"].ToString());
-                if (periodetujuan != PeriodeAsal)
+                if (periodetujuan != periodeAsal)
                 {
                     this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\periode_beda.wav";
                     this.Player.Play();
                     XtraMessageBox.Show("Import Jurnal di Batalkan \nPilihan Periode tidak sama dengan sumber data ", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    
+
                     return;
                 }
+
+                DataTable importScopeTable = BuildScopedImportDataTable(dt, CompanyInfo.IDDATA, periodetujuan, LoginInfo.userID, ptahun, pbulan);
+
                 //jika periode belum ada, buat periode
-                string periodedipilih = pbulan.ToString("0#") + "/" + ptahun.ToString();
-                int pexist = JurnalServices.CekPeriodeExist(CompanyInfo.IDDATA, periodedipilih);
+                int pexist = JurnalServices.CekPeriodeExist(CompanyInfo.IDDATA, periodetujuan);
                 if (pexist == 0)
                 {
                     AccountServices.CreateNextPeriode(CompanyInfo.IDDATA, pbulan - 1, ptahun);
                 }
 
-
-                //Kosongkan Data Table Oracle
-                Hapus_Data_Table_Tmp();
+                //Kosongkan data tmp milik user+periode aktif saja (tanpa ganggu user lain).
+                JurnalServices.DeleteJurnalTmpByScope(CompanyInfo.IDDATA, periodetujuan, LoginInfo.userID);
 
                 //Copy Data dari DataTable ke Oracle
-                JurnalServices.SaveUsingOracleBulkCopy("ACCT_JURNAL_TMP", dt);
-                //Update IDDATA dan UserID
-                Update_IDData_Userid();
+                JurnalServices.SaveUsingOracleBulkCopy("ACCT_JURNAL_TMP", importScopeTable);
+                stagedRowsLoaded = true;
 
                 //CEK KODE NULL
-                var KODENULL = JurnalServices.CekJurnal_KODENULL();
+                DataTable KODENULL = JurnalServices.CekJurnal_KODENULL_Scoped(CompanyInfo.IDDATA, periodetujuan, LoginInfo.userID);
                 if (KODENULL.Rows.Count > 0)
                 {
                     List<string> list = KODENULL.AsEnumerable()
@@ -188,7 +199,7 @@ namespace Accounting.Form
                 }
 
                 //cek duplikasi nojurnal pada periode dan lokasi data yang sama
-                var dup_nojurnal = JurnalServices.CekNoJurnalExist();
+                DataTable dup_nojurnal = JurnalServices.CekNoJurnalExistScoped(CompanyInfo.IDDATA, periodetujuan, LoginInfo.userID);
                 if (dup_nojurnal.Rows.Count > 0)
                 {
                     this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_duplikasi.wav";
@@ -223,8 +234,8 @@ namespace Accounting.Form
 
 
                 //cek aku master sudah ada ?
-                var ptahun_asal = Convert.ToInt32(PeriodeAsal.Substring(3, 4));
-                var akun = JurnalServices.CekAkunMaster(ptahun_asal);
+                int ptahun_asal = Convert.ToInt32(periodeAsal.Substring(3, 4));
+                DataTable akun = JurnalServices.CekAkunMasterScoped(ptahun_asal, CompanyInfo.IDDATA, periodetujuan, LoginInfo.userID);
                 if (akun.Rows.Count > 0)
                 {
                     this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_daftarperk.wav";
@@ -242,7 +253,7 @@ namespace Accounting.Form
 
 
                 //Copy data dari table tmp ke table Acct_Jurnal_Dtl
-                var sukses = JurnalServices.ImportJurnalParsial(CompanyInfo.IDDATA, pbulan, ptahun, PeriodeAsal);
+                int sukses = JurnalServices.ImportJurnalParsialScoped(CompanyInfo.IDDATA, pbulan, ptahun, periodetujuan, LoginInfo.userID);
                 if (sukses == 0)
                 {
                     this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_bedaperiode.wav";
@@ -259,6 +270,7 @@ namespace Accounting.Form
                     f.ShowDialog();
                     return;
                 }
+
                 AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, pbulan, ptahun, LoginInfo.userID);
                 watch.Stop();
 
@@ -273,25 +285,19 @@ namespace Accounting.Form
             {
                 XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void Update_IDData_Userid()
-        {
-            try
+            finally
             {
-                string query = "update ACCT_JURNAL_TMP set IDDATA=:piddata,GLYEAR=:PTAHUN,GLMONTH=:PBULAN,userid=:puserid";
-                conn.Open();
-                OracleCommand cmd = new OracleCommand(query, conn);
-                cmd.Parameters.Add(":piddata", OracleDbType.Varchar2, 20).Value =CompanyInfo.IDDATA;
-                cmd.Parameters.Add(":PTAHUN", OracleDbType.Int16).Value = Convert.ToInt32(setahun.Value);
-                cmd.Parameters.Add(":PBULAN", OracleDbType.Int16).Value = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
-                cmd.Parameters.Add(":puserid", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;
-                cmd.ExecuteNonQuery();
-                conn.Close();
-            }
-            catch (SystemException ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (stagedRowsLoaded)
+                {
+                    try
+                    {
+                        JurnalServices.DeleteJurnalTmpByScope(CompanyInfo.IDDATA, periodetujuan, LoginInfo.userID);
+                    }
+                    catch
+                    {
+                        // best effort cleanup only
+                    }
+                }
             }
         }
 
@@ -305,7 +311,7 @@ namespace Accounting.Form
                     bool isValid = JurnalServices.ValidateColumnNames(dt, KolomWajib);
                     if (isValid)
                     {
-                        var list = ConvertDataTableToList(dt);
+                        List<ImportJurnalList> list = ConvertDataTableToList(dt);
 
                         var cekbaris = list.Where(x => x.RowNo < 0);
                         var duplicateEntries = list.GroupBy(j => new { j.NoJurnal,j.Tanggal,j.RowNo })
@@ -324,12 +330,14 @@ namespace Accounting.Form
                             return;
                         }
 
+                        bool hasValidationError = false;
                         if (cekbaris.Any())
                         {
                             gridControl1.DataSource = cekbaris;
                             gridView1.Columns[0].Visible = false;
                             SBImport.Enabled = false;
                             XtraMessageBox.Show("Tentukan Nomor Baris dengan benar pada daftar nomor jurnal berikut", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            hasValidationError = true;
                         }
                         if (duplicateEntries.Any())
                         {
@@ -337,8 +345,10 @@ namespace Accounting.Form
                             gridView1.Columns[0].Visible = false;
                             SBImport.Enabled = false;
                             XtraMessageBox.Show("Double Nomor urut pada nomor jurnal", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            hasValidationError = true;
                         }
-                        else
+
+                        if (!hasValidationError)
                         {
                             gridControl1.DataSource = list;
                             SBImport.Enabled = true;
@@ -370,51 +380,177 @@ namespace Accounting.Form
             }
         }
 
-        private void Hapus_Data_Table_Tmp()
-        {
-            try
-            {
-                string query = "TRUNCATE TABLE ACCT_JURNAL_TMP";
-                conn.Open();
-                OracleCommand cmd = new OracleCommand(query, conn);
-                cmd.ExecuteNonQuery();
-                conn.Close();
-            }
-            catch (SystemException ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         private static List<ImportJurnalList> ConvertDataTableToList(DataTable table)
         {
-            // Create a new list to hold the objects
             List<ImportJurnalList> dataRowObjects = new();
-            // Loop through each row in the DataTable
-            foreach (DataRow row in table.Rows)
+            for (int index = 0; index < table.Rows.Count; index++)
             {
-                // Create a new object to hold the data from the row
+                DataRow row = table.Rows[index];
+                int excelRow = index + 2; // +2 because header row is row 1 in excel
+
                 ImportJurnalList dataRowObject = new()
                 {
-                    // Set the values of the object from the data in the row
-                    NoJurnal = row["NoJurnal"].ToString(),
-                    Tanggal = Convert.ToDateTime(row["Tanggal"].ToString()),
-                    RowNo = Convert.ToInt32(row["RowNo"].ToString()),
-                    Kode = row["Kode"].ToString(),
-                    Rekening = row["Rekening"].ToString(),
-                    Debet = Convert.ToDecimal(row["Debet"].ToString()),
-                    Kredit = Convert.ToDecimal(row["Kredit"].ToString()),
-                    Keterangan = row["Keterangan"].ToString(),
-                    Posted = row["Posted"].ToString(),
-                    Periode = row["Periode"].ToString()
+                    NoJurnal = ReadString(row, "NoJurnal"),
+                    Tanggal = ReadDateTime(row, "Tanggal", excelRow),
+                    RowNo = ReadInt32(row, "RowNo", excelRow),
+                    Kode = ReadString(row, "Kode"),
+                    Rekening = ReadString(row, "Rekening"),
+                    Debet = ReadDecimal(row, "Debet", excelRow),
+                    Kredit = ReadDecimal(row, "Kredit", excelRow),
+                    Keterangan = ReadString(row, "Keterangan"),
+                    Posted = ReadString(row, "Posted"),
+                    Periode = ReadString(row, "Periode")
                 };
 
-                // Add the object to the list
                 dataRowObjects.Add(dataRowObject);
             }
 
-            // Return the list of objects
             return dataRowObjects;
+        }
+
+        private static bool TryGetSinglePeriodeFromData(DataTable source, out string periode, out string errorMessage)
+        {
+            periode = string.Empty;
+            errorMessage = string.Empty;
+
+            List<string> periodeValues = source.AsEnumerable()
+                .Select(row => row["Periode"]?.ToString()?.Trim())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (periodeValues.Count == 0)
+            {
+                errorMessage = "Kolom Periode wajib diisi.";
+                return false;
+            }
+
+            if (periodeValues.Count > 1)
+            {
+                errorMessage = "Ditemukan lebih dari satu nilai periode pada file import: " + string.Join(", ", periodeValues);
+                return false;
+            }
+
+            periode = periodeValues[0];
+            return true;
+        }
+
+        private static DataTable BuildScopedImportDataTable(
+            DataTable source,
+            string iddata,
+            string periode,
+            string userid,
+            int glYear,
+            int glMonth)
+        {
+            DataTable scoped = source.Copy();
+            EnsureColumn(scoped, "IDDATA", typeof(string));
+            EnsureColumn(scoped, "USERID", typeof(string));
+            EnsureColumn(scoped, "GLYEAR", typeof(int));
+            EnsureColumn(scoped, "GLMONTH", typeof(int));
+
+            foreach (DataRow row in scoped.Rows)
+            {
+                row["Periode"] = periode;
+                row["IDDATA"] = iddata;
+                row["USERID"] = userid;
+                row["GLYEAR"] = glYear;
+                row["GLMONTH"] = glMonth;
+            }
+
+            return scoped;
+        }
+
+        private static void EnsureColumn(DataTable dataTable, string columnName, Type dataType)
+        {
+            if (!dataTable.Columns.Contains(columnName))
+            {
+                dataTable.Columns.Add(columnName, dataType);
+                return;
+            }
+
+            if (dataTable.Columns[columnName].DataType != dataType)
+            {
+                throw new InvalidOperationException($"Kolom {columnName} memiliki tipe data tidak sesuai untuk proses import.");
+            }
+        }
+
+        private static string ReadString(DataRow row, string columnName)
+        {
+            object value = row[columnName];
+            return value == DBNull.Value ? string.Empty : value.ToString()?.Trim() ?? string.Empty;
+        }
+
+        private static int ReadInt32(DataRow row, string columnName, int excelRow)
+        {
+            object value = row[columnName];
+            if (value == DBNull.Value || string.IsNullOrWhiteSpace(value.ToString()))
+            {
+                throw new FormatException($"Baris Excel {excelRow}: kolom {columnName} wajib diisi.");
+            }
+
+            if (int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
+            {
+                return parsed;
+            }
+
+            if (int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.CurrentCulture, out parsed))
+            {
+                return parsed;
+            }
+
+            throw new FormatException($"Baris Excel {excelRow}: kolom {columnName} tidak valid ({value}).");
+        }
+
+        private static decimal ReadDecimal(DataRow row, string columnName, int excelRow)
+        {
+            object value = row[columnName];
+            if (value == DBNull.Value || string.IsNullOrWhiteSpace(value.ToString()))
+            {
+                return 0m;
+            }
+
+            if (value is decimal dec) return dec;
+            if (value is double dbl) return Convert.ToDecimal(dbl);
+            if (value is float flt) return Convert.ToDecimal(flt);
+
+            if (decimal.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal parsed))
+            {
+                return parsed;
+            }
+
+            if (decimal.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.CurrentCulture, out parsed))
+            {
+                return parsed;
+            }
+
+            throw new FormatException($"Baris Excel {excelRow}: kolom {columnName} tidak valid ({value}).");
+        }
+
+        private static DateTime ReadDateTime(DataRow row, string columnName, int excelRow)
+        {
+            object value = row[columnName];
+            if (value == DBNull.Value || string.IsNullOrWhiteSpace(value.ToString()))
+            {
+                throw new FormatException($"Baris Excel {excelRow}: kolom {columnName} wajib diisi.");
+            }
+
+            if (value is DateTime dateTime)
+            {
+                return dateTime;
+            }
+
+            if (DateTime.TryParse(value.ToString(), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime parsed))
+            {
+                return parsed;
+            }
+
+            if (DateTime.TryParse(value.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out parsed))
+            {
+                return parsed;
+            }
+
+            throw new FormatException($"Baris Excel {excelRow}: kolom {columnName} tidak valid ({value}).");
         }
 
 

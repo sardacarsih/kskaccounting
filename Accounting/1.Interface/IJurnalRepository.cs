@@ -26,10 +26,15 @@ namespace Accounting.DataLayer
         DataTable CekDuplikasiJurnal();     
         DataTable CekNoJurnalExist();
         DataTable CekJurnal_KODENULL();
+        DataTable CekAkunMasterScoped(int ptahun, string piddata, string periode, string userid);
+        DataTable CekNoJurnalExistScoped(string piddata, string periode, string userid);
+        DataTable CekJurnal_KODENULL_Scoped(string piddata, string periode, string userid);
         bool CekNoJurnalExist_input(string piddata,string nojurnal,string periode);
+        bool CekNoJurnalExistExceptJurnalId(string piddata, string nojurnal, string periode, double exceptJurnalId);
         bool CekjURNALRJE(double p_jurnalID);
         int ImportJurnalGlobal(string piddata, int p_bulan, int p_tahun, string periode);
         int ImportJurnalParsial(string piddata, int p_bulan, int p_tahun, string periode);
+        int ImportJurnalParsialScoped(string piddata, int p_bulan, int p_tahun, string periode, string userid);
         DataTable EditJurnalDT(string p_nomorHID);
         int CekRecordJurnalExist(string piddata, string periode);
         int CekPeriodeExist(string piddata, string p_periode);
@@ -38,16 +43,20 @@ namespace Accounting.DataLayer
         DataTable PeriodeList(string piddata, string ptahun);
         void HapusJurnal(string p_nomorHID);
         void SaveUsingOracleBulkCopy(string destTableName, DataTable dt);
+        void DeleteJurnalTmpByScope(string piddata, string periode, string userid);
         void ImportCOAOracleBulkCopy(string destTableName, DataTable dt,String jenisakunting);
         void JurnalRE(string p_iddata, string p_periode, string p_userid);
         bool InsertJurnalDetail(BindingList<JurnalDetailAdd> inputJurnalDetail);
         bool ValidateColumnNames(DataTable dataTable, string[] NamaKolom);
 
-        void InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail);
-        void UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail);
-        void HapusJurnal(double p_JurnalID);
+        JurnalPersistResult InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail);
+        JurnalPersistResult UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail, DateTime? expectedHeaderVersionUtc);
+        JurnalPersistResult HapusJurnal(double p_JurnalID);
         void HapusJurnalRange(List<double> selectedValues);
         void PerformDragAndDrop(GridView targetGrid, GridView sourceGrid, DevExpress.Utils.DragDrop.DragDropEventArgs e);
         List<DTOCOAAktif> KodeUntukJurnal(string piddata, int ptahun);
+        List<JurnalAuditSummary> SearchAuditTrail(string iddata, DateTime fromDate, DateTime toDate, string actionType, string userId, string nojurnal);
+        List<JurnalAuditLog> GetAuditByJurnal(string nojurnal, string periode, string iddata, DateTime fromDate, DateTime toDate);
+        List<JurnalAuditDetailDTO> GetAuditDetail(double auditId);
     }
 }

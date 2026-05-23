@@ -2,6 +2,7 @@ using Accounting._1.Interface;
 using Accounting._2.DataAcces;
 using Accounting.BusinessLayer;
 using Accounting.Model;
+using Accounting.Services;
 using Accounting.UC.Jurnal;
 using DevExpress.Data;
 using DevExpress.Data.ODataLinq.Helpers;
@@ -53,7 +54,7 @@ namespace Accounting.Form
 
         private void txtkodeperkiran_Leave(object? sender, EventArgs e)
         {
-            if (suppressKodeLeaveValidation)
+            if (suppressKodeLeaveValidation || isSaveOrUpdateInProgress || TABJurnal.SelectedTabPage != xtraTabPage1)
             {
                 return;
             }
@@ -78,6 +79,11 @@ namespace Accounting.Form
             bool isResolved = TryResolveKodeStyle1(JDgridView, rowHandle, kode, openLookupIfInvalid: true);
             BeginInvoke(new MethodInvoker(() =>
             {
+                if (isSaveOrUpdateInProgress || TABJurnal.SelectedTabPage != xtraTabPage1)
+                {
+                    return;
+                }
+
                 JDgridView.FocusedColumn = isResolved ? JDgridView.Columns["Debet"] : JDgridView.Columns["Kode"];
                 JDgridView.ShowEditor();
             }));
@@ -85,7 +91,13 @@ namespace Accounting.Form
 
         private void ExportJurnal_Periode()
         {
-            jurnalExcelExportService.ExportJurnalDetails(JurnalDetail ?? Enumerable.Empty<JurnalDetailDTO>(), "JurnalPeriode");
+            List<JurnalDetailDTO> exportRows = GetActiveDetailRowsForExport();
+            if (!exportRows.Any())
+            {
+                exportRows = NormalizeJurnalExportOrder(JurnalDetail ?? Enumerable.Empty<JurnalDetailDTO>());
+            }
+
+            jurnalExcelExportService.ExportJurnalDetails(exportRows, "JurnalPeriode");
         }
 
 
@@ -227,7 +239,7 @@ namespace Accounting.Form
                     }
                     else
                     {
-                        SBSimpan.Enabled = true;
+                        SBSimpan.Enabled = CanSaveCurrentJurnal();
                     }
 
                 }
@@ -312,8 +324,14 @@ namespace Accounting.Form
 
         private void ribhapus_Click(object sender, EventArgs e)
         {
+            if (!TryEnsureJurnalAccess(editjurnal
+                    ? AuthorizationService.EnsureCanUpdateJurnal
+                    : AuthorizationService.EnsureCanCreateJurnal))
+            {
+                return;
+            }
+
             JDgridView.DeleteRow(JDgridView.FocusedRowHandle);
-            x--;
             XtraMessageBox.Show("Deleted");
         }
         private DataTable PeriodeListAll(string piddata)

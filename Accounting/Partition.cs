@@ -1,33 +1,25 @@
-﻿using DevExpress.Data.ODataLinq;
-using DevExpress.DataProcessing.InMemoryDataProcessor;
-using DevExpress.XtraCharts.Native;
-using DevExpress.XtraEditors;
+using Accounting.Utilities;
 using Oracle.ManagedDataAccess.Client;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace Accounting
 {
     public partial class Partition : DevExpress.XtraEditors.XtraForm
     {
+        private readonly OracleConnection conn = new(ConnectionManager.GetOracleConnection());
+
         public Partition()
         {
             InitializeComponent();
         }
-        OracleConnection conn = new("Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=LOCALHOST)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=KSKGROUP)));User Id=KSKG;Password=KSKGboss2022");
+
         private void simpleButton1_Click(object sender, EventArgs e)
         {
             Stopwatch watch = new Stopwatch();
             watch.Start();
-            var data1 =Load_withPartition("KSKINTI", 2021);
+            var data1 = Load_withPartition("KSKINTI", 2021);
             gridControl1.DataSource = data1;
             watch.Stop();
             memoEdit1.AppendText(watch.ElapsedMilliseconds.ToString());

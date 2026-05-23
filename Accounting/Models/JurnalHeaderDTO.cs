@@ -14,5 +14,6 @@ namespace Accounting.Model
         public string HID { get; set; }
         public string NoJurnal { get; set; }
         public DateTime Tanggal { get; set; }
+        public DateTime HeaderVersionUtc { get; set; }
     }
 }

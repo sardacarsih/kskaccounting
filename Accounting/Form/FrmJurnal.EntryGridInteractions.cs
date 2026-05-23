@@ -2,13 +2,11 @@ using Accounting._1.Interface;
 using Accounting._2.DataAcces;
 using Accounting.BusinessLayer;
 using Accounting.Model;
+using Accounting.Services;
 using Accounting.UC.Jurnal;
 using DevExpress.Data;
-using DevExpress.Data.ODataLinq.Helpers;
 using DevExpress.Mvvm.Native;
 using DevExpress.Utils.DragDrop;
-using DevExpress.Utils.Menu;
-using DevExpress.Xpf.Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.Mask;
@@ -18,7 +16,6 @@ using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid.Views.Grid.ViewInfo;
-using DevExpress.XtraSplashScreen;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -262,12 +259,12 @@ namespace Accounting.Form
 
                         foreach (var item in jurnalfiltered)
                         {
-                            decimal debetWithPPH21 = Math.Round(item.DEBETPPH / 0.975m);
+                            decimal debetWithPPH21 = JurnalAmountRounding.RoundJournalAmount(item.DEBETPPH / 0.975m);
                             if (item.DEBET < debetWithPPH21)
                             {
-                                decimal pph21 = Math.Round(debetWithPPH21 * 0.025m);
-                                item.DEBET += pph21;
-                                item.PPH21 += pph21;
+                                decimal pph21 = JurnalAmountRounding.RoundJournalAmount(debetWithPPH21 * 0.025m);
+                                item.DEBET = JurnalAmountRounding.RoundJournalAmount(item.DEBET + pph21);
+                                item.PPH21 = JurnalAmountRounding.RoundJournalAmount(item.PPH21 + pph21);
                             }
                         }
                         // Assuming komponenjurnal is a List<JurnalKomponen>
@@ -276,8 +273,8 @@ namespace Accounting.Form
                             .Select(x => new AIS_JURNAL
                             {
                                 // Mapping properties from JurnalKomponen to AIS_JURNAL
-                                DEBET = x.Sisi == "D" ? x.Jumlah : 0,
-                                KREDIT = x.Sisi == "K" ? x.Jumlah : 0,        // Mapping Jumlah to DEBET
+                                DEBET = x.Sisi == "D" ? JurnalAmountRounding.RoundJournalAmount(x.Jumlah) : 0,
+                                KREDIT = x.Sisi == "K" ? JurnalAmountRounding.RoundJournalAmount(x.Jumlah) : 0,        // Mapping Jumlah to DEBET
                                 KETERANGAN = $"{x.Keterangan ?? string.Empty} {ket2 ?? string.Empty}",
                                 POSTED = true,
                                 PERIODE = periodestring
@@ -289,12 +286,12 @@ namespace Accounting.Form
 
 
                         // Calculate the total DEBET after updates
-                        decimal totaldebet = jurnalfiltered.Sum(f => f.DEBET);
-                        decimal totalpph21 = jurnalfiltered.Sum(f => f.PPH21);
-                        decimal totalkredit = jurnalfiltered.Sum(f => f.KREDIT);
+                        decimal totaldebet = JurnalAmountRounding.RoundJournalAmount(jurnalfiltered.Sum(f => f.DEBET));
+                        decimal totalpph21 = JurnalAmountRounding.RoundJournalAmount(jurnalfiltered.Sum(f => f.PPH21));
+                        decimal totalkredit = JurnalAmountRounding.RoundJournalAmount(jurnalfiltered.Sum(f => f.KREDIT));
 
                         // Calculate operational value
-                        decimal operasional = totaldebet - (totalpph21 + totalkredit);
+                        decimal operasional = JurnalAmountRounding.RoundJournalAmount(totaldebet - (totalpph21 + totalkredit));
 
 
                         // Add new rows for debetPercentage and operasional
@@ -326,8 +323,8 @@ namespace Accounting.Form
                             .Select(x => new AIS_JURNAL
                             {
                                 // Mapping properties from JurnalKomponen to AIS_JURNAL
-                                DEBET = x.Sisi == "D" ? x.Jumlah : 0,
-                                KREDIT = x.Sisi == "K" ? x.Jumlah : 0,        // Mapping Jumlah to DEBET
+                                DEBET = x.Sisi == "D" ? JurnalAmountRounding.RoundJournalAmount(x.Jumlah) : 0,
+                                KREDIT = x.Sisi == "K" ? JurnalAmountRounding.RoundJournalAmount(x.Jumlah) : 0,        // Mapping Jumlah to DEBET
                                 KETERANGAN = $"{x.Keterangan ?? string.Empty} {ket2 ?? string.Empty}",
                                 POSTED = true,
                                 PERIODE = periodestring
@@ -337,8 +334,8 @@ namespace Accounting.Form
                         // Adding the filtered and mapped list to jurnalfiltered
                         jurnalfiltered.AddRange(komponenfiltered);
 
-                        decimal biayaoperasional_bruto = jurnalfiltered.Sum(f => f.DEBET);
-                        decimal biayaoperasional_netto = biayaoperasional_bruto - jurnalfiltered.Sum(f => f.KREDIT);
+                        decimal biayaoperasional_bruto = JurnalAmountRounding.RoundJournalAmount(jurnalfiltered.Sum(f => f.DEBET));
+                        decimal biayaoperasional_netto = JurnalAmountRounding.RoundJournalAmount(biayaoperasional_bruto - jurnalfiltered.Sum(f => f.KREDIT));
 
 
 
@@ -368,7 +365,7 @@ namespace Accounting.Form
                     }
 
 
-                    jurnalfinalAIS = jurnalfiltered.Select(j => new AIS_JURNAL_FINAL
+                    jurnalfinalAIS = JurnalAmountRounding.NormalizeAisFinalRows(jurnalfiltered.Select(j => new AIS_JURNAL_FINAL
                     {
                         NOJURNAL = noAIS_Bukti,
                         TANGGAL = TanggalJurnal,
@@ -380,7 +377,7 @@ namespace Accounting.Form
                         KETERANGAN = j.KETERANGAN,
                         POSTED = j.POSTED,
                         PERIODE = j.PERIODE
-                    }).ToList();
+                    }));
 
                     gcAISdetail.DataSource = jurnalfinalAIS;
                     gridViewAISdetail.Columns["NOJURNAL"].Visible = false;
@@ -399,14 +396,14 @@ namespace Accounting.Form
                     debitColumn.Summary.Clear();
                     kreditColumn.Summary.Clear();
 
-                    debitColumn.Summary.Add(DevExpress.Data.SummaryItemType.Sum, "DEBET", "{0:n0}");
-                    kreditColumn.Summary.Add(DevExpress.Data.SummaryItemType.Sum, "KREDIT", "{0:n0}");
+                    debitColumn.Summary.Add(DevExpress.Data.SummaryItemType.Sum, "DEBET", "{0:n2}");
+                    kreditColumn.Summary.Add(DevExpress.Data.SummaryItemType.Sum, "KREDIT", "{0:n2}");
 
                     debitColumn.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-                    debitColumn.DisplayFormat.FormatString = "n0";
+                    debitColumn.DisplayFormat.FormatString = "n2";
 
                     kreditColumn.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-                    kreditColumn.DisplayFormat.FormatString = "n0";
+                    kreditColumn.DisplayFormat.FormatString = "n2";
                 }
                 else
                 {
@@ -465,62 +462,81 @@ namespace Accounting.Form
                 return;
             }
 
+            List<int> sourceIndexes = sourceHandles
+                .Select(sourceGrid.GetDataSourceRowIndex)
+                .Where(index => index >= 0 && index < sourceTable.Count)
+                .Distinct()
+                .OrderBy(index => index)
+                .ToList();
+
+            if (sourceIndexes.Count == 0)
+            {
+                return;
+            }
+
             int targetRowHandle = hitInfo.RowHandle;
-            int targetRowIndex = targetGrid.GetDataSourceRowIndex(targetRowHandle);
+            int targetRowIndex = targetRowHandle >= 0
+                ? targetGrid.GetDataSourceRowIndex(targetRowHandle)
+                : -1;
 
-            List<JurnalDetailAdd> draggedRows = new List<JurnalDetailAdd>();
-            foreach (int sourceHandle in sourceHandles)
+            int insertIndex;
+            if (targetRowIndex < 0)
             {
-                int oldRowIndex = sourceGrid.GetDataSourceRowIndex(sourceHandle);
-                JurnalDetailAdd oldRow = sourceTable[oldRowIndex];
-                draggedRows.Add(oldRow);
+                // Drop outside row area defaults to append.
+                insertIndex = sourceTable.Count;
+            }
+            else if (e.InsertType == InsertType.Before)
+            {
+                insertIndex = targetRowIndex;
+            }
+            else if (e.InsertType == InsertType.After)
+            {
+                insertIndex = targetRowIndex + 1;
+            }
+            else
+            {
+                return;
             }
 
-            int newRowIndex;
+            int removedBeforeInsert = sourceIndexes.Count(index => index < insertIndex);
+            insertIndex -= removedBeforeInsert;
+            insertIndex = Math.Max(0, Math.Min(insertIndex, sourceTable.Count));
 
-            switch (e.InsertType)
+            int[] destinationIndexes = Enumerable.Range(insertIndex, sourceIndexes.Count).ToArray();
+            if (sourceIndexes.SequenceEqual(destinationIndexes))
             {
-                case InsertType.Before:
-                    newRowIndex = targetRowIndex > sourceHandles[sourceHandles.Length - 1] ? targetRowIndex - 1 : targetRowIndex;
-                    for (int i = draggedRows.Count - 1; i >= 0; i--)
-                    {
-                        JurnalDetailAdd oldRow = draggedRows[i];
-                        JurnalDetailAdd newRow = new()
-                        {
-                            Kode = oldRow.Kode,
-                            Rekening = oldRow.Rekening,
-                            Debet = oldRow.Debet,
-                            Kredit = oldRow.Kredit,
-                            Keterangan = oldRow.Keterangan
-                        };
-                        sourceTable.Remove(oldRow);
-                        sourceTable.Insert(newRowIndex, newRow);
-                    }
-                    break;
-                case InsertType.After:
-                    newRowIndex = targetRowIndex < sourceHandles[0] ? targetRowIndex + 1 : targetRowIndex;
-                    for (int i = 0; i < draggedRows.Count; i++)
-                    {
-                        JurnalDetailAdd oldRow = draggedRows[i];
-                        JurnalDetailAdd newRow = new()
-                        {
-                            Kode = oldRow.Kode,
-                            Rekening = oldRow.Rekening,
-                            Debet = oldRow.Debet,
-                            Kredit = oldRow.Kredit,
-                            Keterangan = oldRow.Keterangan
-                        };
-                        sourceTable.Remove(oldRow);
-                        sourceTable.Insert(newRowIndex, newRow);
-                    }
-                    break;
-                default:
-                    newRowIndex = -1;
-                    break;
+                return;
             }
-            int insertedIndex = targetGrid.GetRowHandle(newRowIndex);
-            targetGrid.FocusedRowHandle = insertedIndex;
-            targetGrid.SelectRow(targetGrid.FocusedRowHandle);
+
+            List<JurnalDetailAdd> movedRows = sourceIndexes
+                .Select(index => sourceTable[index])
+                .ToList();
+
+            for (int i = sourceIndexes.Count - 1; i >= 0; i--)
+            {
+                sourceTable.RemoveAt(sourceIndexes[i]);
+            }
+
+            for (int i = 0; i < movedRows.Count; i++)
+            {
+                sourceTable.Insert(insertIndex + i, movedRows[i]);
+            }
+
+            targetGrid.ClearSelection();
+            int selectedCount = movedRows.Count;
+            for (int i = 0; i < selectedCount; i++)
+            {
+                int rowHandle = targetGrid.GetRowHandle(insertIndex + i);
+                if (rowHandle >= 0)
+                {
+                    targetGrid.SelectRow(rowHandle);
+                    if (i == 0)
+                    {
+                        targetGrid.FocusedRowHandle = rowHandle;
+                    }
+                }
+            }
+            ReindexBarisInInputOrder();
 
         }
 
@@ -587,8 +603,17 @@ namespace Accounting.Form
                 // Saat selesai keterangan, langsung lanjut ke baris baru agar input cepat.
                 else if (string.Equals(focusedField, "Keterangan", StringComparison.OrdinalIgnoreCase))
                 {
-                    gridView.AddNewRow();
-                    gridView.FocusedColumn = gridView.Columns["Kode"];
+                    int lastRowHandle = gridView.RowCount - 1;
+                    if (focusedRowHandle >= lastRowHandle)
+                    {
+                        gridView.AddNewRow();
+                        gridView.FocusedColumn = gridView.Columns["Kode"];
+                    }
+                    else
+                    {
+                        gridView.FocusedRowHandle = focusedRowHandle + 1;
+                        gridView.FocusedColumn = gridView.Columns["Kode"];
+                    }
                 }
                 else
                 {
@@ -600,6 +625,13 @@ namespace Accounting.Form
 
             if (e.KeyCode == Keys.Delete && e.Modifiers == Keys.Control)
             {
+                if (!TryEnsureJurnalAccess(editjurnal
+                        ? AuthorizationService.EnsureCanUpdateJurnal
+                        : AuthorizationService.EnsureCanCreateJurnal))
+                {
+                    return;
+                }
+
                 if (XtraMessageBox.Show("Hapus Baris?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                     return;
 
@@ -643,115 +675,6 @@ namespace Accounting.Form
                 && Convert.ToDecimal(e.Value) == 0)
             {
                 e.DisplayText = string.Empty;
-            }
-        }
-
-
-        GridHitInfo? downHitInfo = null;
-        private void JDgridView_MouseDown(object sender, MouseEventArgs e)
-        {
-            if (sender is not GridView view)
-            {
-                return;
-            }
-
-            downHitInfo = null;
-
-            GridHitInfo hitInfo = view.CalcHitInfo(new Point(e.X, e.Y));
-            if (Control.ModifierKeys != Keys.None)
-                return;
-            if (e.Button == MouseButtons.Left && hitInfo.InRow && hitInfo.RowHandle != GridControl.NewItemRowHandle)
-                downHitInfo = hitInfo;
-        }
-
-        private void JDgridView_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (sender is not GridView view)
-            {
-                return;
-            }
-
-            if (e.Button == MouseButtons.Left && downHitInfo != null)
-            {
-                Size dragSize = SystemInformation.DragSize;
-                Rectangle dragRect = new Rectangle(new Point(downHitInfo.HitPoint.X - dragSize.Width / 2,
-                    downHitInfo.HitPoint.Y - dragSize.Height / 2), dragSize);
-
-                if (!dragRect.Contains(new Point(e.X, e.Y)))
-                {
-                    view.GridControl.DoDragDrop(downHitInfo, DragDropEffects.All);
-                    downHitInfo = null;
-                }
-            }
-        }
-
-        private void GCJurnal_DragOver(object sender, DragEventArgs e)
-        {
-            var dataObject = e.Data;
-            if (dataObject == null)
-            {
-                return;
-            }
-
-            if (dataObject.GetDataPresent(typeof(GridHitInfo)))
-            {
-                if (dataObject.GetData(typeof(GridHitInfo)) is not GridHitInfo dragHitInfo)
-                {
-                    return;
-                }
-
-                if (sender is not GridControl grid || grid.MainView is not GridView view)
-                {
-                    return;
-                }
-
-                GridHitInfo hitInfo = view.CalcHitInfo(grid.PointToClient(new Point(e.X, e.Y)));
-                if (hitInfo.InRow && hitInfo.RowHandle != dragHitInfo.RowHandle && hitInfo.RowHandle != GridControl.NewItemRowHandle)
-                    e.Effect = DragDropEffects.Move;
-                else
-                    e.Effect = DragDropEffects.None;
-            }
-        }
-
-        private void GCJurnal_DragDrop(object sender, DragEventArgs e)
-        {
-            if (sender is not GridControl grid || grid.MainView is not GridView view)
-            {
-                return;
-            }
-
-            var dataObject = e.Data;
-            if (dataObject == null)
-            {
-                return;
-            }
-
-            if (dataObject.GetData(typeof(GridHitInfo)) is not GridHitInfo srcHitInfo)
-            {
-                return;
-            }
-
-            GridHitInfo hitInfo = view.CalcHitInfo(grid.PointToClient(new Point(e.X, e.Y)));
-            int sourceRow = srcHitInfo.RowHandle;
-            int targetRow = hitInfo.RowHandle;
-            MoveRow(sourceRow, targetRow);
-        }
-        private void MoveRow(int sourceRow, int targetRow)
-        {
-            if (sourceRow == targetRow || sourceRow == targetRow + 1)
-                return;
-
-            GridView view = JDgridView;
-            DataRow row1 = view.GetDataRow(targetRow);
-            DataRow row2 = view.GetDataRow(targetRow + 1);
-            DataRow dragRow = view.GetDataRow(sourceRow);
-            int val1 = (int)row1["OrderFieldName"];
-            if (row2 == null)
-                dragRow["OrderFieldName"] = val1 + 1;
-            else
-            {
-                int val2 = (int)row2["OrderFieldName"];
-                dragRow["OrderFieldName"] = (val1 + val2) / 2;
             }
         }
     }

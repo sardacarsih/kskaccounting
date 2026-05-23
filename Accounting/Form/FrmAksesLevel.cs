@@ -1,5 +1,6 @@
-﻿using DevExpress.XtraEditors;
+using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Base;
+using DevExpress.XtraBars.Alerter;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Data;
@@ -14,6 +15,13 @@ namespace Accounting.Form
         {
             InitializeComponent();
         }
+
+        // ── Toast Notification Helper ──────────────────────────────────
+        private void ShowToast(string caption, string message)
+        {
+            alertControl1.Show(this, caption, message);
+        }
+
         DataSet DSAkses;
         OracleDataAdapter sqlAdapter;
         int levelid;
@@ -229,7 +237,7 @@ namespace Accounting.Form
                     conn.Close();
                 }
                 Load_Level();
-                XtraMessageBox.Show("Duplikasi Role Baru Telah dibuat", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowToast("✅ Sukses", "Duplikasi Role Baru telah dibuat");
             }
             catch (Exception ex)
             {
@@ -277,7 +285,7 @@ namespace Accounting.Form
                 }
                 Load_Level();
                 gridControl1.DataSource = null;
-                XtraMessageBox.Show("Role Telah dihapus", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowToast("🗑️ Dihapus", "Role telah berhasil dihapus");
             }
             catch (Exception ex)
             {                

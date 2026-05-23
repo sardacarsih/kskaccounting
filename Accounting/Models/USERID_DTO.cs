@@ -16,6 +16,12 @@ namespace Accounting
         public string JABATAN { get; set; }
         public string PASSWORD { get; set; }
         public string AKTIF { get; set; }
+        public int FAILED_LOGIN_COUNT { get; set; }
+        public DateTime? LOCKOUT_UNTIL_UTC { get; set; }
+        public DateTime? LAST_LOGIN_AT_UTC { get; set; }
+        public DateTime? LAST_FAILED_LOGIN_AT_UTC { get; set; }
+        public DateTime? PASSWORD_CHANGED_AT_UTC { get; set; }
+        public string PASSWORD_RESET_REQUIRED { get; set; }
     }
 
     // The USERID_DETAIL_DTO class represents the detail with a master-detail relationship

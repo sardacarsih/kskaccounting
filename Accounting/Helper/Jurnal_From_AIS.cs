@@ -1,5 +1,6 @@
 ﻿using Accounting._1.Interface;
 using Accounting._2.DataAcces;
+using Accounting.BusinessLayer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,21 +38,21 @@ namespace Accounting.Helper
 
                 foreach (var item in jurnalfiltered)
                 {
-                    decimal debetWithPPH21 = Math.Round(item.DEBETPPH / 0.975m);
+                    decimal debetWithPPH21 = JurnalAmountRounding.RoundJournalAmount(item.DEBETPPH / 0.975m);
                     if (item.DEBET < debetWithPPH21)
                     {
-                        decimal pph21 = Math.Round(debetWithPPH21 * 0.025m);
-                        item.DEBET += pph21;
-                        item.PPH21 += pph21;
+                        decimal pph21 = JurnalAmountRounding.RoundJournalAmount(debetWithPPH21 * 0.025m);
+                        item.DEBET = JurnalAmountRounding.RoundJournalAmount(item.DEBET + pph21);
+                        item.PPH21 = JurnalAmountRounding.RoundJournalAmount(item.PPH21 + pph21);
                     }
                 }
 
                 // Calculate the total DEBET after updates
-                decimal totaldebet = jurnalfiltered.Sum(f => f.DEBET);
-                decimal totalpph21 = jurnalfiltered.Sum(f => f.PPH21);
+                decimal totaldebet = JurnalAmountRounding.RoundJournalAmount(jurnalfiltered.Sum(f => f.DEBET));
+                decimal totalpph21 = JurnalAmountRounding.RoundJournalAmount(jurnalfiltered.Sum(f => f.PPH21));
 
                 // Calculate operational value
-                decimal operasional = totaldebet - totalpph21;
+                decimal operasional = JurnalAmountRounding.RoundJournalAmount(totaldebet - totalpph21);
 
                 // Add new rows for debetPercentage and operasional
                 var newRows = new List<AIS_JURNAL>
@@ -102,8 +103,8 @@ namespace Accounting.Helper
                     PotBpjsPENSIUN = filteredBpjs.Any() ? filteredBpjs.Sum(b => b.POT_BPJS_TK_PENSIUN) : 0m
                 };
 
-                decimal biayaoperasional_bruto = jurnalfiltered.Sum(f => f.DEBET) + totals.Libur + totals.Umakan + totals.Perabot + totals.Kompensasi + totals.Lembur;
-                decimal biayaoperasional_netto = biayaoperasional_bruto - (totals.PotKantor + totals.PotBpjsTK + totals.PotBpjsKES + totals.PotBpjsPENSIUN);
+                decimal biayaoperasional_bruto = JurnalAmountRounding.RoundJournalAmount(jurnalfiltered.Sum(f => f.DEBET) + totals.Libur + totals.Umakan + totals.Perabot + totals.Kompensasi + totals.Lembur);
+                decimal biayaoperasional_netto = JurnalAmountRounding.RoundJournalAmount(biayaoperasional_bruto - (totals.PotKantor + totals.PotBpjsTK + totals.PotBpjsKES + totals.PotBpjsPENSIUN));
 
                 var newRows = new List<AIS_JURNAL>
                 {
@@ -148,7 +149,7 @@ namespace Accounting.Helper
             }
 
             // Convert to AIS_JURNAL_FINAL list
-            var jurnalfinalAIS = jurnalfiltered.Select(j => new AIS_JURNAL_FINAL
+            var jurnalfinalAIS = JurnalAmountRounding.NormalizeAisFinalRows(jurnalfiltered.Select(j => new AIS_JURNAL_FINAL
             {
                 NOJURNAL = noAIS_Bukti,
                 TANGGAL = TanggalJurnal,
@@ -158,7 +159,7 @@ namespace Accounting.Helper
                 KETERANGAN = j.KETERANGAN,
                 KREDIT = j.KREDIT,
                 DEBET = j.DEBET
-            }).ToList();
+            }));
 
             return jurnalfinalAIS;
         }

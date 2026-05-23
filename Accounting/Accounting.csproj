@@ -8,7 +8,7 @@
     <ApplicationIcon>icons\gl1_9S6_2.ico</ApplicationIcon>
     <PackageIcon>gl1_9S6_2.ico</PackageIcon>
     <Platforms>AnyCPU;x64</Platforms>
-    <Nullable>enable</Nullable>
+    <Nullable>annotations</Nullable>
     <AssemblyVersion></AssemblyVersion>
     <FileVersion>1.0.9</FileVersion>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -47,6 +47,7 @@
     <PackageReference Include="ExcelDataReader" Version="3.7.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.7.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0" PrivateAssets="all" />
     <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.6.1" />
     <PackageReference Include="Serilog" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
@@ -100,6 +101,9 @@
     <None Update="icons\gl1_9S6_2.ico">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
+    </None>
+    <None Update="Resources\login-wireguard-bg.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

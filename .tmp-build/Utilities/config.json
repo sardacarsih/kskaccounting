@@ -1,0 +1,40 @@
+{
+  //PUSAT
+  //"LokasiServer": "LOCAL_FSLGROUP",
+  //"ServerAddress": "LOCALHOST"
+
+  //////KEBUN
+  //"LokasiServer": "LOCAL_KSKKEBUN",
+  //"ServerAddress": "LOCALHOST"
+  //////KEBUN
+  "LokasiServer": "LOCAL_MSLKEBUN",
+  "ServerAddress": "LOCALHOST"
+
+ // "LokasiServer": "KSKGROUP",
+  //"ServerAddress": "10.10.10.41"
+
+  //"LokasiServer": "PAJAK",
+  //"ServerAddress": "10.10.10.41"
+
+  //"LokasiServer": "KSKKEBUN",
+  //"ServerAddress": "200.208.100.201"
+
+  //"LokasiServer": "MSLKEBUN",
+  //"ServerAddress": "192.168.110.10",
+
+  //"LokasiServer": "PKSFSL",
+  //"ServerAddress": "192.168.1.10"
+
+  //"LokasiServer": "FAKKEBUN",
+  //"ServerAddress": "192.168.1.1",
+
+  //"LokasiServer": "FSKKEBUN",
+  //"ServerAddress": "192.168.36.10",
+
+  //"LokasiServer": "FBM",
+  //"ServerAddress": "10.10.10.41"
+
+  //"LokasiServer": "FSLKEBUN",
+  //"ServerAddress": "10.10.20.13"
+
+}

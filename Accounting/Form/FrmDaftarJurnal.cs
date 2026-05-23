@@ -1,17 +1,26 @@
 ﻿
 
 using Accounting.BusinessLayer;
+using Accounting.Services;
 using DevExpress.XtraSplashScreen;
 using System;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
+using DevExpress.XtraGrid.Columns;
 using DevExpress.Utils.Menu;
 using System.Diagnostics;
+using System.Drawing;
+using System.Data;
 namespace Accounting.Form
 {
     public partial class FrmDaftarJurnal : DevExpress.XtraEditors.XtraForm
     {
+        private const int BaseDpi = 96;
+        private const int HeaderPadding = 12;
+        private const int RowHeight = 38;
+        private const int RowGap = 8;
+        private const int HeaderSpacing = 10;
 
         int pbulan,ptahun;
         bool NODATA;
@@ -22,6 +31,17 @@ namespace Accounting.Form
         }
         private void FrmDaftarJurnal_Load(object sender, EventArgs e)
         {
+            try
+            {
+                AuthorizationService.EnsureCanViewJurnalWorkspace();
+            }
+            catch (InvalidOperationException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                BeginInvoke(new MethodInvoker(Close));
+                return;
+            }
+
             cmbbulan.Properties.Items.AddRange(new[] { "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" });
             int x= int.Parse(Acct.PeriodeMax.ToString().Substring(Acct.PeriodeMax.ToString().Length-2, 2));
             int ymax = int.Parse(Acct.PeriodeMax.ToString().Substring(Acct.PeriodeMax.ToString().Length - 6, 4));
@@ -36,6 +56,76 @@ namespace Accounting.Form
             gridView2.Focus();
             Cursor.Current = Cursors.Default;
             SplashScreenManager.CloseForm();
+            ApplyResponsiveLayout();
+        }
+
+        private void FrmDaftarJurnal_Resize(object sender, EventArgs e)
+        {
+            ApplyResponsiveLayout();
+        }
+
+        private void ApplyResponsiveLayout()
+        {
+            if (sidePanel1 == null || labelControl3 == null || cmbbulan == null || setahun == null || btnexport == null)
+            {
+                return;
+            }
+
+            int clientWidth = ClientSize.Width;
+            bool isNarrowLayout = clientWidth <= ScaleForDpi(1366);
+            bool isWideLayout = clientWidth >= ScaleForDpi(1920);
+
+            int padding = ScaleForDpi(HeaderPadding);
+            int rowHeight = ScaleForDpi(RowHeight);
+            int rowGap = ScaleForDpi(RowGap);
+            int spacing = ScaleForDpi(HeaderSpacing);
+            int availableWidth = Math.Max(ScaleForDpi(640), sidePanel1.ClientSize.Width - (padding * 2));
+            int row1Y = padding;
+
+            int labelY = row1Y + ((rowHeight - labelControl3.Height) / 2);
+            labelControl3.Location = new Point(padding, labelY);
+
+            int periodX = labelControl3.Right + spacing;
+            int periodWidth = isNarrowLayout
+                ? Math.Clamp((int)(availableWidth * 0.32), ScaleForDpi(150), ScaleForDpi(190))
+                : Math.Clamp((int)(availableWidth * 0.26), ScaleForDpi(170), ScaleForDpi(240));
+            cmbbulan.Location = new Point(periodX, row1Y);
+            cmbbulan.Size = new Size(periodWidth, rowHeight);
+
+            int yearX = cmbbulan.Right + spacing;
+            setahun.Location = new Point(yearX, row1Y);
+            setahun.Size = new Size(ScaleForDpi(100), rowHeight);
+
+            int exportWidth = ScaleForDpi(118);
+            int exportX = sidePanel1.ClientSize.Width - padding - exportWidth;
+            btnexport.Size = new Size(exportWidth, rowHeight);
+
+            bool compactMode = exportX < (setahun.Right + spacing);
+            if (compactMode)
+            {
+                int row2Y = row1Y + rowHeight + rowGap;
+                btnexport.Location = new Point(padding, row2Y);
+                sidePanel1.Height = row2Y + rowHeight + padding;
+            }
+            else
+            {
+                btnexport.Location = new Point(exportX, row1Y);
+                sidePanel1.Height = rowHeight + (padding * 2);
+            }
+
+            if (gridControl2 != null)
+            {
+                double leftRatio = isNarrowLayout ? 0.60 : (isWideLayout ? 0.52 : 0.56);
+                int leftMin = ScaleForDpi(460);
+                int leftMax = Math.Max(leftMin, ClientSize.Width - ScaleForDpi(380));
+                gridControl2.Width = Math.Clamp((int)(ClientSize.Width * leftRatio), leftMin, leftMax);
+            }
+        }
+
+        private int ScaleForDpi(int value)
+        {
+            int dpi = DeviceDpi > 0 ? DeviceDpi : BaseDpi;
+            return Math.Max(1, (value * dpi) / BaseDpi);
         }
        
         private void setahun_EditValueChanged(object sender, EventArgs e)
@@ -116,13 +206,16 @@ namespace Accounting.Form
                 XtraMessageBox.Show("Transaksi ini tidak dapat diHapus...!!!\nPeriode Akuntansi : "+Periode+ " Telah Dikunci.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            //4 kode daftar jurnal
-            bool akses = LevelAksesServices.Hapus(4, LoginInfo.userID);
-            if (akses == false)
+            try
             {
-                XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                AuthorizationService.EnsureCanDeleteJurnal();
+            }
+            catch (InvalidOperationException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
             if (XtraMessageBox.Show("Hapus Transaksi Jurnal ? \n\nNomor : " + Nomor+"\nPeriode : "+Periode, "Confirm Hapus", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
         }
@@ -144,11 +237,13 @@ namespace Accounting.Form
                 return;
             }
 
-            //4 kode daftar jurnal
-            bool akses = LevelAksesServices.Ubah(4, LoginInfo.userID);
-            if (akses == false)
+            try
             {
-                XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                AuthorizationService.EnsureCanUpdateJurnal();
+            }
+            catch (InvalidOperationException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -161,6 +256,16 @@ namespace Accounting.Form
 
         private void btnexport_Click(object sender, EventArgs e)
         {
+            try
+            {
+                AuthorizationService.EnsureCanExportJurnal();
+            }
+            catch (InvalidOperationException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             SplashScreenManager.ShowForm(typeof(WaitForm_Exporting));
             Cursor.Current = Cursors.WaitCursor;
             Stopwatch watch = new Stopwatch();
@@ -198,13 +303,15 @@ namespace Accounting.Form
                 return;
             }
             NODATA = false;
-            gridControl2.DataSource = jurnalheader;
+            jurnalheader.DefaultView.Sort = "NOJURNAL ASC";
+            gridControl2.DataSource = jurnalheader.DefaultView;
             gridView2.Columns[0].Visible = false;
             gridView2.Columns[2].DisplayFormat.FormatType = DevExpress.Utils.FormatType.DateTime;
             gridView2.Columns[2].DisplayFormat.FormatString = "dd-MMM-yyyy";
 
             var jurnaldetail = JurnalServices.GetJurnalDetails(CompanyInfo.IDDATA, periode);
-            gridControl1.DataSource = jurnaldetail;
+            jurnaldetail.DefaultView.Sort = "NOJURNAL ASC, BARIS ASC";
+            gridControl1.DataSource = jurnaldetail.DefaultView;
             gridView1.Columns[0].Visible = false;
             gridView1.Columns[1].Visible = false;
             gridView1.Columns[2].OptionsColumn.FixedWidth = true;
@@ -225,11 +332,21 @@ namespace Accounting.Form
             gridView1.Columns[5].Summary.Add(DevExpress.Data.SummaryItemType.Sum, "DEBET", "{0:N2}");
             gridView1.Columns[6].Summary.Add(DevExpress.Data.SummaryItemType.Sum, "KREDIT", "{0:N2}");
             gridView1.BestFitColumns();
+            DisableUserSorting(gridView1);
+            DisableUserSorting(gridView2);
 
             gridView2.Focus();
             FilterByNoJurnal();
         }
 
-        
+        private static void DisableUserSorting(GridView view)
+        {
+            view.OptionsCustomization.AllowSort = false;
+            foreach (GridColumn column in view.Columns)
+            {
+                column.OptionsColumn.AllowSort = DevExpress.Utils.DefaultBoolean.False;
+            }
+        }
+
     }
 }

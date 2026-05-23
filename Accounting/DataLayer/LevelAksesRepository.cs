@@ -53,7 +53,7 @@ namespace Accounting.DataLayer
                     return (val == 'Y');
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Handle exceptions as per your application's error-handling strategy.
                 // You can log the error or return a default value.
@@ -90,7 +90,7 @@ namespace Accounting.DataLayer
                     return (val == 'Y');
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Handle exceptions as per your application's error-handling strategy.
                 // You can log the error or return a default value.
@@ -127,7 +127,7 @@ namespace Accounting.DataLayer
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Handle exceptions as per your application's error-handling strategy.
                 // You can log the error or return a default value.
@@ -161,7 +161,7 @@ namespace Accounting.DataLayer
                 }
                
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Handle exceptions as per your application's error-handling strategy.
                 // You can log the error or return a default value.
@@ -192,7 +192,7 @@ namespace Accounting.DataLayer
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Handle exceptions as per your application's error-handling strategy.
                 // You can log the error or return a default value.

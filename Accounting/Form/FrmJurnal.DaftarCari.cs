@@ -193,6 +193,7 @@ namespace Accounting.Form
                 return;
             }
 
+            DisableUserSorting(GVHeader);
             GVHeader.Columns["JURNALID"].Visible = false;
             ApplyDateFormat(GVHeader.Columns["Tanggal"]);
             GVHeader.BestFitColumns();
@@ -205,16 +206,13 @@ namespace Accounting.Form
                 return;
             }
 
+            DisableUserSorting(gridView1);
             gridView1.Columns["REFFID"].Visible = false;
             gridView1.Columns["HIDREFF"].Visible = false;
             gridView1.Columns["Posted"].Visible = false;
             ApplyDateFormat(gridView1.Columns["Tanggal"]);
             ApplyNumericFormat(gridView1.Columns["Debet"]);
             ApplyNumericFormat(gridView1.Columns["Kredit"]);
-            gridView1.Columns["Periode"].GroupIndex = 0;
-            gridView1.Columns["NoJurnal"].GroupIndex = 1;
-            gridView1.Columns["BARIS"].SortIndex = 1;
-            gridView1.ExpandAllGroups();
             gridView1.BestFitColumns();
         }
 
@@ -304,11 +302,17 @@ namespace Accounting.Form
             {
                 if (filter)
                 {
-                    List<JurnalDetailDTO> exportRows = jurnalDaftarCariService.BuildMonthlyExportRows(
-                        cefilterlengkap.Checked,
-                        PencarianJurnal_Bulan.ToList(),
-                        JurnalDetail ?? Enumerable.Empty<JurnalDetailDTO>(),
-                        JurnalHeader_Filtered);
+                    List<JurnalDetailDTO> exportRows = GetActiveDetailRowsForExport();
+                    if (!exportRows.Any())
+                    {
+                        exportRows = jurnalDaftarCariService.BuildMonthlyExportRows(
+                            cefilterlengkap.Checked,
+                            PencarianJurnal_Bulan.ToList(),
+                            JurnalDetail ?? Enumerable.Empty<JurnalDetailDTO>(),
+                            JurnalHeader_Filtered);
+                    }
+
+                    exportRows = NormalizeJurnalExportOrder(exportRows);
 
                     ExportPencarian_Bulan = exportRows;
                     jurnalExcelExportService.ExportJurnalDetails(exportRows, "JurnalFilterPeriode");
@@ -473,9 +477,10 @@ namespace Accounting.Form
                         return;
                     }
 
-                    ExportPencarian = exportResult.ExportRows;
+                    List<JurnalDetailDTO> orderedExportRows = NormalizeJurnalExportOrder(exportResult.ExportRows);
+                    ExportPencarian = orderedExportRows;
                     ReffID = exportResult.ReffIds;
-                    jurnalExcelExportService.ExportJurnalDetails(exportResult.ExportRows, $"{CompanyInfo.IDDATA}_SearchJurnal");
+                    jurnalExcelExportService.ExportJurnalDetails(orderedExportRows, $"{CompanyInfo.IDDATA}_SearchJurnal");
                 }
                 else
                 {

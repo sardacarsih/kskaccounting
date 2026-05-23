@@ -45,6 +45,11 @@ namespace Accounting._2.DataAcces
             return JurnalServices.CekNoJurnalExist_input(pIdData, pNomor, periode);
         }
 
+        public bool CekNoJurnalExistExceptJurnalId(string pIdData, string pNomor, string periode, double exceptJurnalId)
+        {
+            return JurnalServices.CekNoJurnalExistExceptJurnalId(pIdData, pNomor, periode, exceptJurnalId);
+        }
+
         public bool CekjURNALRJE(double pJurnalId)
         {
             return JurnalServices.CekjURNALRJE(pJurnalId);
@@ -137,19 +142,19 @@ namespace Accounting._2.DataAcces
             return Task.Run(() => PeriodeList(pIdData, pTahun));
         }
 
-        public void InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
+        public JurnalPersistResult InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
         {
-            JurnalServices.InsertJurnalMasterDetail(jurnalHeader, jurnalDetail);
+            return JurnalServices.InsertJurnalMasterDetail(jurnalHeader, jurnalDetail);
         }
 
-        public void UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
+        public JurnalPersistResult UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail, DateTime? expectedHeaderVersionUtc)
         {
-            JurnalServices.UpdateJurnalMasterDetail(oldJurnalId, jurnalHeader, jurnalDetail);
+            return JurnalServices.UpdateJurnalMasterDetail(oldJurnalId, jurnalHeader, jurnalDetail, expectedHeaderVersionUtc);
         }
 
-        public void HapusJurnal(double pJurnalId)
+        public JurnalPersistResult HapusJurnal(double pJurnalId)
         {
-            JurnalServices.HapusJurnal(pJurnalId);
+            return JurnalServices.HapusJurnal(pJurnalId);
         }
 
         public void HapusJurnalRange(List<double> selectedValues)
@@ -217,9 +222,19 @@ namespace Accounting._2.DataAcces
             return JurnalFromModuleServices.GetJurnalHeader_Inventory(pPeriodeInt, pPtLokasi);
         }
 
+        public IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int pPeriodeInt, string pPtLokasi, string? pSourceFilter = null)
+        {
+            return JurnalFromModuleServices.GetJurnalHeader_InventoryBaru(pPeriodeInt, pPtLokasi, pSourceFilter);
+        }
+
         public DataTable Jurnal_Inventori(int pPeriodeInt, string pPtLokasi, string pIdData, string pPosted, string pPeriodeStr, string pUserId, int pGlYear, int pGlMonth)
         {
             return JurnalFromModuleServices.Jurnal_Inventori(pPeriodeInt, pPtLokasi, pIdData, pPosted, pPeriodeStr, pUserId, pGlYear, pGlMonth);
+        }
+
+        public DataTable Jurnal_InventoriBaru(int pPeriodeInt, string pPtLokasi, string pIdData, string pPosted, string pPeriodeStr, string pUserId, int pGlYear, int pGlMonth, string? pSourceFilter = null)
+        {
+            return JurnalFromModuleServices.Jurnal_InventoriBaru(pPeriodeInt, pPtLokasi, pIdData, pPosted, pPeriodeStr, pUserId, pGlYear, pGlMonth, pSourceFilter);
         }
 
         public double CEK_TOTAL_TRANSAKSI(int pPeriodeInt, string pPtLokasi, string pModule)
@@ -341,6 +356,21 @@ namespace Accounting._2.DataAcces
         public Task<List<BPJS_INFO_DTO>> GetBPJSUmumAsync(string pIdData, int pPeriode, int pRemise)
         {
             return jurnalImportRepository.GetBPJSUmumAsync(pIdData, pPeriode, pRemise);
+        }
+
+        public List<JurnalAuditSummary> SearchAuditTrail(string iddata, DateTime fromDate, DateTime toDate, string actionType, string userId, string nojurnal)
+        {
+            return JurnalServices.SearchAuditTrail(iddata, fromDate, toDate, actionType, userId, nojurnal);
+        }
+
+        public List<JurnalAuditLog> GetAuditByJurnal(string nojurnal, string periode, string iddata, DateTime fromDate, DateTime toDate)
+        {
+            return JurnalServices.GetAuditByJurnal(nojurnal, periode, iddata, fromDate, toDate);
+        }
+
+        public List<JurnalAuditDetailDTO> GetAuditDetail(double auditId)
+        {
+            return JurnalServices.GetAuditDetail(auditId);
         }
     }
 }

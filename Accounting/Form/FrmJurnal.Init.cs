@@ -2,13 +2,11 @@ using Accounting._1.Interface;
 using Accounting._2.DataAcces;
 using Accounting.BusinessLayer;
 using Accounting.Model;
+using Accounting.Services;
 using Accounting.UC.Jurnal;
 using DevExpress.Data;
-using DevExpress.Data.ODataLinq.Helpers;
 using DevExpress.Mvvm.Native;
 using DevExpress.Utils.DragDrop;
-using DevExpress.Utils.Menu;
-using DevExpress.Xpf.Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.Mask;
@@ -18,7 +16,6 @@ using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid.Views.Grid.ViewInfo;
-using DevExpress.XtraSplashScreen;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -67,8 +64,10 @@ namespace Accounting.Form
         {
             JDgridView.OptionsNavigation.EnterMoveNextColumn = true;
             _ = new GridNewRowHelper(JDgridView);
+            ConfigureInputGridColumnsBehavior();
 
             PopulateList();
+            SetSaveButtonMode(isEdit: false);
             HandleBehaviorDragDropEvents();
         }
 
@@ -78,11 +77,13 @@ namespace Accounting.Form
             JDgridView.ValidateRow += JDgridView_ValidateRow;
             GCJurnal.DataSourceChanged += GCJurnal_DataSourceChanged;
             TABJurnal.SelectedPageChanged += TABJurnal_SelectedPageChanged;
+            xtraTabControl1.SelectedPageChanged += ImportTab_SelectedPageChanged;
 
             repdebet.KeyDown += repdebet_KeyDown;
             repkredit.KeyDown += Repkredit_KeyDown;
             gridViewAISheader.FocusedRowChanged += GridViewAISheader_FocusedRowChanged;
             GCJurnal.Resize += GCJurnal_Resize;
+            GCJurnal.MouseWheel += GCJurnal_MouseWheel;
         }
 
         private void UnregisterEventHandlers()
@@ -91,11 +92,13 @@ namespace Accounting.Form
             JDgridView.ValidateRow -= JDgridView_ValidateRow;
             GCJurnal.DataSourceChanged -= GCJurnal_DataSourceChanged;
             TABJurnal.SelectedPageChanged -= TABJurnal_SelectedPageChanged;
+            xtraTabControl1.SelectedPageChanged -= ImportTab_SelectedPageChanged;
 
             repdebet.KeyDown -= repdebet_KeyDown;
             repkredit.KeyDown -= Repkredit_KeyDown;
             gridViewAISheader.FocusedRowChanged -= GridViewAISheader_FocusedRowChanged;
             GCJurnal.Resize -= GCJurnal_Resize;
+            GCJurnal.MouseWheel -= GCJurnal_MouseWheel;
 
             if (repositoryItemTextEditKode != null)
             {
@@ -165,6 +168,12 @@ namespace Accounting.Form
             isInitializing = true;
             try
             {
+                if (!TryEnsureJurnalAccess(AuthorizationService.EnsureCanViewJurnalWorkspace))
+                {
+                    BeginInvoke(new MethodInvoker(Close));
+                    return;
+                }
+
                 // Phase 1: parallel DB calls - PeriodeListAll + MaxTahunCOA
                 p_iddata = CompanyInfo.IDDATA;
                 var periodeAllTask = jurnalRepository.PeriodeListAllAsync(p_iddata);
@@ -206,9 +215,11 @@ namespace Accounting.Form
                 leperiode.EditValue = periodetujuan;
 
                 PilihanPeriodeAkuntansi();
+                ApplyExportGridSortPolicy();
                 lblrecordbulan.Visible = false;
                 SetTanggalharini();
                 EnsureInputGridReadyForEntry();
+                ApplyJurnalAuthorizationState();
             }
             catch (Exception ex)
             {
@@ -244,6 +255,7 @@ namespace Accounting.Form
                 UpdateGridEnabledState();
                 EnsureSeedRowForInputGrid();
                 ResetJurnalInputGridLayoutToDefault();
+                ApplyJurnalAuthorizationState();
                 if (focusFirstCell)
                 {
                     FocusFirstInputCell();
@@ -273,25 +285,13 @@ namespace Accounting.Form
             {
                 EnsureInputGridReadyForEntry();
             }
-            else if (e.Page == xtraTabKasir && !kasirLoaded)
+            else if (e.Page == xtraTabPage2)
             {
-                Load_Kode_Kasir();
-                kasirLoaded = true;
+                PilihanPeriodeAkuntansi(useLoading: false);
             }
-            else if (e.Page == xtraTabAIS && !aisLoaded)
+            else if (e.Page == TABImportJurnal)
             {
-                await Load_Kode_AISAsync();
-                aisLoaded = true;
-            }
-            else if (e.Page == xtraTabInventori && !inventoryLoaded)
-            {
-                Load_Kode_Inv();
-                inventoryLoaded = true;
-            }
-            else if (e.Page == xtraTabHR && !hrisLoaded)
-            {
-                await Load_Kode_HRISAsync();
-                hrisLoaded = true;
+                await EnsureImportTabLoadedAsync(xtraTabControl1.SelectedTabPage);
             }
 
             // Release search result memory when leaving search tabs
@@ -301,6 +301,35 @@ namespace Accounting.Form
                 ExportPencarian = Enumerable.Empty<JurnalDetailDTO>();
                 PencarianJurnal_Bulan = Enumerable.Empty<JurnalDetailDTO>();
                 ExportPencarian_Bulan = Enumerable.Empty<JurnalDetailDTO>();
+            }
+        }
+
+        private async void ImportTab_SelectedPageChanged(object sender, DevExpress.XtraTab.TabPageChangedEventArgs e)
+        {
+            await EnsureImportTabLoadedAsync(e.Page);
+        }
+
+        private async Task EnsureImportTabLoadedAsync(DevExpress.XtraTab.XtraTabPage page)
+        {
+            if (page == xtraTabKasir && !kasirLoaded)
+            {
+                Load_Kode_Kasir();
+                kasirLoaded = true;
+            }
+            else if (page == xtraTabAIS && !aisLoaded)
+            {
+                await Load_Kode_AISAsync();
+                aisLoaded = true;
+            }
+            else if (page == xtraTabInventori && !inventoryLoaded)
+            {
+                Load_Kode_Inv();
+                inventoryLoaded = true;
+            }
+            else if (page == xtraTabHR && !hrisLoaded)
+            {
+                await Load_Kode_HRISAsync();
+                hrisLoaded = true;
             }
         }
 
@@ -359,41 +388,74 @@ namespace Accounting.Form
                 JDgridView.OptionsView.ShowColumnHeaders = true;
                 JDgridView.OptionsView.ShowFooter = true;
                 JDgridView.OptionsView.ShowGroupPanel = false;
-                JDgridView.OptionsView.ColumnAutoWidth = true;
-                JDgridView.OptionsBehavior.Editable = true;
+                JDgridView.OptionsView.ColumnAutoWidth = false;
+                JDgridView.OptionsBehavior.Editable = HasJurnalInputWriteAccess();
+                JDgridView.OptionsCustomization.AllowSort = false;
                 JDgridView.ClearColumnsFilter();
                 JDgridView.ActiveFilterString = string.Empty;
                 JDgridView.ClearGrouping();
+                JDgridView.ClearSorting();
+                ConfigureInputGridColumnsBehavior();
 
-                int totalWidth = GCJurnal.ClientSize.Width;
-                if (totalWidth <= 0) totalWidth = GCJurnal.Width;
+                GCJurnal.ForceInitialize();
+                JDgridView.BestFitColumns();
 
-                int fixedNoWidth = ScaleX(35);
-                int fixedHapusWidth = ScaleX(54);
-                int flexibleWidth = totalWidth - fixedNoWidth - fixedHapusWidth;
-                if (flexibleWidth < 200) flexibleWidth = 200;
-
-                int kodeWidth = Math.Max(ScaleX(120), (int)(flexibleWidth * 0.12));
-                int rekeningWidth = Math.Max(ScaleX(120), (int)(flexibleWidth * 0.16));
-                int debetWidth = Math.Max(ScaleX(80), (int)(flexibleWidth * 0.10));
-                int kreditWidth = Math.Max(ScaleX(80), (int)(flexibleWidth * 0.10));
-                int keteranganWidth = Math.Max(ScaleX(150), flexibleWidth - kodeWidth - rekeningWidth - debetWidth - kreditWidth);
-
-                ApplyDefaultColumnLayout(NO, 0, fixedNoWidth);
-                ApplyDefaultColumnLayout(KODE, 1, kodeWidth);
-                ApplyDefaultColumnLayout(REKENING, 2, rekeningWidth);
-                ApplyDefaultColumnLayout(DEBET, 3, debetWidth);
-                ApplyDefaultColumnLayout(KREDIT, 4, kreditWidth);
-                ApplyDefaultColumnLayout(KETERANGAN, 5, keteranganWidth);
-                ApplyDefaultColumnLayout(Hapus, 6, fixedHapusWidth);
+                ApplyBestFitColumnLayout(NO, 0, ScaleX(42), fixedWidth: true);
+                ApplyBestFitColumnLayout(KODE, 1, ScaleX(130));
+                ApplyBestFitColumnLayout(REKENING, 2, ScaleX(190));
+                ApplyBestFitColumnLayout(DEBET, 3, ScaleX(120));
+                ApplyBestFitColumnLayout(KREDIT, 4, ScaleX(120));
+                ApplyBestFitColumnLayout(KETERANGAN, 5, ScaleX(320));
+                ApplyBestFitColumnLayout(Hapus, 6, ScaleX(56), fixedWidth: true);
+                EnsureKeteranganFillsViewport();
             }
             finally
             {
                 JDgridView.EndUpdate();
             }
 
-            GCJurnal.ForceInitialize();
             JDgridView.LayoutChanged();
+        }
+
+        private void ConfigureInputGridColumnsBehavior()
+        {
+            foreach (GridColumn column in JDgridView.Columns)
+            {
+                column.OptionsColumn.AllowSort = DevExpress.Utils.DefaultBoolean.False;
+                column.SortOrder = DevExpress.Data.ColumnSortOrder.None;
+            }
+
+            KODE.OptionsColumn.AllowSize = true;
+            REKENING.OptionsColumn.AllowSize = true;
+        }
+
+        private void EnsureKeteranganFillsViewport()
+        {
+            if (KETERANGAN == null || !KETERANGAN.Visible)
+            {
+                return;
+            }
+
+            int viewportWidth = JDgridView.ViewRect.Width;
+            if (viewportWidth <= 0)
+            {
+                viewportWidth = GCJurnal.ClientSize.Width;
+            }
+
+            if (viewportWidth <= 0)
+            {
+                return;
+            }
+
+            int usedByOtherColumns = JDgridView.VisibleColumns
+                .Where(column => column != KETERANGAN)
+                .Sum(column => column.Width);
+
+            int desiredKeteranganWidth = viewportWidth - usedByOtherColumns - ScaleX(8);
+            if (desiredKeteranganWidth > KETERANGAN.MinWidth)
+            {
+                KETERANGAN.Width = desiredKeteranganWidth;
+            }
         }
 
         private void ApplyModernInputGridAppearance()
@@ -404,6 +466,9 @@ namespace Accounting.Form
                 JDgridView.OptionsSelection.EnableAppearanceFocusedCell = true;
                 JDgridView.OptionsSelection.EnableAppearanceFocusedRow = true;
                 JDgridView.OptionsSelection.InvertSelection = false;
+                JDgridView.OptionsSelection.MultiSelect = true;
+                JDgridView.OptionsSelection.MultiSelectMode = GridMultiSelectMode.RowSelect;
+                JDgridView.OptionsBehavior.EditorShowMode = DevExpress.Utils.EditorShowMode.Click;
                 JDgridView.OptionsView.EnableAppearanceOddRow = true;
                 JDgridView.OptionsView.EnableAppearanceEvenRow = true;
                 JDgridView.OptionsView.ShowIndicator = false;
@@ -446,7 +511,7 @@ namespace Accounting.Form
             }
         }
 
-        private static void ApplyDefaultColumnLayout(GridColumn column, int visibleIndex, int width)
+        private static void ApplyBestFitColumnLayout(GridColumn column, int visibleIndex, int minWidth, bool fixedWidth = false)
         {
             if (column == null)
             {
@@ -456,7 +521,18 @@ namespace Accounting.Form
             column.MaxWidth = 0;
             column.Visible = true;
             column.VisibleIndex = visibleIndex;
-            column.Width = width;
+            column.MinWidth = minWidth;
+
+            if (fixedWidth)
+            {
+                column.Width = minWidth;
+                return;
+            }
+
+            if (column.Width < minWidth)
+            {
+                column.Width = minWidth;
+            }
         }
 
         private void GCJurnal_Resize(object? sender, EventArgs e)
@@ -486,7 +562,30 @@ namespace Accounting.Form
 
             JDgridView.FocusedRowHandle = 0;
             JDgridView.FocusedColumn = KODE;
-            JDgridView.ShowEditor();
+        }
+
+        private void GCJurnal_MouseWheel(object? sender, MouseEventArgs e)
+        {
+            if (TABJurnal.SelectedTabPage != xtraTabPage1)
+            {
+                return;
+            }
+
+            bool hadActiveEditor = JDgridView.ActiveEditor != null;
+            if (!hadActiveEditor)
+            {
+                return;
+            }
+
+            JDgridView.CloseEditor();
+
+            int direction = e.Delta > 0 ? -1 : 1;
+            int maxTopRowIndex = Math.Max(0, JDgridView.DataRowCount - 1);
+            int nextTopRowIndex = Math.Max(0, Math.Min(JDgridView.TopRowIndex + direction, maxTopRowIndex));
+            if (nextTopRowIndex != JDgridView.TopRowIndex)
+            {
+                JDgridView.TopRowIndex = nextTopRowIndex;
+            }
         }
 
 
@@ -571,7 +670,8 @@ namespace Accounting.Form
                 hasValidYear = Acct.TahunMax >= dt.Year;
             }
 
-            GCJurnal.Enabled = hasCoaData && hasValidYear;
+            GCJurnal.Enabled = hasCoaData && hasValidYear && HasJurnalInputWriteAccess();
+            ApplyJurnalAuthorizationState();
         }
 
         private void LoadAndSetPeriode()
@@ -644,12 +744,7 @@ namespace Accounting.Form
 
         private void JDgridView_RowCountChanged(object sender, EventArgs e)
         {
-
-            for (int i = 0; i < JDgridView.RowCount; i++)
-            {
-
-                JDgridView.SetRowCellValue(i, JDgridView.Columns["BARIS"], i + 1);
-            }
+            ReindexBarisInInputOrder();
         }
     }
 }

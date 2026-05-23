@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Windows.Forms;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
@@ -21,16 +22,25 @@ namespace Accounting.Form
         {
             try
             {
-               
+                if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanAccessDeveloperTools))
+                {
+                    Close();
+                    return;
+                }
             }
             catch (SystemException ex)
             {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Close();
             }
         }
         string randomString;
         private void sbbrowse_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanAccessDeveloperTools))
+            {
+                return;
+            }
             try
             {
                 using OpenFileDialog ofd = new() { Filter = "SQL Script|*.sql" };
@@ -60,6 +70,10 @@ namespace Accounting.Form
         string sqlFilePath;
         private void SBImport_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanAccessDeveloperTools))
+            {
+                return;
+            }
             if (string.IsNullOrEmpty(sqlFilePath))
             {
                 return;

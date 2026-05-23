@@ -1,40 +1,76 @@
 {
-  //PUSAT
-  //"LokasiServer": "LOCAL_FSLGROUP",
-  //"ServerAddress": "LOCALHOST"
-
-  //////KEBUN
-  //"LokasiServer": "LOCAL_KSKKEBUN",
-  //"ServerAddress": "LOCALHOST"
-  //////KEBUN
-  "LokasiServer": "LOCAL_MSLKEBUN",
-  "ServerAddress": "LOCALHOST"
-
- // "LokasiServer": "KSKGROUP",
-  //"ServerAddress": "10.10.10.41"
-
-  //"LokasiServer": "PAJAK",
-  //"ServerAddress": "10.10.10.41"
-
-  //"LokasiServer": "KSKKEBUN",
-  //"ServerAddress": "200.208.100.201"
-
-  //"LokasiServer": "MSLKEBUN",
-  //"ServerAddress": "192.168.110.10",
-
-  //"LokasiServer": "PKSFSL",
-  //"ServerAddress": "192.168.1.10"
-
-  //"LokasiServer": "FAKKEBUN",
-  //"ServerAddress": "192.168.1.1",
-
-  //"LokasiServer": "FSKKEBUN",
-  //"ServerAddress": "192.168.36.10",
-
-  //"LokasiServer": "FBM",
-  //"ServerAddress": "10.10.10.41"
-
-  //"LokasiServer": "FSLKEBUN",
-  //"ServerAddress": "10.10.20.13"
-
+  "ActiveServerKey": "LOCAL_KSKKEBUN",
+  "AllowEnvironmentFallback": false,
+  "Servers": {
+    "LOCAL_MSLKEBUN": {
+      "Host": "LOCALHOST",
+      "Port": 1521,
+      "ServiceName": "MSLKEBUN",
+      "UserId": "MSL",
+      "Password": "MSLboss"
+    },
+    "LOCAL_KSKKEBUN": {
+      "Host": "LOCALHOST",
+      "Port": 1521,
+      "ServiceName": "KSKKEBUN",
+      "UserId": "KSK",
+      "Password": "KSKboss"
+    },
+    "MSLKEBUN": {
+      "Host": "192.168.110.10",
+      "Port": 1521,
+      "ServiceName": "MSLKEBUN",
+      "UserId": "MSL",
+      "Password": "MSLboss"
+    },
+    "FSLKEBUN": {
+      "Host": "10.10.110.10",
+      "Port": 1521,
+      "ServiceName": "FSLKEBUN",
+      "UserId": "FSL",
+      "Password": "FSLboss"
+    },
+    "KSKKEBUN": {
+      "Host": "192.168.30.9",
+      "Port": 1521,
+      "ServiceName": "KSKKEBUN",
+      "UserId": "KSK",
+      "Password": "KSKboss"
+    },
+    "PAJAK_FSKPKS": {
+      "Host": "10.10.10.41",
+      "Port": 1521,
+      "ServiceName": "PAJAK",
+      "UserId": "PAJAK",
+      "Password": "PAJAKboss2022"
+    },
+    "KSKGROUP": {
+      "Host": "10.10.10.41",
+      "Port": 1521,
+      "ServiceName": "KSKGROUP",
+      "UserId": "KSKG",
+      "Password": "KSKGboss2022"
+    },
+     "FSLGROUP": {
+      "Host": "10.99.99.1",
+      "Port": 1521,
+      "ServiceName": "FSLGROUP",
+      "UserId": "FSLG",
+      "Password": "FSLGboss2022"
+    },
+     "FKM": {
+      "Host": "10.10.10.41",
+      "Port": 1521,
+      "ServiceName": "FKM",
+      "UserId": "FKM_ADMIN",
+      "Password": "FKMboss"
+    },
+     "PAJAK": {
+      "Host": "10.10.10.41",
+      "Port": 1521,
+      "ServiceName": "PAJAK",
+      "UserId": "PAJAK",
+      "Password": "PAJAKboss2022"
+    }
+  }
 }

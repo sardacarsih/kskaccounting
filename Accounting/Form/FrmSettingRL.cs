@@ -6,6 +6,7 @@ using System;
 using System.Configuration;
 using System.Data;
 using System.Windows.Forms;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
@@ -21,6 +22,11 @@ namespace Accounting.Form
         int MAXTAHUN;
         private void FrmSettingRL_Load(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageProfitLossSetup))
+            {
+                Close();
+                return;
+            }
             MAXTAHUN = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
             string setlr = ConfigurationManager.AppSettings["setLR"];
             if (setlr == "Ya")
@@ -35,6 +41,10 @@ namespace Accounting.Form
             gridControl1.DataSource = DSSetup;
             gridControl1.DataMember = "Setup";
             gridView1.BestFitColumns();
+            bool canManage = AuthorizationService.CanManageProfitLossSetup();
+            gridView1.OptionsBehavior.Editable = canManage;
+            simpleButton1.Enabled = canManage;
+            checkEdit1.Enabled = canManage;
         }
 
         private DataSet Load_SettingsRL()
@@ -61,6 +71,10 @@ namespace Accounting.Form
 
         private void gridView1_RowUpdated(object sender, DevExpress.XtraGrid.Views.Base.RowObjectEventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageProfitLossSetup))
+            {
+                return;
+            }
             ColumnView view = gridControl1.FocusedView as ColumnView;
             view.CloseEditor();
             if (view.UpdateCurrentRow())
@@ -126,6 +140,15 @@ namespace Accounting.Form
 
         private void checkEdit1_EditValueChanged(object sender, EventArgs e)
         {
+            if (!Visible)
+            {
+                return;
+            }
+
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageProfitLossSetup))
+            {
+                return;
+            }
             try
             {
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -151,6 +174,10 @@ namespace Accounting.Form
 
         private void simpleButton1_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageProfitLossSetup))
+            {
+                return;
+            }
             using (OracleCommand _command = new OracleCommand("update acc_setuplabarugi set lvl=leveldefault", conn)
             {
                 CommandType = CommandType.Text

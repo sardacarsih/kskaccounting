@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using Oracle.ManagedDataAccess.Client;
 using System.Configuration;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
@@ -17,34 +18,52 @@ namespace Accounting.Form
         string JENIS;
         private void FrmCompanyProfile_Load(object sender, EventArgs e)
         {
-           
-            lblnamapt.Text = CompanyInfo.NAMAPT;
-            lblIDDATA.Text =CompanyInfo.IDDATA;
-            txtwilayah.Text = CompanyInfo.WILAYAH;
-            if (CompanyInfo.JENIS_AKUNTING == "PUSAT")
+            try
             {
-                radioGroup1.SelectedIndex = 0;
+                if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageCompanyProfile))
+                {
+                    Close();
+                    return;
+                }
+
+                lblnamapt.Text = CompanyInfo.NAMAPT;
+                lblIDDATA.Text =CompanyInfo.IDDATA;
+                txtwilayah.Text = CompanyInfo.WILAYAH;
+                if (CompanyInfo.JENIS_AKUNTING == "PUSAT")
+                {
+                    radioGroup1.SelectedIndex = 0;
+                }
+                else if (CompanyInfo.JENIS_AKUNTING == "PWK")
+                {
+                    radioGroup1.SelectedIndex = 1;
+                }
+                else if (CompanyInfo.JENIS_AKUNTING == "KEBUN")
+                {
+                    radioGroup1.SelectedIndex = 2;
+                }
+                else if (CompanyInfo.JENIS_AKUNTING == "PKS")
+                {
+                    radioGroup1.SelectedIndex = 3;
+                }
+                else
+                {
+                    radioGroup1.SelectedIndex = 4;
+                }
             }
-            else if (CompanyInfo.JENIS_AKUNTING == "PWK")
+            catch (Exception ex)
             {
-                radioGroup1.SelectedIndex = 1;
-            }
-            else if (CompanyInfo.JENIS_AKUNTING == "KEBUN")
-            {
-                radioGroup1.SelectedIndex = 2;
-            }
-            else if (CompanyInfo.JENIS_AKUNTING == "PKS")
-            {
-                radioGroup1.SelectedIndex = 3;
-            }
-            else
-            {
-                radioGroup1.SelectedIndex = 4;
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Close();
             }
         }
 
         private void sbcetak_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageCompanyProfile))
+            {
+                return;
+            }
+
             if (radioGroup1.SelectedIndex == 0)
             {
                 JENIS = "PUSAT";

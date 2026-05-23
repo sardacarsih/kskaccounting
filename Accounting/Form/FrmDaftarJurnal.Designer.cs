@@ -1,4 +1,4 @@
-﻿
+
 namespace Accounting.Form
 {
     partial class FrmDaftarJurnal
@@ -70,6 +70,7 @@ namespace Accounting.Form
             // 
             // btnexport
             // 
+            this.btnexport.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             this.btnexport.ImageOptions.Image = global::Accounting.Properties.Resources.exporttoxls_16x16;
             this.btnexport.Location = new System.Drawing.Point(367, 12);
             this.btnexport.Margin = new System.Windows.Forms.Padding(4);
@@ -81,6 +82,7 @@ namespace Accounting.Form
             // 
             // setahun
             // 
+            this.setahun.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
             this.setahun.EditValue = new decimal(new int[] {
             0,
             0,
@@ -97,6 +99,7 @@ namespace Accounting.Form
             // 
             // cmbbulan
             // 
+            this.cmbbulan.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
             this.cmbbulan.Location = new System.Drawing.Point(101, 19);
             this.cmbbulan.Margin = new System.Windows.Forms.Padding(4);
             this.cmbbulan.Name = "cmbbulan";
@@ -110,6 +113,7 @@ namespace Accounting.Form
             // 
             // labelControl3
             // 
+            this.labelControl3.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
             this.labelControl3.Location = new System.Drawing.Point(7, 21);
             this.labelControl3.Margin = new System.Windows.Forms.Padding(4);
             this.labelControl3.Name = "labelControl3";
@@ -185,20 +189,23 @@ namespace Accounting.Form
             // FrmDaftarJurnal
             // 
             this.Appearance.Options.UseFont = true;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 30F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1305, 634);
             this.Controls.Add(this.gridControl1);
             this.Controls.Add(this.gridControl2);
             this.Controls.Add(this.sidePanel1);
             this.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.Margin = new System.Windows.Forms.Padding(4);
-            this.MaximizeBox = false;
+            this.MaximizeBox = true;
+            this.MinimizeBox = true;
+            this.MinimumSize = new System.Drawing.Size(980, 620);
             this.Name = "FrmDaftarJurnal";
             this.Text = "Daftar Jurnal";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.FrmDaftarJurnal_Load);
+            this.Resize += new System.EventHandler(this.FrmDaftarJurnal_Resize);
             this.sidePanel1.ResumeLayout(false);
             this.sidePanel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.setahun.Properties)).EndInit();

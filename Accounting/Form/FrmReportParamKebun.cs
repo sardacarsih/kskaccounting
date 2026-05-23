@@ -10,6 +10,7 @@ using System.Data;
 using System.Drawing.Printing;
 using System.Media;
 using System.Windows.Forms;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
@@ -25,8 +26,20 @@ namespace Accounting.Form
         DataSet TMJeniskerja = new DataSet();
         int bulan;
         //string iddata;
+
+        private void ApplyAuthorizationState()
+        {
+            sbcetak.Enabled = AuthorizationService.CanViewEstateReports();
+            sbexport.Enabled = AuthorizationService.CanExportReports();
+        }
+
         private void FrmReportParamEstate_Load(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanViewEstateReports))
+            {
+                Close();
+                return;
+            }
             string[] Bulan = { "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" };
             cmbbulan.Properties.Items.AddRange(Bulan);
             bulan = int.Parse(Acct.PeriodeMax.ToString().Substring(Acct.PeriodeMax.ToString().Length - 2, 2));
@@ -36,11 +49,16 @@ namespace Accounting.Form
             setahun.Properties.MinValue = Acct.TahunMin;
             setahun.Properties.MaxValue = Acct.TahunMax;
             setahun.Value = Acct.TahunMax;
+            ApplyAuthorizationState();
         }
 
 
         private void sbexport_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanExportReports))
+            {
+                return;
+            }
             try
             {
                 int pbulan = cmbbulan.SelectedIndex + 1;
@@ -148,11 +166,17 @@ namespace Accounting.Form
                 cmbbulan.Enabled = true;
                 cmbbulan.SelectedIndex = 0;
             }
+
+            sbexport.Enabled = sbexport.Enabled && AuthorizationService.CanExportReports();
         }
         private SoundPlayer Player = new SoundPlayer();
 
         private void sbcetak_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanViewEstateReports))
+            {
+                return;
+            }
             try
             {
                 int pbulan = cmbbulan.SelectedIndex + 1;
@@ -171,15 +195,6 @@ namespace Accounting.Form
 
                 if (radioGroup1.SelectedIndex == 0)
                 {
-                    bool akses = LevelAksesServices.CetakExport(34, LoginInfo.userID);
-                    if (akses == false)
-                    {
-                        this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                        this.Player.Play();
-                        XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-
                     //cek record jurnal exist ?
                     var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
                     if (record == 0)

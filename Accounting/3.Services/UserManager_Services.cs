@@ -17,41 +17,49 @@ namespace Accounting.Services
 
         public static void AddUser(USERID_DTO user)
         {
+            AuthorizationService.EnsureCanManageUsers();
             repository.AddUser(user);
         }
 
         public static void AddUserRole(string userid, int role_id, int moduleid)
         {
+            AuthorizationService.EnsureCanManageUsers(userid);
             repository.AddUserRole(userid, role_id, moduleid);
         }
 
         public static void AddUserRole_Estate(string userid, int estateid)
         {
+            AuthorizationService.EnsureCanManageUsers(userid);
             repository.AddUserRole_Estate(userid, estateid);
         }
 
         public static void AddUserRole_IDDATA(string userid, string iddata)
         {
+            AuthorizationService.EnsureCanManageUsers(userid);
             repository.AddUserRole_IDDATA(userid, iddata);
         }
 
         public static void DeleteAksesEstate(string userid, int estateid)
         {
+            AuthorizationService.EnsureCanManageUsers(userid);
             repository.DeleteAksesEstate(userid, estateid);
         }
 
         public static void DeleteIDData(string userid, string iddata)
         {
+            AuthorizationService.EnsureCanManageUsers(userid);
             repository.DeleteIDData(userid, iddata);
         }
 
         public static void UpdateUser(USERID_DTO user)
         {
+            AuthorizationService.EnsureCanManageUsers(user.USERID);
             repository.UpdateUser(user);
         }
 
         public static void DeleteUser(string user)
         {
+            AuthorizationService.EnsureCanManageUsers(user);
             repository.DeleteUser(user);
         }
 
@@ -117,59 +125,7 @@ namespace Accounting.Services
 
         public static LoginAuthResult AuthenticateForModule(string userId, string password, string moduleName)
         {
-            USERID_DTO? credential = repository.GetUserCredential(userId);
-            if (credential == null || string.IsNullOrWhiteSpace(credential.USERID))
-            {
-                return new LoginAuthResult { Status = LoginAuthStatus.UserNotFound };
-            }
-
-            if (!string.Equals(credential.AKTIF, "Y", StringComparison.OrdinalIgnoreCase))
-            {
-                return new LoginAuthResult { Status = LoginAuthStatus.InactiveUser };
-            }
-
-            // --- BEGIN MIGRATION BLOCK (transparent PBKDF2 migration) ---
-            var passwordCryptography = new PasswordCryptographyPbkdf2();
-            bool isValid;
-
-            if (PasswordHashMigrator.NeedsMigration(credential.PASSWORD))
-            {
-                var format = PasswordHashMigrator.DetectFormat(credential.PASSWORD);
-                isValid = PasswordHashMigrator.VerifyLegacyPassword(password, credential.PASSWORD, format);
-
-                if (isValid)
-                {
-                    string newHash = passwordCryptography.GetHashPassword(password);
-                    repository.ResetPassword(credential.USERID, newHash);
-                }
-            }
-            else
-            {
-                isValid = passwordCryptography.IsValidPassword(password, credential.PASSWORD);
-            }
-            // --- END MIGRATION BLOCK ---
-
-            if (!isValid)
-            {
-                return new LoginAuthResult { Status = LoginAuthStatus.InvalidPassword };
-            }
-
-            if (!repository.HasModuleAccess(credential.USERID, moduleName))
-            {
-                return new LoginAuthResult { Status = LoginAuthStatus.NoModuleAccess };
-            }
-
-            List<LOGIN_USERS_DTO> users = repository.UserLoginByIDDATA(credential.USERID, moduleName);
-            if (users.Count == 0)
-            {
-                return new LoginAuthResult { Status = LoginAuthStatus.NoLocationAccess };
-            }
-
-            return new LoginAuthResult
-            {
-                Status = LoginAuthStatus.Success,
-                Users = users
-            };
+            return AuthenticationService.AuthenticateForModule(repository, userId, password, moduleName);
         }
 
         public static void ResetPassword(string userId, string newPlainPassword)
@@ -177,6 +133,49 @@ namespace Accounting.Services
             var crypto = new PasswordCryptographyPbkdf2();
             string hashedPassword = crypto.GetHashPassword(newPlainPassword);
             repository.ResetPassword(userId, hashedPassword);
+            repository.SetPasswordResetRequired(userId, false);
+        }
+
+        public static string AdminResetPassword(string userId, string moduleName, bool bypassAuthorization = false)
+        {
+            if (!bypassAuthorization)
+            {
+                AuthorizationService.EnsureCanResetPassword(userId);
+            }
+
+            return AuthenticationService.AdminResetPassword(repository, userId, moduleName);
+        }
+
+        public static bool TryValidatePasswordPolicy(string password, out string validationMessage)
+        {
+            return AuthenticationService.TryValidatePasswordPolicy(password, out validationMessage);
+        }
+
+        public static bool TryChangePassword(string userId, string currentPassword, string newPassword, out string validationMessage)
+        {
+            bool changed = AuthenticationService.TryChangePassword(repository, userId, currentPassword, newPassword, out validationMessage);
+            if (changed)
+            {
+                AppSession.MarkPasswordChangeCompleted();
+            }
+
+            return changed;
+        }
+
+        public static bool TryChangePasswordAfterVerifiedLogin(string userId, string newPassword, out string validationMessage)
+        {
+            bool changed = AuthenticationService.TryChangePasswordAfterVerifiedLogin(repository, userId, newPassword, out validationMessage);
+            if (changed)
+            {
+                AppSession.MarkPasswordChangeCompleted();
+            }
+
+            return changed;
+        }
+
+        public static void RecordLocationSelection(string userId, string moduleName, string idData)
+        {
+            AuthenticationService.RecordLocationSelection(repository, userId, moduleName, idData);
         }
 
         public static string GetHashPassword(string userId)

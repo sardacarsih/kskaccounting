@@ -14,6 +14,7 @@ using DevExpress.XtraSplashScreen;
 using DevExpress.XtraEditors;
 using ExcelDataReader;
 using System.Text;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
@@ -28,6 +29,11 @@ namespace Accounting.Form
         int pbulan, ptahun;
         private void FrmImportCOA_Load(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanImportCoa))
+            {
+                Close();
+                return;
+            }
             int x = int.Parse(Acct.PeriodeMax.ToString().Substring(Acct.PeriodeMax.ToString().Length - 2, 2));
             int y = int.Parse(Acct.PeriodeMax.ToString().Substring(Acct.PeriodeMax.ToString().Length - 6, 4));
 
@@ -42,6 +48,10 @@ namespace Accounting.Form
 
         private void sbbrowse_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanImportCoa))
+            {
+                return;
+            }
             using var handle = SplashScreenManager.ShowOverlayForm(this);
             try
             {              
@@ -82,6 +92,10 @@ namespace Accounting.Form
 
         private void SBImport_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanImportCoa))
+            {
+                return;
+            }
             var p_tahun = (int)setahun.Value;
             if (XtraMessageBox.Show("Lanjutkan Proses Import Daftar Perkiraan ? " +
                 "\n\nTahun : " + p_tahun + " " +

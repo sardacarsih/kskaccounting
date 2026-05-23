@@ -1,7 +1,9 @@
 ﻿using Accounting.BusinessLayer;
 using Accounting.Model;
+using Accounting.Services;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid;
+using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraSplashScreen;
 using OfficeOpenXml;
 using System;
@@ -20,8 +22,36 @@ namespace Accounting.Form
         {
             InitializeComponent();
         }
+
+        private static List<JurnalDetailDTO> NormalizeJurnalOrder(IEnumerable<JurnalDetailDTO> rows)
+        {
+            return rows
+                .OrderBy(row => row.NoJurnal)
+                .ThenBy(row => row.BARIS)
+                .ToList();
+        }
+
+        private static void DisableUserSorting(DevExpress.XtraGrid.Views.Grid.GridView gridView)
+        {
+            gridView.OptionsCustomization.AllowSort = false;
+            foreach (GridColumn column in gridView.Columns)
+            {
+                column.OptionsColumn.AllowSort = DevExpress.Utils.DefaultBoolean.False;
+            }
+        }
         private void FrmExportJurnal_Load(object sender, EventArgs e)
         {
+            try
+            {
+                AuthorizationService.EnsureCanExportJurnal();
+            }
+            catch (InvalidOperationException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                BeginInvoke(new MethodInvoker(Close));
+                return;
+            }
+
             try
             {
                 // Mengisi ComboBox dengan nama bulan untuk cmbbulandari
@@ -69,7 +99,7 @@ namespace Accounting.Form
                 using var handle = SplashScreenManager.ShowOverlayForm(gridControl1);
                 handle.QueueFocus(IntPtr.Zero);
 
-                if (cmbbulandari.SelectedIndex == -1 || cmbbulansampai.SelectedIndex == -1 || setahun.Value == null)
+                if (cmbbulandari.SelectedIndex == -1 || cmbbulansampai.SelectedIndex == -1 || setahun.EditValue == null)
                     return;
 
                 var bulan1 = cmbbulandari.SelectedIndex + 1;
@@ -82,20 +112,15 @@ namespace Accounting.Form
                     return;
                 }
 
-                JurnalDetail = JurnalServices
-    .GetJurnalDetails_DapperAsQueryable(CompanyInfo.IDDATA, tahun, bulan1, bulan2)
-    .OrderBy(j => j.Tanggal)
-    .ThenBy(j => j.NoJurnal);
+                List<JurnalDetailDTO> orderedRows = NormalizeJurnalOrder(
+                    JurnalServices.GetJurnalDetails_DapperAsQueryable(CompanyInfo.IDDATA, tahun, bulan1, bulan2));
+                JurnalDetail = orderedRows.AsQueryable();
 
-                gridControl1.DataSource = JurnalDetail.ToList();
-
-
-                // Terapkan sorting di GridView
-                gridView1.BeginSort();
-                gridView1.ClearSorting(); // atau gridView1.SortInfo.Clear();
-                gridView1.Columns["Tanggal"].SortOrder = DevExpress.Data.ColumnSortOrder.Ascending;
-                gridView1.Columns["NoJurnal"].SortOrder = DevExpress.Data.ColumnSortOrder.Ascending;
-                gridView1.EndSort();
+                gridControl1.DataSource = orderedRows;
+                GridColumn rowNoColumn = gridView1.Columns.ColumnByFieldName("BARIS") ?? gridView1.Columns.AddField("BARIS");
+                rowNoColumn.Caption = "RowNo";
+                rowNoColumn.Visible = false;
+                DisableUserSorting(gridView1);
             }
             catch (SystemException ex)
             {
@@ -111,6 +136,16 @@ namespace Accounting.Form
 
         private void btnexport_Click(object sender, EventArgs e)
         {
+            try
+            {
+                AuthorizationService.EnsureCanExportJurnal();
+            }
+            catch (InvalidOperationException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             using var handle = SplashScreenManager.ShowOverlayForm(this);
             handle.QueueFocus(IntPtr.Zero);
             //try
@@ -121,13 +156,13 @@ namespace Accounting.Form
                     string filename = string.Empty;
                     using (ExcelPackage package = new ())
                     {
-
-                        if (JurnalDetail.Count() > 0)
+                        List<JurnalDetailDTO> orderedRows = NormalizeJurnalOrder(JurnalDetail ?? Enumerable.Empty<JurnalDetailDTO>());
+                        if (orderedRows.Count > 0)
                         {
                             var wsDt = package.Workbook.Worksheets.Add("Jurnal Entries");
 
                             //Load the datatable and set the number formats...
-                            wsDt.Cells["A1"].LoadFromCollection(JurnalDetail, true);
+                            wsDt.Cells["A1"].LoadFromCollection(orderedRows, true);
 
                             //wsDt.Cells["A1"].LoadFromCollection(mydata);
                             wsDt.DeleteColumn(1, 2);
@@ -144,9 +179,9 @@ namespace Accounting.Form
                             wsDt.Cells[1, 9].Value = "Posted";
                             wsDt.Cells[1, 10].Value = "Periode";
 
-                            wsDt.Cells[2, 2, JurnalDetail.Count() + 1, 2].Style.Numberformat.Format = "dd-MMM-yyyy";
+                            wsDt.Cells[2, 2, orderedRows.Count + 1, 2].Style.Numberformat.Format = "dd-MMM-yyyy";
                             //=IF(A2<>A1,1,C1+1)
-                            wsDt.Cells[2, 3, JurnalDetail.Count() + 1, 3].Formula = string.Format("IF(A2<>A1,1,C1+1)", new ExcelAddress(2, 3, JurnalDetail.Count() + 1, 3).Address);
+                            wsDt.Cells[2, 3, orderedRows.Count + 1, 3].Formula = string.Format("IF(A2<>A1,1,C1+1)", new ExcelAddress(2, 3, orderedRows.Count + 1, 3).Address);
 
                             // number formats
                             string positiveFormat = "#,##0.00_)";
@@ -155,7 +190,7 @@ namespace Accounting.Form
                             string numberFormat = positiveFormat + ";" + negativeFormat;
                             string fullNumberFormat = positiveFormat + ";" + negativeFormat + ";" + zeroFormat;
 
-                            wsDt.Cells[2, 6, JurnalDetail.Count() + 1, 7].Style.Numberformat.Format = fullNumberFormat;
+                            wsDt.Cells[2, 6, orderedRows.Count + 1, 7].Style.Numberformat.Format = fullNumberFormat;
                             //wsDt.Cells[2, 7, dt.Rows.Count + 1, 7].Style.Numberformat.Format = "#,##0.00";
 
                             // 

@@ -23,8 +23,15 @@ namespace Accounting.Interface
         List<LOGIN_USERS_DTO> UserLoginByIDDATA(string userId, string appName);
         USERID_DTO? GetUserCredential(string userId);
         bool HasModuleAccess(string userId, string modulename);
+        bool HasRbacModuleAccess(string userId, string modulename);
+        bool HasLegacyModuleAccess(string userId, string modulename);
         string GetHashPassword(string userId);
         void ResetPassword(string userId, string newHashedPassword);
+        void SetPasswordResetRequired(string userId, bool required);
+        void RegisterFailedLoginAttempt(string userId, int maxFailedAttempts, int lockoutMinutes);
+        void ResetLoginFailures(string userId);
+        void UpdateSuccessfulLogin(string userId);
+        void RecordLoginAudit(LoginAuditRecord record);
 
         List<AKSES_ESTATE_DTO> GetAksesEstatebyUserID(string userId, string modulename);
         List<AKSES_IDDATA_DTO> GetAksesIDDATAbyUserID(string userId, string modulename);

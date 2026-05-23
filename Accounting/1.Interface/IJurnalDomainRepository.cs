@@ -10,11 +10,12 @@ namespace Accounting._1.Interface
     public interface IJurnalEntryRepository
     {
         bool CekNoJurnalExist_input(string pIdData, string pNomor, string periode);
+        bool CekNoJurnalExistExceptJurnalId(string pIdData, string pNomor, string periode, double exceptJurnalId);
         bool CekjURNALRJE(double pJurnalId);
         string GetLockStatus(string pIdData, string pPeriode);
-        void InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail);
-        void UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail);
-        void HapusJurnal(double pJurnalId);
+        JurnalPersistResult InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail);
+        JurnalPersistResult UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail, DateTime? expectedHeaderVersionUtc);
+        JurnalPersistResult HapusJurnal(double pJurnalId);
         void HapusJurnalRange(List<double> selectedValues);
         string CekSumber_Jurnal(double pJurnalId);
         void UpdateStatusJurnal_AIS_DELETED(string pNomor, string pPeriode);
@@ -45,6 +46,9 @@ namespace Accounting._1.Interface
         Task<int> MaxTahunCOAAsync(string pIdData);
         Task<List<DTOCOAAktif>> KodeUntukJurnalAsync(string pIdData, int pTahun);
         Task<DataTable> PeriodeListAsync(string pIdData, string pTahun);
+        List<JurnalAuditSummary> SearchAuditTrail(string iddata, DateTime fromDate, DateTime toDate, string actionType, string userId, string nojurnal);
+        List<JurnalAuditLog> GetAuditByJurnal(string nojurnal, string periode, string iddata, DateTime fromDate, DateTime toDate);
+        List<JurnalAuditDetailDTO> GetAuditDetail(double auditId);
     }
 
     public interface IJurnalImportRepository
@@ -57,7 +61,9 @@ namespace Accounting._1.Interface
         IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int pPeriodeInt, string pPtLokasi, string pEstate);
         DataTable AIS_Jurnal_Detail_ALL_HARIAN(DateTime tanggalJurnal, int pPeriode, string pPeriodeStr, string pPtLokasi, string pEstate, int pRemise, string pIdData);
         IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_Inventory(int pPeriodeInt, string pPtLokasi);
+        IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int pPeriodeInt, string pPtLokasi, string? pSourceFilter = null);
         DataTable Jurnal_Inventori(int pPeriodeInt, string pPtLokasi, string pIdData, string pPosted, string pPeriodeStr, string pUserId, int pGlYear, int pGlMonth);
+        DataTable Jurnal_InventoriBaru(int pPeriodeInt, string pPtLokasi, string pIdData, string pPosted, string pPeriodeStr, string pUserId, int pGlYear, int pGlMonth, string? pSourceFilter = null);
         double CEK_TOTAL_TRANSAKSI(int pPeriodeInt, string pPtLokasi, string pModule);
         Task<List<Estate>> GetEstateAsync(string pIdData);
         Task<List<Division>> GetDivisionsAsync(string pIdData, string pEstateId, int pPeriode, int pRemise);

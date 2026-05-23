@@ -7,6 +7,7 @@ using DevExpress.Utils;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid.Views.Grid.ViewInfo;
 using DevExpress.XtraEditors;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
@@ -19,7 +20,11 @@ namespace Accounting.Form
         }
         private void FrmMasterDivisi_Load(object sender, EventArgs e)
         {
-          
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                Close();
+                return;
+            }
             Load_Divisi();
         }
 
@@ -46,6 +51,10 @@ namespace Accounting.Form
         string p_divisiid = "New";
         private void btnsimpan_Click(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanUpdateCoa))
+            {
+                return;
+            }
             try
             {
                
@@ -105,7 +114,10 @@ namespace Accounting.Form
      
         private void btnhapus_Click(object sender, EventArgs e)
         {
-           
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanDeleteCoa))
+            {
+                return;
+            }
 
             var namadivisi = gridView1.GetFocusedRowCellValue("DIVISI").ToString();
             if (this.gridView1.GetFocusedRowCellValue("DIVISIID") == null)

@@ -1,4 +1,4 @@
-﻿
+
 namespace Accounting.Form
 {
     partial class FrmPeriode
@@ -55,6 +55,7 @@ namespace Accounting.Form
             // 
             // setahun
             // 
+            setahun.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
             setahun.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
             setahun.Location = new System.Drawing.Point(55, 4);
             setahun.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
@@ -71,6 +72,7 @@ namespace Accounting.Form
             // 
             // labelControl1
             // 
+            labelControl1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left;
             labelControl1.Location = new System.Drawing.Point(9, 7);
             labelControl1.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             labelControl1.Name = "labelControl1";
@@ -80,6 +82,7 @@ namespace Accounting.Form
             // 
             // gridControl1
             // 
+            gridControl1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             gridControl1.EmbeddedNavigator.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             gridControl1.Location = new System.Drawing.Point(9, 41);
             gridControl1.MainView = gridView1;
@@ -167,6 +170,7 @@ namespace Accounting.Form
             // 
             // simpleButton2
             // 
+            simpleButton2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             simpleButton2.Location = new System.Drawing.Point(377, 0);
             simpleButton2.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             simpleButton2.Name = "simpleButton2";
@@ -182,8 +186,8 @@ namespace Accounting.Form
             // 
             // FrmPeriode
             // 
-            AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             ClientSize = new System.Drawing.Size(491, 537);
             ControlBox = false;
             Controls.Add(simpleButton2);
@@ -191,10 +195,15 @@ namespace Accounting.Form
             Controls.Add(labelControl1);
             Controls.Add(setahun);
             Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            MaximizeBox = true;
+            MinimizeBox = true;
+            MinimumSize = new System.Drawing.Size(560, 520);
             Name = "FrmPeriode";
             Text = "Periode Akuntansi";
             Load += FrmPeriode_Load;
+            Resize += FrmPeriode_Resize;
             ((System.ComponentModel.ISupportInitialize)setahun.Properties).EndInit();
             ((System.ComponentModel.ISupportInitialize)gridControl1).EndInit();
             ((System.ComponentModel.ISupportInitialize)gridView1).EndInit();

@@ -7,7 +7,8 @@ namespace Accounting
 {
     internal enum PasswordFormat
     {
-        Pbkdf2,
+        Pbkdf2Versioned,
+        Pbkdf2LegacyBinary,
         Md5Hex,
         Sha1Hex,
         Sha256Hex,
@@ -18,22 +19,30 @@ namespace Accounting
     {
         public static bool NeedsMigration(string storedHash)
         {
-            return DetectFormat(storedHash) != PasswordFormat.Pbkdf2;
+            return DetectFormat(storedHash) != PasswordFormat.Pbkdf2Versioned;
         }
 
         public static PasswordFormat DetectFormat(string storedHash)
         {
-            if (string.IsNullOrEmpty(storedHash))
-                return PasswordFormat.Plaintext;
-
-            // PBKDF2: 56 Base64 chars that decode to exactly 40 bytes
-            if (storedHash.Length == 56 && IsValidBase64(storedHash, out int byteLen) && byteLen == 40)
-                return PasswordFormat.Pbkdf2;
-
-            // Hex-based hashes
-            if (IsHexString(storedHash))
+            string normalizedHash = NormalizeStoredHash(storedHash);
+            if (string.IsNullOrEmpty(normalizedHash))
             {
-                return storedHash.Length switch
+                return PasswordFormat.Plaintext;
+            }
+
+            if (normalizedHash.StartsWith("PBKDF2$", StringComparison.OrdinalIgnoreCase))
+            {
+                return PasswordFormat.Pbkdf2Versioned;
+            }
+
+            if (TryDecodeLegacyBase64(normalizedHash, out byte[] decodedBytes) && decodedBytes.Length == 40)
+            {
+                return PasswordFormat.Pbkdf2LegacyBinary;
+            }
+
+            if (IsHexString(normalizedHash))
+            {
+                return normalizedHash.Length switch
                 {
                     32 => PasswordFormat.Md5Hex,
                     40 => PasswordFormat.Sha1Hex,
@@ -47,26 +56,47 @@ namespace Accounting
 
         public static bool VerifyLegacyPassword(string password, string storedHash, PasswordFormat format)
         {
+            string normalizedHash = NormalizeStoredHash(storedHash);
             switch (format)
             {
                 case PasswordFormat.Plaintext:
-                    return string.Equals(password, storedHash, StringComparison.Ordinal);
+                    return string.Equals(password, normalizedHash, StringComparison.Ordinal);
 
                 case PasswordFormat.Md5Hex:
-                    if (CompareHex(MD5.Create(), password, storedHash)) return true;
-                    return string.Equals(password, storedHash, StringComparison.Ordinal);
+                    if (CompareHex(MD5.Create(), password, normalizedHash))
+                    {
+                        return true;
+                    }
+
+                    return string.Equals(password, normalizedHash, StringComparison.Ordinal);
 
                 case PasswordFormat.Sha1Hex:
-                    if (CompareHex(SHA1.Create(), password, storedHash)) return true;
-                    return string.Equals(password, storedHash, StringComparison.Ordinal);
+                    if (CompareHex(SHA1.Create(), password, normalizedHash))
+                    {
+                        return true;
+                    }
+
+                    return string.Equals(password, normalizedHash, StringComparison.Ordinal);
 
                 case PasswordFormat.Sha256Hex:
-                    if (CompareHex(SHA256.Create(), password, storedHash)) return true;
-                    return string.Equals(password, storedHash, StringComparison.Ordinal);
+                    if (CompareHex(SHA256.Create(), password, normalizedHash))
+                    {
+                        return true;
+                    }
+
+                    return string.Equals(password, normalizedHash, StringComparison.Ordinal);
+
+                case PasswordFormat.Pbkdf2LegacyBinary:
+                    return new PasswordCryptographyPbkdf2().VerifyPassword(password, normalizedHash).IsValid;
 
                 default:
                     return false;
             }
+        }
+
+        public static string NormalizeStoredHash(string? storedHash)
+        {
+            return storedHash?.Trim() ?? string.Empty;
         }
 
         private static bool CompareHex(HashAlgorithm algorithm, string password, string storedHash)
@@ -79,19 +109,31 @@ namespace Accounting
             }
         }
 
-        private static bool IsValidBase64(string value, out int byteLength)
+        private static bool TryDecodeLegacyBase64(string value, out byte[] bytes)
         {
-            byteLength = 0;
+            bytes = Array.Empty<byte>();
             try
             {
-                byte[] bytes = Convert.FromBase64String(value);
-                byteLength = bytes.Length;
+                string normalizedValue = NormalizeBase64Padding(value);
+                bytes = Convert.FromBase64String(normalizedValue);
                 return true;
             }
             catch (FormatException)
             {
                 return false;
             }
+        }
+
+        private static string NormalizeBase64Padding(string value)
+        {
+            string normalizedValue = NormalizeStoredHash(value);
+            int remainder = normalizedValue.Length % 4;
+            if (remainder == 0)
+            {
+                return normalizedValue;
+            }
+
+            return normalizedValue.PadRight(normalizedValue.Length + (4 - remainder), '=');
         }
 
         private static bool IsHexString(string value)

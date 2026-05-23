@@ -28,6 +28,9 @@
     <Compile Update="Form\FrmAkunEF_Luas.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Form\FrmAuditTrail.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Form\FrmBiayaBlok.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -61,7 +64,31 @@
     <Compile Update="Form\FrmExportJurnal.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Form\FrmFixedAssetApproval.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmFixedAssetCenter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmFixedAssetCip.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmFixedAssetDepreciation.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmFixedAssetLifecycle.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmFixedAssetMaster.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmFixedAssetReports.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Form\FrmImportCOA.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmImportFixedAsset.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Form\FrmImportJurnalSheet.cs">
@@ -107,6 +134,12 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Form\FrmJurnal.Init.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.LoadingOptimization.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\FrmJurnal.PerfTelemetry.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Form\Frmlogin.cs">

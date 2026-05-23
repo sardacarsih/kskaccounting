@@ -1,4 +1,4 @@
-﻿using Accounting.BusinessLayer;
+using Accounting.BusinessLayer;
 using Accounting.Model;
 using Dapper;
 using DevExpress.Data.ODataLinq;
@@ -7,11 +7,14 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid.Views.Grid.ViewInfo;
 using Oracle.ManagedDataAccess.Client;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -27,6 +30,21 @@ namespace Accounting.DataLayer
             "AND", "OR", "NOT", "NEAR", "WITHIN", "MINUS", "ACCUM", "ABOUT", "BT", "NT", "RT", "SQE"
         };
         private static readonly Regex OracleTextTokenRegex = new("[A-Za-z0-9]+", RegexOptions.Compiled);
+        private const string KeepBarisTempTableName = "ACCT_JURNAL_KEEP_BARIS_TMP";
+        private const string DetailStageTempTableName = "ACCT_JURNAL_DTL_STAGE_TMP";
+        private const string JurnalAsyncRecalcClientIdentifier = "JURNAL_ASYNC_RECALC";
+        private const int KeepBarisArrayBindBatchSize = 500;
+        private const int DetailStageArrayBindBatchSize = 500;
+
+        private sealed class ExistingDetailAuditRow
+        {
+            public int Baris { get; set; }
+            public string Kode { get; set; } = string.Empty;
+            public string Rekening { get; set; } = string.Empty;
+            public decimal? Debet { get; set; }
+            public decimal? Kredit { get; set; }
+            public string Keterangan { get; set; } = string.Empty;
+        }
         
         public DataTable GetJurnalHeader(string piddata, string periode)
         {
@@ -187,6 +205,39 @@ namespace Accounting.DataLayer
                 throw ;
             }
         }
+
+        public int ImportJurnalParsialScoped(string piddata, int p_bulan, int p_tahun, string periode, string userid)
+        {
+            try
+            {
+                using OracleCommand cmd = new("ACCT_JURNAL_IMPORT_V2.ImportJurnalParsial", conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+                if (conn.State != ConnectionState.Open)
+                {
+                    conn.Open();
+                }
+
+                cmd.BindByName = true;
+                cmd.Parameters.Add("ISSUKSES", OracleDbType.Int16).Direction = ParameterDirection.ReturnValue;
+                cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+                cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
+                cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
+                cmd.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
+                cmd.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
+                cmd.ExecuteReader();
+
+                int result = Convert.ToInt16(cmd.Parameters["ISSUKSES"].Value.ToString());
+                conn.Close();
+                return result;
+            }
+            catch (Exception)
+            {
+                conn.Close();
+                throw;
+            }
+        }
         public void SaveUsingOracleBulkCopy(string destTableName, DataTable dt)
         {
             try
@@ -233,6 +284,32 @@ namespace Accounting.DataLayer
             }
         }
 
+        public DataTable CekAkunMasterScoped(int ptahun, string piddata, string periode, string userid)
+        {
+            using OracleCommand command = new("ACCT_JURNAL_IMPORT_V2.CekAkunMaster", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            if (conn.State != ConnectionState.Open)
+            {
+                conn.Open();
+            }
+
+            command.BindByName = true;
+            command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+            command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = ptahun;
+            command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
+            command.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
+            command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
+
+            OracleDataReader dr = command.ExecuteReader();
+            DataTable dt = new();
+            dt.Load(dr);
+            dr.Close();
+            conn.Close();
+            return dt;
+        }
+
         public DataTable CekDuplikasiJurnal()
         {
             using OracleCommand _command = new("ACCT_JURNAL.CekDuplikasiJurnal", conn)
@@ -273,6 +350,31 @@ namespace Accounting.DataLayer
             dr.Close();
             conn.Close();
             return _dt;
+        }
+
+        public DataTable CekNoJurnalExistScoped(string piddata, string periode, string userid)
+        {
+            using OracleCommand command = new("ACCT_JURNAL_IMPORT_V2.CekNoJurnalExist", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            if (conn.State != ConnectionState.Open)
+            {
+                conn.Open();
+            }
+
+            command.BindByName = true;
+            command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+            command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
+            command.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
+            command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
+
+            OracleDataReader dr = command.ExecuteReader();
+            DataTable dt = new();
+            dt.Load(dr);
+            dr.Close();
+            conn.Close();
+            return dt;
         }
 
         public int CekRecordJurnalExist(string piddata, string periode)
@@ -371,6 +473,28 @@ namespace Accounting.DataLayer
             }
             conn.Close();
             return result;
+        }
+
+        public bool CekNoJurnalExistExceptJurnalId(string piddata, string nojurnal, string periode, double exceptJurnalId)
+        {
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            const string sql = @"SELECT COUNT(1)
+                FROM ACCT_JURNAL_HDR
+                WHERE IDDATA = :p_iddata
+                  AND PERIODE = :p_periode
+                  AND UPPER(NOJURNAL) = :p_nojurnal
+                  AND JURNALID <> :p_except_jurnal_id";
+
+            connection.Open();
+            int count = connection.ExecuteScalar<int>(sql, new
+            {
+                p_iddata = piddata,
+                p_periode = periode,
+                p_nojurnal = (nojurnal ?? string.Empty).ToUpperInvariant(),
+                p_except_jurnal_id = exceptJurnalId
+            });
+
+            return count > 0;
         }
         public DataTable EditJurnalDT(string p_nomorHID)
         {
@@ -520,7 +644,8 @@ namespace Accounting.DataLayer
         FROM ACCT_JURNAL_DTL
         WHERE IDDATA = :p_iddata
           AND GLYEAR = :P_TAHUN
-          AND GLMONTH BETWEEN :P_DARIBULAN AND :P_SAMPAIBULAN";
+          AND GLMONTH BETWEEN :P_DARIBULAN AND :P_SAMPAIBULAN
+        ORDER BY NOJURNAL ASC, BARIS ASC";
 
             using (var conn = new OracleConnection(LoginInfo.OracleConnString))
             {
@@ -544,7 +669,10 @@ namespace Accounting.DataLayer
             IEnumerable<JurnalHeaderDTO> JurnalHeader;
             using (var contol = new OracleConnection( LoginInfo.OracleConnString))
             {
-                sql1 = "SELECT JURNALID,HID,NOJURNAL,TANGGAL FROM ACCT_JURNAL_HDR WHERE IDDATA=:p_iddata and PERIODE=:p_periode order by nojurnal";
+                sql1 = @"SELECT JURNALID,HID,NOJURNAL,TANGGAL,NVL(MODIFIED_DATE, CREATED_DATE) AS HeaderVersionUtc
+                         FROM ACCT_JURNAL_HDR
+                         WHERE IDDATA=:p_iddata and PERIODE=:p_periode
+                         ORDER BY nojurnal";
 
                 if (contol.State == ConnectionState.Closed)
                     contol.Open();
@@ -700,7 +828,7 @@ namespace Accounting.DataLayer
                 dynamicParams.Add("p_jumlah", p_jumlah, DbType.Decimal);
             }
 
-            sql.Append(" ORDER BY PERIODE, NOJURNAL, BARIS");
+            sql.Append(" ORDER BY NOJURNAL ASC, BARIS ASC");
             return sql.ToString();
         }
 
@@ -751,7 +879,7 @@ namespace Accounting.DataLayer
                 dynamicParams.Add("p_jumlah", p_jumlah, DbType.Decimal);
             }
 
-            sql.Append(" ORDER BY NOJURNAL, BARIS");
+            sql.Append(" ORDER BY NOJURNAL ASC, BARIS ASC");
             return sql.ToString();
         }
 
@@ -874,6 +1002,52 @@ namespace Accounting.DataLayer
             return _dt;
         }
 
+        public DataTable CekJurnal_KODENULL_Scoped(string piddata, string periode, string userid)
+        {
+            using OracleCommand command = new("ACCT_JURNAL_IMPORT_V2.CekJurnalKodeNull", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            if (conn.State != ConnectionState.Open)
+            {
+                conn.Open();
+            }
+
+            command.BindByName = true;
+            command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+            command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
+            command.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
+            command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
+
+            OracleDataReader dr = command.ExecuteReader();
+            DataTable dt = new();
+            dt.Load(dr);
+            dr.Close();
+            conn.Close();
+            return dt;
+        }
+
+        public void DeleteJurnalTmpByScope(string piddata, string periode, string userid)
+        {
+            using OracleCommand command = new(
+                "DELETE FROM ACCT_JURNAL_TMP WHERE IDDATA=:p_iddata AND PERIODE=:p_periode AND USERID=:p_userid",
+                conn)
+            {
+                CommandType = CommandType.Text
+            };
+            if (conn.State != ConnectionState.Open)
+            {
+                conn.Open();
+            }
+
+            command.BindByName = true;
+            command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
+            command.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
+            command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
+            command.ExecuteNonQuery();
+            conn.Close();
+        }
+
         public bool CekjURNALRJE(double p_jurnalID)
         {
             using OracleCommand _command = new("SELECT ISRE FROM ACCT_JURNAL_HDR WHERE JURNALID=:p_jurnalID", conn)
@@ -902,7 +1076,7 @@ namespace Accounting.DataLayer
             return jurnal;
         }
 
-        public void InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
+        public JurnalPersistResult InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
         {
             using var connection = new OracleConnection(LoginInfo.OracleConnString);
             connection.Open();
@@ -918,37 +1092,14 @@ namespace Accounting.DataLayer
                 var masterParameters = new DynamicParameters(jurnalHeader);
                 masterParameters.Add("jurnalid", dbType: DbType.Double, direction: ParameterDirection.Output);
 
-                int rowsAffected = connection.Execute(masterInsertQuery, masterParameters, transaction);
-
+                connection.Execute(masterInsertQuery, masterParameters, transaction);
                 double newjurnalid = masterParameters.Get<double>("jurnalid");
-
-                var detailInsertQuery = @"INSERT INTO ACCT_JURNAL_DTL
-             (NOJURNAL, TANGGAL, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN, POSTED, PERIODE, IDDATA, USERID, SUMBER, DID, GLYEAR, GLMONTH, HIDREFF, REFFID)
-             VALUES (:NOJURNAL, :TANGGAL, :BARIS, :KODE, :REKENING, :DEBET, :KREDIT, :KETERANGAN, :POSTED, :PERIODE, :IDDATA, :USERID, :SUMBER, :DID, :GLYEAR, :GLMONTH, :HIDREFF, :REFFID)";
-
-                int glMonth = int.Parse(jurnalHeader.PERIODE[..2]);
-                int glYear = int.Parse(jurnalHeader.PERIODE.Substring(3, 4));
-
-                foreach (var detailData in jurnalDetail)
-                {
-                    detailData.NoJurnal = jurnalHeader.NOJURNAL;
-                    detailData.Tanggal = jurnalHeader.TANGGAL;
-                    detailData.Periode = jurnalHeader.PERIODE;
-                    detailData.IDDATA = jurnalHeader.IDDATA;
-                    detailData.USERID = jurnalHeader.USERID;
-                    detailData.SUMBER = jurnalHeader.SUMBER;
-                    detailData.GLMONTH = glMonth;
-                    detailData.GLYEAR = glYear;
-                    detailData.DID = newjurnalid.ToString() + detailData.BARIS;
-                    detailData.Posted = "True";
-                    detailData.REFFID = newjurnalid;
-                    detailData.HIDREFF = jurnalHeader.HID;
-                }
-                connection.Execute(detailInsertQuery, jurnalDetail, transaction);
+                PrepareDetailRows(jurnalHeader, newjurnalid, jurnalDetail);
+                UpsertDetailRowsUsingStage(connection, transaction, jurnalHeader, newjurnalid, jurnalDetail, isUpdate: false);
+                JurnalRecalcHint recalcHint = BuildInsertRecalcHint(jurnalDetail);
 
                 transaction.Commit();
-
-                AccountServices.RekalkulasiByJurnalID(jurnalHeader.IDDATA, glMonth, glYear, newjurnalid, jurnalHeader.PERIODE, LoginInfo.userID);
+                return JurnalPersistResult.Success(newjurnalid, recalcHint);
             }
             catch
             {
@@ -957,25 +1108,37 @@ namespace Accounting.DataLayer
             }
         }
 
-        public void UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
+        public JurnalPersistResult UpdateJurnalMasterDetail(double oldJurnalId, JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail, DateTime? expectedHeaderVersionUtc)
         {
             using var connection = new OracleConnection(LoginInfo.OracleConnString);
             connection.Open();
             using var transaction = connection.BeginTransaction();
+            bool clientIdentifierSet = false;
             try
             {
+                SetClientIdentifier(connection, transaction, JurnalAsyncRecalcClientIdentifier);
+                clientIdentifierSet = true;
+
                 // Snapshot old detail rows BEFORE any changes for audit comparison
-                var oldDetails = connection.Query<dynamic>(
-                    "SELECT BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN FROM ACCT_JURNAL_DTL WHERE REFFID=:reffid",
+                List<ExistingDetailAuditRow> oldDetails = connection.Query<ExistingDetailAuditRow>(
+                    @"SELECT BARIS AS Baris,
+                             KODE AS Kode,
+                             REKENING AS Rekening,
+                             DEBET AS Debet,
+                             KREDIT AS Kredit,
+                             KETERANGAN AS Keterangan
+                      FROM ACCT_JURNAL_DTL
+                      WHERE REFFID=:reffid",
                     new { reffid = oldJurnalId }, transaction).ToList();
-                var oldDetailMap = oldDetails.ToDictionary(d => (int)(decimal)d.BARIS);
+                var oldDetailMap = oldDetails.ToDictionary(d => d.Baris);
 
                 var headerUpdateQuery = @"UPDATE ACCT_JURNAL_HDR
                     SET NOJURNAL=:NoJurnal, TANGGAL=:Tanggal, PERIODE=:Periode,
                         SUMBER=:Sumber, USERID=:UserID, HID=:HID, PC=:PC, IP_ADD=:IP_Add, ISRE=:ISRE,
                         MODIFIED_DATE=SYSTIMESTAMP, MODIFIED_BY=:ModifiedBy, MODIFIED_PC=:ModifiedPC, MODIFIED_IP=:ModifiedIP
-                    WHERE JURNALID=:JurnalId";
-                connection.Execute(headerUpdateQuery, new
+                    WHERE JURNALID=:JurnalId
+                      AND (:ExpectedVersion IS NULL OR NVL(MODIFIED_DATE, CREATED_DATE)=:ExpectedVersion)";
+                int updatedHeaderRows = connection.Execute(headerUpdateQuery, new
                 {
                     NoJurnal = jurnalHeader.NOJURNAL,
                     Tanggal = jurnalHeader.TANGGAL,
@@ -989,59 +1152,20 @@ namespace Accounting.DataLayer
                     ModifiedBy = jurnalHeader.USERID,
                     ModifiedPC = jurnalHeader.PC,
                     ModifiedIP = jurnalHeader.IP_ADD,
-                    JurnalId = oldJurnalId
+                    JurnalId = oldJurnalId,
+                    ExpectedVersion = expectedHeaderVersionUtc
                 }, transaction);
-
-                int glMonth = int.Parse(jurnalHeader.PERIODE[..2]);
-                int glYear = int.Parse(jurnalHeader.PERIODE.Substring(3, 4));
-
-                foreach (var detailData in jurnalDetail)
+                if (updatedHeaderRows == 0)
                 {
-                    detailData.NoJurnal = jurnalHeader.NOJURNAL;
-                    detailData.Tanggal = jurnalHeader.TANGGAL;
-                    detailData.Periode = jurnalHeader.PERIODE;
-                    detailData.IDDATA = jurnalHeader.IDDATA;
-                    detailData.USERID = jurnalHeader.USERID;
-                    detailData.SUMBER = jurnalHeader.SUMBER;
-                    detailData.GLMONTH = glMonth;
-                    detailData.GLYEAR = glYear;
-                    detailData.DID = oldJurnalId.ToString() + detailData.BARIS;
-                    detailData.Posted = "True";
-                    detailData.REFFID = oldJurnalId;
-                    detailData.HIDREFF = jurnalHeader.HID;
+                    transaction.Rollback();
+                    return JurnalPersistResult.Conflict(oldJurnalId);
                 }
 
-                var mergeQuery = @"MERGE INTO ACCT_JURNAL_DTL target
-                    USING (SELECT :DID as DID, :NOJURNAL as NOJURNAL, :TANGGAL as TANGGAL,
-                                  :BARIS as BARIS, :KODE as KODE, :REKENING as REKENING,
-                                  :DEBET as DEBET, :KREDIT as KREDIT, :KETERANGAN as KETERANGAN,
-                                  :POSTED as POSTED, :PERIODE as PERIODE, :IDDATA as IDDATA,
-                                  :USERID as USERID, :SUMBER as SUMBER, :GLYEAR as GLYEAR,
-                                  :GLMONTH as GLMONTH, :HIDREFF as HIDREFF, :REFFID as REFFID
-                           FROM DUAL) source
-                    ON (target.DID = source.DID)
-                    WHEN MATCHED THEN UPDATE SET
-                        NOJURNAL=source.NOJURNAL, TANGGAL=source.TANGGAL,
-                        KODE=source.KODE, REKENING=source.REKENING,
-                        DEBET=source.DEBET, KREDIT=source.KREDIT,
-                        KETERANGAN=source.KETERANGAN, POSTED=source.POSTED,
-                        PERIODE=source.PERIODE, USERID=source.USERID,
-                        SUMBER=source.SUMBER, GLYEAR=source.GLYEAR,
-                        GLMONTH=source.GLMONTH, HIDREFF=source.HIDREFF,
-                        MODIFIED_DATE=SYSTIMESTAMP
-                    WHEN NOT MATCHED THEN INSERT
-                        (NOJURNAL, TANGGAL, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN,
-                         POSTED, PERIODE, IDDATA, USERID, SUMBER, DID, GLYEAR, GLMONTH, HIDREFF, REFFID, CREATED_DATE)
-                    VALUES (source.NOJURNAL, source.TANGGAL, source.BARIS, source.KODE, source.REKENING,
-                            source.DEBET, source.KREDIT, source.KETERANGAN, source.POSTED, source.PERIODE,
-                            source.IDDATA, source.USERID, source.SUMBER, source.DID, source.GLYEAR,
-                            source.GLMONTH, source.HIDREFF, source.REFFID, SYSTIMESTAMP)";
-                connection.Execute(mergeQuery, jurnalDetail, transaction);
-
+                PrepareDetailRows(jurnalHeader, oldJurnalId, jurnalDetail);
+                int deletedRows = UpsertDetailRowsUsingStage(connection, transaction, jurnalHeader, oldJurnalId, jurnalDetail, isUpdate: true);
                 var newBarisSet = new HashSet<int>(jurnalDetail.Select(d => d.BARIS));
-                int deletedRows = connection.Execute(
-                    "DELETE FROM ACCT_JURNAL_DTL WHERE REFFID=:reffid AND BARIS NOT IN :barisList",
-                    new { reffid = oldJurnalId, barisList = newBarisSet.ToList() }, transaction);
+                HashSet<string> impactedAccounts = new(StringComparer.OrdinalIgnoreCase);
+                int impactedRows = 0;
 
                 // Build detail-level audit rows
                 var auditDetailRows = new List<object>();
@@ -1051,6 +1175,18 @@ namespace Accounting.DataLayer
                 {
                     if (oldDetailMap.TryGetValue(newDetail.BARIS, out var oldRow))
                     {
+                        if (AreDetailValuesEqual(newDetail, oldRow))
+                        {
+                            continue;
+                        }
+
+                        if (HasFinancialImpact(newDetail, oldRow))
+                        {
+                            impactedRows++;
+                            AddImpactedAccount(impactedAccounts, newDetail.Kode);
+                            AddImpactedAccount(impactedAccounts, oldRow.Kode);
+                        }
+
                         // MODIFIED — row existed before
                         auditDetailRows.Add(new
                         {
@@ -1061,15 +1197,21 @@ namespace Accounting.DataLayer
                             DEBET = newDetail.Debet,
                             KREDIT = newDetail.Kredit,
                             KETERANGAN = newDetail.Keterangan,
-                            OLD_KODE = (string)oldRow.KODE,
-                            OLD_DEBET = (decimal?)oldRow.DEBET,
-                            OLD_KREDIT = (decimal?)oldRow.KREDIT,
-                            OLD_KETERANGAN = (string)oldRow.KETERANGAN
+                            OLD_KODE = oldRow.Kode,
+                            OLD_DEBET = oldRow.Debet,
+                            OLD_KREDIT = oldRow.Kredit,
+                            OLD_KETERANGAN = oldRow.Keterangan
                         });
                         modifiedCount++;
                     }
                     else
                     {
+                        if (HasFinancialImpactAdded(newDetail))
+                        {
+                            impactedRows++;
+                            AddImpactedAccount(impactedAccounts, newDetail.Kode);
+                        }
+
                         // ADDED — new row
                         auditDetailRows.Add(new
                         {
@@ -1080,10 +1222,10 @@ namespace Accounting.DataLayer
                             DEBET = newDetail.Debet,
                             KREDIT = newDetail.Kredit,
                             KETERANGAN = newDetail.Keterangan,
-                            OLD_KODE = (string)null,
+                            OLD_KODE = (string?)null,
                             OLD_DEBET = (decimal?)null,
                             OLD_KREDIT = (decimal?)null,
-                            OLD_KETERANGAN = (string)null
+                            OLD_KETERANGAN = (string?)null
                         });
                         addedCount++;
                     }
@@ -1092,22 +1234,28 @@ namespace Accounting.DataLayer
                 // DELETED — rows that were removed
                 foreach (var oldRow in oldDetails)
                 {
-                    int oldBaris = (int)(decimal)oldRow.BARIS;
+                    int oldBaris = oldRow.Baris;
                     if (!newBarisSet.Contains(oldBaris))
                     {
+                        if (HasFinancialImpactDeleted(oldRow))
+                        {
+                            impactedRows++;
+                            AddImpactedAccount(impactedAccounts, oldRow.Kode);
+                        }
+
                         auditDetailRows.Add(new
                         {
                             CHANGE_TYPE = "DELETED",
                             BARIS = oldBaris,
-                            KODE = (string)oldRow.KODE,
-                            REKENING = (string)oldRow.REKENING,
-                            DEBET = (decimal?)oldRow.DEBET,
-                            KREDIT = (decimal?)oldRow.KREDIT,
-                            KETERANGAN = (string)oldRow.KETERANGAN,
-                            OLD_KODE = (string)null,
+                            KODE = oldRow.Kode,
+                            REKENING = oldRow.Rekening,
+                            DEBET = oldRow.Debet,
+                            KREDIT = oldRow.Kredit,
+                            KETERANGAN = oldRow.Keterangan,
+                            OLD_KODE = (string?)null,
                             OLD_DEBET = (decimal?)null,
                             OLD_KREDIT = (decimal?)null,
-                            OLD_KETERANGAN = (string)null
+                            OLD_KETERANGAN = (string?)null
                         });
                     }
                 }
@@ -1116,24 +1264,32 @@ namespace Accounting.DataLayer
                     detailRowsInserted: addedCount, detailRowsUpdated: modifiedCount, detailRowsDeleted: deletedRows);
 
                 InsertAuditDetailRows(connection, transaction, auditId, auditDetailRows);
+                JurnalRecalcHint recalcHint = impactedRows > 0
+                    ? JurnalRecalcHint.Create(
+                        JurnalRecalcScopes.UpdateDelta,
+                        impactedRows,
+                        impactedAccounts.Count,
+                        impactedAccounts)
+                    : JurnalRecalcHint.None();
 
                 transaction.Commit();
-
-                AccountServices.RekalkulasiByJurnalID(
-                    jurnalHeader.IDDATA,
-                    glMonth, glYear,
-                    oldJurnalId,
-                    jurnalHeader.PERIODE,
-                    LoginInfo.userID);
+                return JurnalPersistResult.Success(oldJurnalId, recalcHint);
             }
             catch
             {
                 transaction.Rollback();
                 throw;
             }
+            finally
+            {
+                if (clientIdentifierSet)
+                {
+                    TryClearClientIdentifier(connection, transaction);
+                }
+            }
         }
 
-        public void HapusJurnal(double p_JurnalID)
+        public JurnalPersistResult HapusJurnal(double p_JurnalID)
         {
             using var connection = new OracleConnection(LoginInfo.OracleConnString);
             connection.Open();
@@ -1149,6 +1305,28 @@ namespace Accounting.DataLayer
                 var details = connection.Query<dynamic>(
                     "SELECT BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN FROM ACCT_JURNAL_DTL WHERE REFFID=:reffid",
                     new { reffid = p_JurnalID }, transaction).ToList();
+                HashSet<string> impactedAccounts = new(StringComparer.OrdinalIgnoreCase);
+                int impactedRows = 0;
+                foreach (var detail in details)
+                {
+                    var oldRow = new ExistingDetailAuditRow
+                    {
+                        Baris = (int)(decimal)detail.BARIS,
+                        Kode = (string?)detail.KODE,
+                        Rekening = (string?)detail.REKENING,
+                        Debet = (decimal?)detail.DEBET,
+                        Kredit = (decimal?)detail.KREDIT,
+                        Keterangan = (string?)detail.KETERANGAN
+                    };
+
+                    if (!HasFinancialImpactDeleted(oldRow))
+                    {
+                        continue;
+                    }
+
+                    impactedRows++;
+                    AddImpactedAccount(impactedAccounts, oldRow.Kode);
+                }
 
                 double auditId = InsertAuditLog(connection, transaction, p_JurnalID, "DELETE",
                     header: header,
@@ -1164,10 +1342,10 @@ namespace Accounting.DataLayer
                     DEBET = (decimal?)d.DEBET,
                     KREDIT = (decimal?)d.KREDIT,
                     KETERANGAN = (string)d.KETERANGAN,
-                    OLD_KODE = (string)null,
+                    OLD_KODE = (string?)null,
                     OLD_DEBET = (decimal?)null,
                     OLD_KREDIT = (decimal?)null,
-                    OLD_KETERANGAN = (string)null
+                    OLD_KETERANGAN = (string?)null
                 }).ToList();
                 InsertAuditDetailRows(connection, transaction, auditId, auditDetailRows);
 
@@ -1175,6 +1353,14 @@ namespace Accounting.DataLayer
                     new { jid = p_JurnalID }, transaction);
 
                 transaction.Commit();
+                JurnalRecalcHint recalcHint = impactedRows > 0
+                    ? JurnalRecalcHint.Create(
+                        JurnalRecalcScopes.DeleteDelta,
+                        impactedRows,
+                        impactedAccounts.Count,
+                        impactedAccounts)
+                    : JurnalRecalcHint.None();
+                return JurnalPersistResult.Success(p_JurnalID, recalcHint);
             }
             catch
             {
@@ -1226,10 +1412,10 @@ namespace Accounting.DataLayer
                             DEBET = (decimal?)d.DEBET,
                             KREDIT = (decimal?)d.KREDIT,
                             KETERANGAN = (string)d.KETERANGAN,
-                            OLD_KODE = (string)null,
+                            OLD_KODE = (string?)null,
                             OLD_DEBET = (decimal?)null,
                             OLD_KREDIT = (decimal?)null,
-                            OLD_KETERANGAN = (string)null
+                            OLD_KETERANGAN = (string?)null
                         }).ToList();
                         InsertAuditDetailRows(connection, transaction, auditId, auditDetailRows);
                     }
@@ -1247,13 +1433,373 @@ namespace Accounting.DataLayer
             }
         }
 
+        private static void PrepareDetailRows(JurnalHeaderAdd jurnalHeader, double reffId, List<JurnalDetailAdd> jurnalDetail)
+        {
+            int glMonth = int.Parse(jurnalHeader.PERIODE[..2]);
+            int glYear = int.Parse(jurnalHeader.PERIODE.Substring(3, 4));
+            string reffIdToken = reffId.ToString("0", CultureInfo.InvariantCulture);
+
+            foreach (JurnalDetailAdd detailData in jurnalDetail)
+            {
+                detailData.NoJurnal = jurnalHeader.NOJURNAL;
+                detailData.Tanggal = jurnalHeader.TANGGAL;
+                detailData.Periode = jurnalHeader.PERIODE;
+                detailData.IDDATA = jurnalHeader.IDDATA;
+                detailData.USERID = jurnalHeader.USERID;
+                detailData.SUMBER = jurnalHeader.SUMBER;
+                detailData.GLMONTH = glMonth;
+                detailData.GLYEAR = glYear;
+                detailData.DID = reffIdToken + detailData.BARIS.ToString(CultureInfo.InvariantCulture);
+                detailData.Posted = "True";
+                detailData.REFFID = reffId;
+                detailData.HIDREFF = jurnalHeader.HID;
+            }
+        }
+
+        private static JurnalRecalcHint BuildInsertRecalcHint(List<JurnalDetailAdd> jurnalDetail)
+        {
+            HashSet<string> impactedAccounts = new(StringComparer.OrdinalIgnoreCase);
+            int impactedRows = 0;
+
+            foreach (JurnalDetailAdd detail in jurnalDetail)
+            {
+                if (!HasFinancialImpactAdded(detail))
+                {
+                    continue;
+                }
+
+                impactedRows++;
+                AddImpactedAccount(impactedAccounts, detail.Kode);
+            }
+
+            return impactedRows > 0
+                ? JurnalRecalcHint.Create(
+                    JurnalRecalcScopes.InsertDelta,
+                    impactedRows,
+                    impactedAccounts.Count,
+                    impactedAccounts)
+                : JurnalRecalcHint.None();
+        }
+
+        private static decimal NormalizeAmount(decimal? value) => value ?? 0m;
+        private static string NormalizeText(string? value) => (value ?? string.Empty).Trim();
+
+        private static bool AreDetailValuesEqual(JurnalDetailAdd newDetail, ExistingDetailAuditRow oldRow)
+        {
+            return string.Equals(NormalizeText(newDetail.Kode), NormalizeText(oldRow.Kode), StringComparison.OrdinalIgnoreCase)
+                && string.Equals(NormalizeText(newDetail.Rekening), NormalizeText(oldRow.Rekening), StringComparison.OrdinalIgnoreCase)
+                && NormalizeAmount(newDetail.Debet) == NormalizeAmount(oldRow.Debet)
+                && NormalizeAmount(newDetail.Kredit) == NormalizeAmount(oldRow.Kredit)
+                && string.Equals(NormalizeText(newDetail.Keterangan), NormalizeText(oldRow.Keterangan), StringComparison.Ordinal);
+        }
+
+        private static bool HasFinancialImpact(JurnalDetailAdd newDetail, ExistingDetailAuditRow oldRow)
+        {
+            return !string.Equals(NormalizeText(newDetail.Kode), NormalizeText(oldRow.Kode), StringComparison.OrdinalIgnoreCase)
+                || NormalizeAmount(newDetail.Debet) != NormalizeAmount(oldRow.Debet)
+                || NormalizeAmount(newDetail.Kredit) != NormalizeAmount(oldRow.Kredit);
+        }
+
+        private static bool HasFinancialImpactAdded(JurnalDetailAdd detail)
+        {
+            return !string.IsNullOrWhiteSpace(detail.Kode)
+                && (NormalizeAmount(detail.Debet) != 0m || NormalizeAmount(detail.Kredit) != 0m);
+        }
+
+        private static bool HasFinancialImpactDeleted(ExistingDetailAuditRow oldRow)
+        {
+            return !string.IsNullOrWhiteSpace(oldRow.Kode)
+                && (NormalizeAmount(oldRow.Debet) != 0m || NormalizeAmount(oldRow.Kredit) != 0m);
+        }
+
+        private static void AddImpactedAccount(HashSet<string> impactedAccounts, string? kode)
+        {
+            string normalizedKode = NormalizeText(kode);
+            if (!string.IsNullOrEmpty(normalizedKode))
+            {
+                impactedAccounts.Add(normalizedKode);
+            }
+        }
+
+        private static int UpsertDetailRowsUsingStage(
+            OracleConnection connection,
+            OracleTransaction transaction,
+            JurnalHeaderAdd jurnalHeader,
+            double reffId,
+            List<JurnalDetailAdd> jurnalDetail,
+            bool isUpdate)
+        {
+            string sessionToken = Guid.NewGuid().ToString("N");
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            long stageElapsedMs = 0;
+            long writeElapsedMs = 0;
+            long deleteElapsedMs = 0;
+
+            try
+            {
+                StageDetailRows(connection, transaction, sessionToken, jurnalDetail);
+                stageElapsedMs = stopwatch.ElapsedMilliseconds;
+                string reffIdToken = reffId.ToString("0", CultureInfo.InvariantCulture);
+                decimal reffIdNumber = Convert.ToDecimal(reffId, CultureInfo.InvariantCulture);
+
+                if (isUpdate)
+                {
+                    const string mergeSql = @"MERGE INTO ACCT_JURNAL_DTL target
+                        USING (
+                            SELECT DID, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN
+                            FROM ACCT_JURNAL_DTL_STAGE_TMP
+                            WHERE SESSION_TOKEN = :sessionToken
+                        ) source
+                        ON (target.DID = source.DID)
+                        WHEN MATCHED THEN UPDATE SET
+                            NOJURNAL = :nojurnal,
+                            TANGGAL = :tanggal,
+                            KODE = source.KODE,
+                            REKENING = source.REKENING,
+                            DEBET = source.DEBET,
+                            KREDIT = source.KREDIT,
+                            KETERANGAN = source.KETERANGAN,
+                            POSTED = :posted,
+                            PERIODE = :periode,
+                            USERID = :userId,
+                            SUMBER = :sumber,
+                            GLYEAR = :glYear,
+                            GLMONTH = :glMonth,
+                            HIDREFF = :hidReff,
+                            MODIFIED_DATE = SYSTIMESTAMP
+                        WHEN NOT MATCHED THEN INSERT
+                            (NOJURNAL, TANGGAL, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN,
+                             POSTED, PERIODE, IDDATA, USERID, SUMBER, DID, GLYEAR, GLMONTH, HIDREFF, REFFID, CREATED_DATE)
+                        VALUES
+                            (:nojurnal, :tanggal, source.BARIS, source.KODE, source.REKENING, source.DEBET, source.KREDIT, source.KETERANGAN,
+                             :posted, :periode, :idData, :userId, :sumber, source.DID, :glYear, :glMonth, :hidReff, :reffid, SYSTIMESTAMP)";
+
+                    DynamicParameters mergeParameters = new();
+                    mergeParameters.Add("sessionToken", sessionToken);
+                    mergeParameters.Add("reffid", reffIdNumber, DbType.Decimal);
+                    mergeParameters.Add("nojurnal", jurnalHeader.NOJURNAL);
+                    mergeParameters.Add("tanggal", jurnalHeader.TANGGAL);
+                    mergeParameters.Add("posted", "True");
+                    mergeParameters.Add("periode", jurnalHeader.PERIODE);
+                    mergeParameters.Add("idData", jurnalHeader.IDDATA);
+                    mergeParameters.Add("userId", jurnalHeader.USERID);
+                    mergeParameters.Add("sumber", jurnalHeader.SUMBER);
+                    mergeParameters.Add("glYear", jurnalDetail.FirstOrDefault()?.GLYEAR ?? int.Parse(jurnalHeader.PERIODE.Substring(3, 4)));
+                    mergeParameters.Add("glMonth", jurnalDetail.FirstOrDefault()?.GLMONTH ?? int.Parse(jurnalHeader.PERIODE[..2]));
+                    mergeParameters.Add("hidReff", jurnalHeader.HID);
+                    int mergedRows = connection.Execute(mergeSql, mergeParameters, transaction);
+                    writeElapsedMs = stopwatch.ElapsedMilliseconds - stageElapsedMs;
+
+                    int deletedRows = connection.Execute(
+                        @"DELETE FROM ACCT_JURNAL_DTL target
+                          WHERE target.REFFID = :reffid
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM ACCT_JURNAL_DTL_STAGE_TMP stage
+                                WHERE stage.SESSION_TOKEN = :sessionToken
+                                  AND stage.DID = target.DID
+                            )",
+                        new { reffid = reffIdNumber, sessionToken },
+                        transaction);
+                    deleteElapsedMs = stopwatch.ElapsedMilliseconds - stageElapsedMs - writeElapsedMs;
+
+                    Log.Information(
+                        "PERF JurnalRepository.UpsertDetailRowsUsingStage elapsed_ms={ElapsedMs} stage_ms={StageMs} merge_ms={MergeMs} delete_ms={DeleteMs} reffid={ReffId} detail_count={DetailCount} merged_rows={MergedRows} deleted_rows={DeletedRows} mode=update",
+                        stopwatch.ElapsedMilliseconds,
+                        stageElapsedMs,
+                        writeElapsedMs,
+                        deleteElapsedMs,
+                        reffId,
+                        jurnalDetail.Count,
+                        mergedRows,
+                        deletedRows);
+                    return deletedRows;
+                }
+
+                const string insertSql = @"INSERT INTO ACCT_JURNAL_DTL
+                    (NOJURNAL, TANGGAL, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN,
+                     POSTED, PERIODE, IDDATA, USERID, SUMBER, DID, GLYEAR, GLMONTH, HIDREFF, REFFID, CREATED_DATE)
+                    SELECT
+                        :nojurnal, :tanggal, stage.BARIS, stage.KODE, stage.REKENING, stage.DEBET, stage.KREDIT, stage.KETERANGAN,
+                        :posted, :periode, :idData, :userId, :sumber, :reffidToken || TO_CHAR(stage.BARIS), :glYear, :glMonth, :hidReff, :reffid, SYSTIMESTAMP
+                    FROM ACCT_JURNAL_DTL_STAGE_TMP stage
+                    WHERE stage.SESSION_TOKEN = :sessionToken";
+
+                DynamicParameters insertParameters = new();
+                insertParameters.Add("sessionToken", sessionToken);
+                insertParameters.Add("nojurnal", jurnalHeader.NOJURNAL);
+                insertParameters.Add("tanggal", jurnalHeader.TANGGAL);
+                insertParameters.Add("posted", "True");
+                insertParameters.Add("periode", jurnalHeader.PERIODE);
+                insertParameters.Add("idData", jurnalHeader.IDDATA);
+                insertParameters.Add("userId", jurnalHeader.USERID);
+                insertParameters.Add("sumber", jurnalHeader.SUMBER);
+                insertParameters.Add("glYear", jurnalDetail.FirstOrDefault()?.GLYEAR ?? int.Parse(jurnalHeader.PERIODE.Substring(3, 4)));
+                insertParameters.Add("glMonth", jurnalDetail.FirstOrDefault()?.GLMONTH ?? int.Parse(jurnalHeader.PERIODE[..2]));
+                insertParameters.Add("hidReff", jurnalHeader.HID);
+                insertParameters.Add("reffid", reffIdNumber, DbType.Decimal);
+                insertParameters.Add("reffidToken", reffIdToken);
+
+                connection.Execute(insertSql, insertParameters, transaction);
+                writeElapsedMs = stopwatch.ElapsedMilliseconds - stageElapsedMs;
+
+                Log.Information(
+                    "PERF JurnalRepository.UpsertDetailRowsUsingStage elapsed_ms={ElapsedMs} stage_ms={StageMs} insert_ms={InsertMs} reffid={ReffId} detail_count={DetailCount} mode=insert",
+                    stopwatch.ElapsedMilliseconds,
+                    stageElapsedMs,
+                    writeElapsedMs,
+                    reffId,
+                    jurnalDetail.Count);
+                return 0;
+            }
+            catch (OracleException ex) when (IsDetailStageTempTableUnavailable(ex))
+            {
+                Log.Warning(ex, "PERF JurnalRepository.UpsertDetailRowsUsingStage fallback_to_legacy reffid={ReffId}", reffId);
+                return UpsertDetailRowsLegacy(connection, transaction, jurnalDetail, reffId, isUpdate);
+            }
+            finally
+            {
+                try
+                {
+                    connection.Execute(
+                        $"DELETE FROM {DetailStageTempTableName} WHERE SESSION_TOKEN=:sessionToken",
+                        new { sessionToken },
+                        transaction);
+                }
+                catch
+                {
+                    // Best effort cleanup only.
+                }
+            }
+        }
+
+        private static void StageDetailRows(
+            OracleConnection connection,
+            OracleTransaction transaction,
+            string sessionToken,
+            List<JurnalDetailAdd> jurnalDetail)
+        {
+            if (jurnalDetail.Count == 0)
+            {
+                return;
+            }
+
+            List<JurnalDetailAdd> ordered = jurnalDetail.OrderBy(x => x.BARIS).ToList();
+            const string insertSql = @"INSERT INTO ACCT_JURNAL_DTL_STAGE_TMP
+                (SESSION_TOKEN, DID, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN)
+                VALUES (:sessionToken, :did, :baris, :kode, :rekening, :debet, :kredit, :keterangan)";
+
+            for (int offset = 0; offset < ordered.Count; offset += DetailStageArrayBindBatchSize)
+            {
+                int batchCount = Math.Min(DetailStageArrayBindBatchSize, ordered.Count - offset);
+                JurnalDetailAdd[] batch = ordered.Skip(offset).Take(batchCount).ToArray();
+
+                using OracleCommand command = new(insertSql, connection)
+                {
+                    CommandType = CommandType.Text,
+                    BindByName = true,
+                    ArrayBindCount = batchCount,
+                    Transaction = transaction
+                };
+
+                command.Parameters.Add(":sessionToken", OracleDbType.Varchar2, Enumerable.Repeat(sessionToken, batchCount).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add(":did", OracleDbType.Varchar2, batch.Select(x => x.DID).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add(":baris", OracleDbType.Int32, batch.Select(x => x.BARIS).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add(":kode", OracleDbType.Varchar2, batch.Select(x => x.Kode).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add(":rekening", OracleDbType.Varchar2, batch.Select(x => x.Rekening).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add(":debet", OracleDbType.Decimal, batch.Select(x => x.Debet).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add(":kredit", OracleDbType.Decimal, batch.Select(x => x.Kredit).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add(":keterangan", OracleDbType.Varchar2, batch.Select(x => x.Keterangan).ToArray(), ParameterDirection.Input);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        private static int UpsertDetailRowsLegacy(
+            OracleConnection connection,
+            OracleTransaction transaction,
+            List<JurnalDetailAdd> jurnalDetail,
+            double reffId,
+            bool isUpdate)
+        {
+            if (!isUpdate)
+            {
+                const string detailInsertQuery = @"INSERT INTO ACCT_JURNAL_DTL
+                    (NOJURNAL, TANGGAL, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN, POSTED, PERIODE, IDDATA, USERID, SUMBER, DID, GLYEAR, GLMONTH, HIDREFF, REFFID)
+                    VALUES (:NOJURNAL, :TANGGAL, :BARIS, :KODE, :REKENING, :DEBET, :KREDIT, :KETERANGAN, :POSTED, :PERIODE, :IDDATA, :USERID, :SUMBER, :DID, :GLYEAR, :GLMONTH, :HIDREFF, :REFFID)";
+                connection.Execute(detailInsertQuery, jurnalDetail, transaction);
+                return 0;
+            }
+
+            const string mergeQuery = @"MERGE INTO ACCT_JURNAL_DTL target
+                USING (SELECT :DID as DID, :NOJURNAL as NOJURNAL, :TANGGAL as TANGGAL,
+                              :BARIS as BARIS, :KODE as KODE, :REKENING as REKENING,
+                              :DEBET as DEBET, :KREDIT as KREDIT, :KETERANGAN as KETERANGAN,
+                              :POSTED as POSTED, :PERIODE as PERIODE, :IDDATA as IDDATA,
+                              :USERID as USERID, :SUMBER as SUMBER, :GLYEAR as GLYEAR,
+                              :GLMONTH as GLMONTH, :HIDREFF as HIDREFF, :REFFID as REFFID
+                       FROM DUAL) source
+                ON (target.DID = source.DID)
+                WHEN MATCHED THEN UPDATE SET
+                    NOJURNAL=source.NOJURNAL, TANGGAL=source.TANGGAL,
+                    KODE=source.KODE, REKENING=source.REKENING,
+                    DEBET=source.DEBET, KREDIT=source.KREDIT,
+                    KETERANGAN=source.KETERANGAN, POSTED=source.POSTED,
+                    PERIODE=source.PERIODE, USERID=source.USERID,
+                    SUMBER=source.SUMBER, GLYEAR=source.GLYEAR,
+                    GLMONTH=source.GLMONTH, HIDREFF=source.HIDREFF,
+                    MODIFIED_DATE=SYSTIMESTAMP
+                WHEN NOT MATCHED THEN INSERT
+                    (NOJURNAL, TANGGAL, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN,
+                     POSTED, PERIODE, IDDATA, USERID, SUMBER, DID, GLYEAR, GLMONTH, HIDREFF, REFFID, CREATED_DATE)
+                VALUES (source.NOJURNAL, source.TANGGAL, source.BARIS, source.KODE, source.REKENING,
+                        source.DEBET, source.KREDIT, source.KETERANGAN, source.POSTED, source.PERIODE,
+                        source.IDDATA, source.USERID, source.SUMBER, source.DID, source.GLYEAR,
+                        source.GLMONTH, source.HIDREFF, source.REFFID, SYSTIMESTAMP)";
+
+            connection.Execute(mergeQuery, jurnalDetail, transaction);
+            HashSet<int> newBarisSet = new(jurnalDetail.Select(d => d.BARIS));
+            if (newBarisSet.Count == 0)
+            {
+                return connection.Execute("DELETE FROM ACCT_JURNAL_DTL WHERE REFFID=:reffid", new { reffid = reffId }, transaction);
+            }
+
+            return DeleteObsoleteDetailRowsUsingTempTable(connection, transaction, reffId, newBarisSet);
+        }
+
+        private static bool IsDetailStageTempTableUnavailable(OracleException ex)
+        {
+            string message = ex.Message ?? string.Empty;
+            return message.Contains("ORA-00942", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("ORA-00904", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void SetClientIdentifier(OracleConnection connection, OracleTransaction transaction, string identifier)
+        {
+            connection.Execute(
+                "BEGIN DBMS_SESSION.SET_IDENTIFIER(:identifier); END;",
+                new { identifier },
+                transaction);
+        }
+
+        private static void TryClearClientIdentifier(OracleConnection connection, OracleTransaction transaction)
+        {
+            try
+            {
+                connection.Execute("BEGIN DBMS_SESSION.CLEAR_IDENTIFIER; END;", transaction: transaction);
+            }
+            catch
+            {
+                // Best effort cleanup only.
+            }
+        }
+
         private static double InsertAuditLog(
             OracleConnection connection, OracleTransaction transaction,
-            double jurnalId, string actionType, JurnalHeaderAdd header = null,
-            string userId = null, string pc = null, string ip = null,
-            string nojurnal = null, DateTime? tanggal = null, string periode = null,
-            string sumber = null, string iddata = null,
-            string changedFields = null, string deleteReason = null,
+            double jurnalId, string actionType, JurnalHeaderAdd? header = null,
+            string? userId = null, string? pc = null, string? ip = null,
+            string? nojurnal = null, DateTime? tanggal = null, string? periode = null,
+            string? sumber = null, string? iddata = null,
+            string? changedFields = null, string? deleteReason = null,
             int detailRowsInserted = 0, int detailRowsUpdated = 0, int detailRowsDeleted = 0)
         {
             var auditSql = @"INSERT INTO ACCT_JURNAL_AUDIT
@@ -1303,12 +1849,145 @@ namespace Accounting.DataLayer
                 (:AUDIT_ID, :CHANGE_TYPE, :BARIS, :KODE, :REKENING, :DEBET, :KREDIT, :KETERANGAN,
                  :OLD_KODE, :OLD_DEBET, :OLD_KREDIT, :OLD_KETERANGAN)";
 
-            foreach (var row in auditDetailRows)
+            List<DynamicParameters> parameters = auditDetailRows
+                .Select(row =>
+                {
+                    DynamicParameters p = new(row);
+                    p.Add("AUDIT_ID", auditId);
+                    return p;
+                })
+                .ToList();
+
+            connection.Execute(auditDetailSql, parameters, transaction);
+        }
+
+        private static int DeleteObsoleteDetailRowsUsingTempTable(
+            OracleConnection connection,
+            OracleTransaction transaction,
+            double reffId,
+            HashSet<int> keepBarisSet)
+        {
+            string sessionToken = Guid.NewGuid().ToString("N");
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            try
             {
-                var p = new DynamicParameters(row);
-                p.Add("AUDIT_ID", auditId);
-                connection.Execute(auditDetailSql, p, transaction);
+                StageKeepBarisRows(connection, transaction, sessionToken, keepBarisSet);
+
+                const string deleteSql = @"DELETE FROM ACCT_JURNAL_DTL target
+                    WHERE target.REFFID = :reffid
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM ACCT_JURNAL_KEEP_BARIS_TMP keep
+                          WHERE keep.SESSION_TOKEN = :sessionToken
+                            AND keep.BARIS = target.BARIS
+                      )";
+
+                int deletedRows = connection.Execute(deleteSql, new { reffid = reffId, sessionToken }, transaction);
+                Log.Information(
+                    "PERF JurnalRepository.DeleteObsoleteRows elapsed_ms={ElapsedMs} reffid={ReffId} keep_rows={KeepRows} deleted_rows={DeletedRows} strategy=GTT",
+                    stopwatch.ElapsedMilliseconds,
+                    reffId,
+                    keepBarisSet.Count,
+                    deletedRows);
+                return deletedRows;
             }
+            catch (OracleException ex) when (IsKeepBarisTempTableUnavailable(ex))
+            {
+                Log.Warning(ex, "PERF JurnalRepository.DeleteObsoleteRows fallback_to_chunking reffid={ReffId}", reffId);
+                return DeleteObsoleteDetailRowsByChunking(connection, transaction, reffId, keepBarisSet);
+            }
+            finally
+            {
+                try
+                {
+                    connection.Execute(
+                        $"DELETE FROM {KeepBarisTempTableName} WHERE SESSION_TOKEN=:sessionToken",
+                        new { sessionToken },
+                        transaction);
+                }
+                catch
+                {
+                    // Best effort cleanup only.
+                }
+            }
+        }
+
+        private static void StageKeepBarisRows(
+            OracleConnection connection,
+            OracleTransaction transaction,
+            string sessionToken,
+            HashSet<int> keepBarisSet)
+        {
+            if (keepBarisSet.Count == 0)
+            {
+                return;
+            }
+
+            List<int> barisList = keepBarisSet.OrderBy(x => x).ToList();
+            const string insertSql = "INSERT INTO ACCT_JURNAL_KEEP_BARIS_TMP (SESSION_TOKEN, BARIS) VALUES (:sessionToken, :baris)";
+
+            for (int offset = 0; offset < barisList.Count; offset += KeepBarisArrayBindBatchSize)
+            {
+                int batchCount = Math.Min(KeepBarisArrayBindBatchSize, barisList.Count - offset);
+                int[] barisBatch = barisList.Skip(offset).Take(batchCount).ToArray();
+                string[] sessionTokenBatch = Enumerable.Repeat(sessionToken, batchCount).ToArray();
+
+                using OracleCommand command = new(insertSql, connection)
+                {
+                    CommandType = CommandType.Text,
+                    BindByName = true,
+                    ArrayBindCount = batchCount,
+                    Transaction = transaction
+                };
+
+                command.Parameters.Add(":sessionToken", OracleDbType.Varchar2, sessionTokenBatch, ParameterDirection.Input);
+                command.Parameters.Add(":baris", OracleDbType.Int32, barisBatch, ParameterDirection.Input);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        private static int DeleteObsoleteDetailRowsByChunking(
+            OracleConnection connection,
+            OracleTransaction transaction,
+            double reffId,
+            HashSet<int> keepBarisSet)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            List<int> existingBaris = connection.Query<int>(
+                "SELECT BARIS FROM ACCT_JURNAL_DTL WHERE REFFID=:reffid",
+                new { reffid = reffId },
+                transaction).ToList();
+
+            List<int> deleteBaris = existingBaris.Where(baris => !keepBarisSet.Contains(baris)).ToList();
+            if (deleteBaris.Count == 0)
+            {
+                return 0;
+            }
+
+            int deletedRows = 0;
+            foreach (int[] chunk in deleteBaris.Chunk(900))
+            {
+                deletedRows += connection.Execute(
+                    "DELETE FROM ACCT_JURNAL_DTL WHERE REFFID=:reffid AND BARIS IN :barisList",
+                    new { reffid = reffId, barisList = chunk.ToList() },
+                    transaction);
+            }
+
+            Log.Information(
+                "PERF JurnalRepository.DeleteObsoleteRows elapsed_ms={ElapsedMs} reffid={ReffId} keep_rows={KeepRows} deleted_rows={DeletedRows} strategy=ChunkingFallback",
+                stopwatch.ElapsedMilliseconds,
+                reffId,
+                keepBarisSet.Count,
+                deletedRows);
+            return deletedRows;
+        }
+
+        private static bool IsKeepBarisTempTableUnavailable(OracleException ex)
+        {
+            string message = ex.Message ?? string.Empty;
+            return message.Contains("ORA-00942", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("ORA-00904", StringComparison.OrdinalIgnoreCase);
         }
 
         public void PerformDragAndDrop(GridView targetGrid, GridView sourceGrid, DragDropEventArgs e)
@@ -1400,5 +2079,67 @@ namespace Accounting.DataLayer
 
             return resultList;
         }
+
+        public List<JurnalAuditSummary> SearchAuditTrail(string iddata, DateTime fromDate, DateTime toDate, string actionType, string userId, string nojurnal)
+        {
+            using var connection = new OracleConnection(LoginInfo.OracleConnString);
+            connection.Open();
+
+            var sb = new StringBuilder();
+            sb.Append("SELECT MIN(JURNALID) AS JURNALID, NOJURNAL, MIN(TANGGAL) AS TANGGAL, PERIODE, COUNT(*) AS JUMLAH_AKSI, MAX(ACTION_DATE) AS LAST_ACTION_DATE, LISTAGG(DISTINCT ACTION_TYPE, ', ') WITHIN GROUP (ORDER BY ACTION_TYPE) AS ACTION_TYPES FROM ACCT_JURNAL_AUDIT WHERE IDDATA=:p_iddata AND ACTION_DATE BETWEEN :p_from AND :p_to");
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_iddata", iddata);
+            parameters.Add("p_from", fromDate);
+            parameters.Add("p_to", toDate.Date.AddDays(1).AddSeconds(-1));
+
+            if (!string.IsNullOrEmpty(actionType) && actionType != "All")
+            {
+                sb.Append(" AND ACTION_TYPE=:p_action_type");
+                parameters.Add("p_action_type", actionType);
+            }
+            if (!string.IsNullOrEmpty(userId))
+            {
+                sb.Append(" AND UPPER(ACTION_BY) LIKE :p_user");
+                parameters.Add("p_user", "%" + userId.ToUpper() + "%");
+            }
+            if (!string.IsNullOrEmpty(nojurnal))
+            {
+                sb.Append(" AND UPPER(NOJURNAL) LIKE :p_nojurnal");
+                parameters.Add("p_nojurnal", "%" + nojurnal.ToUpper() + "%");
+            }
+
+            sb.Append(" GROUP BY NOJURNAL, PERIODE ORDER BY MAX(ACTION_DATE) DESC");
+
+            return connection.Query<JurnalAuditSummary>(sb.ToString(), parameters).ToList();
+        }
+
+        public List<JurnalAuditLog> GetAuditByJurnal(string nojurnal, string periode, string iddata, DateTime fromDate, DateTime toDate)
+        {
+            using var connection = new OracleConnection(LoginInfo.OracleConnString);
+            connection.Open();
+
+            const string sql = "SELECT AUDIT_ID, JURNALID, ACTION_TYPE, ACTION_DATE, ACTION_BY, ACTION_PC, ACTION_IP, NOJURNAL, TANGGAL, PERIODE, SUMBER, IDDATA, CHANGED_FIELDS, DELETE_REASON, DETAIL_ROWS_INSERTED, DETAIL_ROWS_UPDATED, DETAIL_ROWS_DELETED FROM ACCT_JURNAL_AUDIT WHERE NOJURNAL=:p_nojurnal AND PERIODE=:p_periode AND IDDATA=:p_iddata AND ACTION_DATE BETWEEN :p_from AND :p_to ORDER BY ACTION_DATE DESC";
+
+            return connection.Query<JurnalAuditLog>(sql, new
+            {
+                p_nojurnal = nojurnal,
+                p_periode = periode,
+                p_iddata = iddata,
+                p_from = fromDate,
+                p_to = toDate.Date.AddDays(1).AddSeconds(-1)
+            }).ToList();
+        }
+
+        public List<JurnalAuditDetailDTO> GetAuditDetail(double auditId)
+        {
+            using var connection = new OracleConnection(LoginInfo.OracleConnString);
+            connection.Open();
+
+            const string sql = "SELECT AUDIT_DTL_ID, AUDIT_ID, CHANGE_TYPE, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN, OLD_KODE, OLD_DEBET, OLD_KREDIT, OLD_KETERANGAN FROM ACCT_JURNAL_AUDIT_DTL WHERE AUDIT_ID=:p_id ORDER BY BARIS";
+
+            return connection.Query<JurnalAuditDetailDTO>(sql, new { p_id = auditId }).ToList();
+        }
     }
 }
+

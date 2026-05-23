@@ -21,11 +21,11 @@ namespace Accounting.Form
 {
     public partial class FrmJurnal
     {
+        private bool UseInventoryBaruSource => checkEditInvBaru.Checked;
 
         private void lookUpEditINV_EditValueChanged(object sender, EventArgs e)
         {
-            Load_inv_header();
-            Load_Jurnal_INV();
+            RefreshInventoryData();
         }
 
 
@@ -45,61 +45,55 @@ namespace Accounting.Form
 
         private void Load_inv_header()
         {
-            if (lookUpEditINV.EditValue != null && SETAHUNINV.Value >= 2022)
+            if (!TryGetInventoryContext(out int ptahun, out int pbulan, out string p_ptlokasi))
             {
-                int ptahun = Convert.ToInt32(SETAHUNINV.Value);
-                int pbulan = CMBBULANINV.SelectedIndex + 1;
-                var p_ptlokasi = lookUpEditINV.EditValue.ToString() ?? string.Empty;
-                if (string.IsNullOrEmpty(p_ptlokasi))
-                {
-                    return;
-                }
-
-                var p_periode_int = Convert.ToInt32(ptahun.ToString() + pbulan.ToString("0#"));
-                InventoryJurnalHeader = jurnalRepository.GetJurnalHeader_Inventory(p_periode_int, p_ptlokasi);
-                gc_inv_header.DataSource = InventoryJurnalHeader;
+                ClearInventoryHeader();
+                return;
             }
 
+            int p_periode_int = Convert.ToInt32(ptahun.ToString() + pbulan.ToString("0#"));
+            InventoryJurnalHeader = UseInventoryBaruSource
+                ? jurnalRepository.GetJurnalHeader_InventoryBaru(p_periode_int, p_ptlokasi)
+                : jurnalRepository.GetJurnalHeader_Inventory(p_periode_int, p_ptlokasi);
+
+            gc_inv_header.DataSource = InventoryJurnalHeader?.ToList() ?? new List<JurnalInventoryHeaderDTO>();
+            ApplyInventoryHeaderFilter();
         }
 
 
         private void Load_Jurnal_INV()
         {
-            if (lookUpEditINV.EditValue != null)
+            if (!TryGetInventoryContext(out int ptahun, out int pbulan, out string p_ptlokasi))
             {
-                if (SETAHUNINV.Value >= 2022)
-                {
-                    int ptahun = Convert.ToInt32(SETAHUNINV.Value);
-                    int pbulan = CMBBULANINV.SelectedIndex + 1;
+                ClearInventoryDetail();
+                return;
+            }
 
+            string p_iddata = CompanyInfo.IDDATA;
+            int p_periode_int = Convert.ToInt32(ptahun.ToString() + pbulan.ToString("0#"));
+            string p_periode_str = FormatPeriod(pbulan, ptahun);
 
-                    var p_ptlokasi = lookUpEditINV.EditValue.ToString() ?? string.Empty;
-                    if (string.IsNullOrEmpty(p_ptlokasi))
-                    {
-                        return;
-                    }
+            dtJurnalInventory = UseInventoryBaruSource
+                ? jurnalRepository.Jurnal_InventoriBaru(p_periode_int, p_ptlokasi, p_iddata, "True", p_periode_str, LoginInfo.userID, ptahun, pbulan)
+                : jurnalRepository.Jurnal_Inventori(p_periode_int, p_ptlokasi, p_iddata, "True", p_periode_str, LoginInfo.userID, ptahun, pbulan);
 
-                    var p_iddata = CompanyInfo.IDDATA;
+            LBLTOTALTRANSAKSI.Text = string.Format("{0:#,##}", CalculateInventoryTotal(dtJurnalInventory));
 
-                    //jika periode telah dikunci,  batalkan proses import jurnal
-                    var p_periode_int = Convert.ToInt32(ptahun.ToString() + pbulan.ToString("0#"));
-                    var p_periode_str = FormatPeriod(pbulan, ptahun);
-
-                    var TOTALNILAI = jurnalRepository.CEK_TOTAL_TRANSAKSI(p_periode_int, p_ptlokasi, "INVENTORY");
-
-                    dtJurnalInventory = jurnalRepository.Jurnal_Inventori(p_periode_int, p_ptlokasi, p_iddata, "True", p_periode_str, LoginInfo.userID, ptahun, pbulan);
-                    LBLTOTALTRANSAKSI.Text = string.Format("{0:#,##}", TOTALNILAI);
-
-                }
-
+            if (gridView_inv_header.RowCount > 0)
+            {
+                gridView_inv_header.FocusedRowHandle = 0;
+                LoadDataInventoryDetail();
+            }
+            else
+            {
+                GC_INV.DataSource = null;
             }
         }
 
 
         private void CMBBULANINV_SelectedIndexChanged(object sender, EventArgs e)
         {
-            Load_inv_header();
-            Load_Jurnal_INV();
+            RefreshInventoryData();
         }
 
 
@@ -107,30 +101,33 @@ namespace Accounting.Form
         {
             try
             {
-                if (dtJurnalInventory == null || dtJurnalInventory.Rows.Count == 0)
-                    return;
-
-                if (checkEditlk.Checked || checkEditlt.Checked)
+                DataTable sourceData = GetFilteredInventoryData();
+                if (sourceData.Rows.Count == 0)
                 {
-                    checkEditlk.Checked = false;
-                    checkEditlt.Checked = false;
+                    return;
                 }
 
                 pbulan = CMBBULANINV.SelectedIndex + 1;
                 ptahun = Convert.ToInt32(SETAHUNINV.Value);
 
-                var p_periode = FormatPeriod(pbulan, ptahun);
-                var Periode = CMBBULANINV.Text + " - " + SETAHUNINV.Value;
+                string p_periode = FormatPeriod(pbulan, ptahun);
+                string Periode = CMBBULANINV.Text + " - " + SETAHUNINV.Value;
                 if (!ValidatePeriodNotLockedWithSound(CompanyInfo.IDDATA, p_periode, Periode))
+                {
                     return;
+                }
 
-                if (XtraMessageBox.Show("Lanjutkan Proses Import Jurnal LT dan LK ? " +
+                string sourceLabel = UseInventoryBaruSource ? "Inventory Baru" : "Inventori";
+                string filterLabel = GetInventoryFilterLabel();
+                if (XtraMessageBox.Show("Lanjutkan Proses Import Jurnal " + sourceLabel + " " + filterLabel + " ? " +
                     "\n\nPeriode : " + Periode + " " +
                     "\nLokasi Data :" + CompanyInfo.IDDATA,
                     "Confirm Proses", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                {
                     return;
+                }
 
-                ExecuteImportJurnal(dtJurnalInventory, pbulan, ptahun, ptahun, "dari Inventori");
+                ExecuteImportJurnal(sourceData, pbulan, ptahun, ptahun, UseInventoryBaruSource ? "dari Inventory Baru" : "dari Inventori");
             }
             catch (Exception ex)
             {
@@ -143,53 +140,20 @@ namespace Accounting.Form
         {
             try
             {
-                if (dtJurnalInventory == null || dtJurnalInventory.Rows.Count == 0)
-                {
-                    return;
-                }
-                if (dtJurnalInventory.Rows.Count > 0)
-                {
-                    DataTable dtnew = new();
-                    if (checkEditlt.Checked == false && checkEditlk.Checked == false)
-                    {
-                        dtnew = dtJurnalInventory;
-                    }
-                    else if (checkEditlt.Checked == true)
-                    {
-                        var filtered = dtJurnalInventory.AsEnumerable()
-                            .Where(y =>
-                            {
-                                var noJurnal = y.Field<string>("NOJURNAL");
-                                return !string.IsNullOrEmpty(noJurnal) && noJurnal.Contains("/LT");
-                            });
-                        if (filtered.Any())
-                        {
-                            dtnew = filtered.CopyToDataTable();
-                        }
-                        else
-                        {
-                            dtnew = dtJurnalInventory.Clone();
-                        }
-                    }
-                    else if (checkEditlk.Checked == true)
-                    {
-                        var filtered = dtJurnalInventory.AsEnumerable()
-                            .Where(y =>
-                            {
-                                var noJurnal = y.Field<string>("NOJURNAL");
-                                return !string.IsNullOrEmpty(noJurnal) && noJurnal.Contains("/LK");
-                            });
-                        if (filtered.Any())
-                        {
-                            dtnew = filtered.CopyToDataTable();
-                        }
-                        else
-                        {
-                            dtnew = dtJurnalInventory.Clone();
-                        }
-                    }
+                DataTable dtnew = GetFilteredInventoryData();
+                List<string> selectedNomor = dtnew.AsEnumerable()
+                    .Select(row => row.Field<string>("NOJURNAL"))
+                    .Where(noJurnal => !string.IsNullOrWhiteSpace(noJurnal))
+                    .Select(noJurnal => noJurnal!)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
 
-                }
+                List<JurnalDetailDTO> exportRows = BuildSelectedJurnalDetails(dtnew, selectedNomor);
+                jurnalExcelExportService.ExportJurnalDetails(exportRows, UseInventoryBaruSource ? "JurnalInventoryBaru" : "JurnalInventory");
+            }
+            catch (InvalidOperationException ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -205,20 +169,12 @@ namespace Accounting.Form
             {
                 if (dtJurnalInventory.Rows.Count > 0)
                 {
-                    if (checkEditlt.Checked == true)
+                    if (checkEditlt.Checked)
                     {
-
                         checkEditlk.Checked = false;
-                        ColumnView view = gridView_inv_header;
-                        GridColumn colCategory = view.Columns["NOMOR"];
-                        ColumnFilterInfo filter = new("Contains([NOMOR], '/LT')", string.Empty);
-                        view.ActiveFilter.Add(colCategory, filter);
                     }
-                    else
-                    {
 
-                        gridView_inv_header.Columns["NOMOR"].ClearFilter();
-                    }
+                    ApplyInventoryHeaderFilter();
                 }
             }
             catch (Exception ex)
@@ -235,20 +191,12 @@ namespace Accounting.Form
             {
                 if (dtJurnalInventory.Rows.Count > 0)
                 {
-                    if (checkEditlk.Checked == true)
+                    if (checkEditlk.Checked)
                     {
-
                         checkEditlt.Checked = false;
-                        ColumnView view = gridView_inv_header;
-                        GridColumn colCategory = view.Columns["NOMOR"];
-                        ColumnFilterInfo filter = new("Contains([NOMOR], '/LK')", string.Empty);
-                        view.ActiveFilter.Add(colCategory, filter);
                     }
-                    else
-                    {
 
-                        gridView_inv_header.Columns["NOMOR"].ClearFilter();
-                    }
+                    ApplyInventoryHeaderFilter();
                 }
             }
             catch (Exception ex)
@@ -262,8 +210,13 @@ namespace Accounting.Form
 
         private void SETAHUNINV_EditValueChanged(object sender, EventArgs e)
         {
-            Load_inv_header();
-            Load_Jurnal_INV();
+            RefreshInventoryData();
+        }
+
+
+        private void checkEditInvBaru_CheckedChanged(object sender, EventArgs e)
+        {
+            RefreshInventoryData();
         }
 
 
@@ -390,9 +343,22 @@ namespace Accounting.Form
         {
             try
             {
-                var filter = gridView_inv_header.GetRowCellValue(gridView_inv_header.FocusedRowHandle, "NOMOR").ToString();
-                var filtered = dtJurnalInventory.AsEnumerable().Where(row => row.Field<string>("NOJURNAL") == filter).CopyToDataTable();
+                string filter = Convert.ToString(gridView_inv_header.GetRowCellValue(gridView_inv_header.FocusedRowHandle, "NOMOR")) ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(filter) || dtJurnalInventory.Rows.Count == 0)
+                {
+                    GC_INV.DataSource = null;
+                    return;
+                }
+
+                IEnumerable<DataRow> filteredRows = dtJurnalInventory.AsEnumerable()
+                    .Where(row => string.Equals(row.Field<string>("NOJURNAL"), filter, StringComparison.OrdinalIgnoreCase));
+                DataTable filtered = filteredRows.Any() ? filteredRows.CopyToDataTable() : dtJurnalInventory.Clone();
                 GC_INV.DataSource = filtered;
+                if (gridView_INVDetails.Columns.Count == 0)
+                {
+                    return;
+                }
+
                 gridView_INVDetails.Columns[0].Visible = false;
                 gridView_INVDetails.Columns[1].Visible = false;
                 gridView_INVDetails.Columns[2].Visible = false;
@@ -412,6 +378,122 @@ namespace Accounting.Form
             {
                 XtraMessageBox.Show(ex.Message, "Error on filter Inventory", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void RefreshInventoryData()
+        {
+            Load_inv_header();
+            Load_Jurnal_INV();
+        }
+
+        private bool TryGetInventoryContext(out int ptahun, out int pbulan, out string p_ptlokasi)
+        {
+            ptahun = Convert.ToInt32(SETAHUNINV.Value);
+            pbulan = CMBBULANINV.SelectedIndex + 1;
+            p_ptlokasi = lookUpEditINV.EditValue?.ToString() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(p_ptlokasi) || SETAHUNINV.Value < 2022 || CMBBULANINV.SelectedIndex < 0)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ClearInventoryHeader()
+        {
+            InventoryJurnalHeader = Enumerable.Empty<JurnalInventoryHeaderDTO>();
+            gc_inv_header.DataSource = null;
+        }
+
+        private void ClearInventoryDetail()
+        {
+            dtJurnalInventory = new DataTable();
+            GC_INV.DataSource = null;
+            LBLTOTALTRANSAKSI.Text = "0";
+        }
+
+        private void ApplyInventoryHeaderFilter()
+        {
+            GridColumn? nomorColumn = gridView_inv_header.Columns["NOMOR"];
+            if (nomorColumn == null)
+            {
+                return;
+            }
+
+            nomorColumn.ClearFilter();
+            if (checkEditlt.Checked)
+            {
+                ColumnFilterInfo filter = new("Contains([NOMOR], '/LT')", string.Empty);
+                gridView_inv_header.ActiveFilter.Add(nomorColumn, filter);
+                return;
+            }
+
+            if (checkEditlk.Checked)
+            {
+                ColumnFilterInfo filter = new("Contains([NOMOR], '/LK')", string.Empty);
+                gridView_inv_header.ActiveFilter.Add(nomorColumn, filter);
+            }
+        }
+
+        private DataTable GetFilteredInventoryData()
+        {
+            if (dtJurnalInventory.Rows.Count == 0)
+            {
+                return dtJurnalInventory.Clone();
+            }
+
+            IEnumerable<DataRow> filteredRows = dtJurnalInventory.AsEnumerable();
+            if (checkEditlt.Checked)
+            {
+                filteredRows = filteredRows.Where(row => InventoryNomorContains(row, "/LT"));
+            }
+            else if (checkEditlk.Checked)
+            {
+                filteredRows = filteredRows.Where(row => InventoryNomorContains(row, "/LK"));
+            }
+
+            return filteredRows.Any() ? filteredRows.CopyToDataTable() : dtJurnalInventory.Clone();
+        }
+
+        private static bool InventoryNomorContains(DataRow row, string token)
+        {
+            string nomor = row.Field<string>("NOJURNAL") ?? string.Empty;
+            return nomor.Contains(token, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static decimal CalculateInventoryTotal(DataTable source)
+        {
+            decimal total = 0m;
+            if (source == null || !source.Columns.Contains("DEBET"))
+            {
+                return total;
+            }
+
+            foreach (DataRow row in source.Rows)
+            {
+                if (row["DEBET"] != DBNull.Value)
+                {
+                    total += Convert.ToDecimal(row["DEBET"]);
+                }
+            }
+
+            return total;
+        }
+
+        private string GetInventoryFilterLabel()
+        {
+            if (checkEditlt.Checked)
+            {
+                return "(LT)";
+            }
+
+            if (checkEditlk.Checked)
+            {
+                return "(LK)";
+            }
+
+            return "(Semua)";
         }
 
 

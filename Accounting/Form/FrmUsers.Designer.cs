@@ -1,6 +1,7 @@
-﻿
+
 using System.Drawing;
 using System.Windows.Forms;
+using DevExpress.XtraBars.Alerter;
 
 namespace Accounting.Form
 {
@@ -52,7 +53,7 @@ namespace Accounting.Form
             jABATANTextEdit = new DevExpress.XtraEditors.TextEdit();
             confirmasi = new DevExpress.XtraEditors.TextEdit();
             nAMATextEdit = new DevExpress.XtraEditors.TextEdit();
-            checkEditaktif = new DevExpress.XtraEditors.CheckEdit();
+            checkEditaktif = new DevExpress.XtraEditors.ToggleSwitch();
             Root = new DevExpress.XtraLayout.LayoutControlGroup();
             layoutControlItem1 = new DevExpress.XtraLayout.LayoutControlItem();
             emptySpaceItem1 = new DevExpress.XtraLayout.EmptySpaceItem();
@@ -70,6 +71,12 @@ namespace Accounting.Form
             imageCollection1 = new DevExpress.Utils.ImageCollection(components);
             sbbaru = new DevExpress.XtraEditors.SimpleButton();
             btnResetPassword = new DevExpress.XtraEditors.SimpleButton();
+            splitContainerControl1 = new DevExpress.XtraEditors.SplitContainerControl();
+            xtraTabControl1 = new DevExpress.XtraTab.XtraTabControl();
+            tabPageProfile = new DevExpress.XtraTab.XtraTabPage();
+            tabPageAccess = new DevExpress.XtraTab.XtraTabPage();
+            alertControl1 = new AlertControl(components);
+            windowsUIButtonPanel1 = new DevExpress.XtraBars.Docking2010.WindowsUIButtonPanel();
             ((System.ComponentModel.ISupportInitialize)gridControl2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)gridView2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)lookUpEdit1.Properties).BeginInit();
@@ -101,17 +108,27 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)gridView1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)layoutControlItem12).BeginInit();
             ((System.ComponentModel.ISupportInitialize)imageCollection1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)splitContainerControl1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)splitContainerControl1.Panel1).BeginInit();
+            splitContainerControl1.Panel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainerControl1.Panel2).BeginInit();
+            splitContainerControl1.Panel2.SuspendLayout();
+            splitContainerControl1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)xtraTabControl1).BeginInit();
+            xtraTabControl1.SuspendLayout();
+            tabPageProfile.SuspendLayout();
+            tabPageAccess.SuspendLayout();
             SuspendLayout();
             // 
             // gridControl2
             // 
             gridControl2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             gridControl2.EmbeddedNavigator.Margin = new Padding(2);
-            gridControl2.Location = new Point(633, 273);
+            gridControl2.Location = new Point(10, 168);
             gridControl2.MainView = gridView2;
             gridControl2.Margin = new Padding(2);
             gridControl2.Name = "gridControl2";
-            gridControl2.Size = new Size(562, 253);
+            gridControl2.Size = new Size(780, 350);
             gridControl2.TabIndex = 19;
             gridControl2.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView2 });
             // 
@@ -140,11 +157,12 @@ namespace Accounting.Form
             layoutControl2.Controls.Add(lookUpEdit1);
             layoutControl2.Controls.Add(lbluser);
             layoutControl2.Controls.Add(lblmodule);
-            layoutControl2.Location = new Point(623, 156);
+            layoutControl2.Location = new Point(10, 10);
             layoutControl2.Name = "layoutControl2";
             layoutControl2.OptionsCustomizationForm.DesignTimeCustomizationFormPositionAndSize = new Rectangle(435, 301, 650, 400);
             layoutControl2.Root = layoutControlGroup1;
-            layoutControl2.Size = new Size(411, 112);
+            layoutControl2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            layoutControl2.Size = new Size(780, 112);
             layoutControl2.TabIndex = 29;
             layoutControl2.Text = "layoutControl2";
             // 
@@ -210,10 +228,11 @@ namespace Accounting.Form
             // 
             // btnaddestate
             // 
-            btnaddestate.Location = new Point(1039, 218);
+            btnaddestate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnaddestate.Location = new Point(720, 128);
             btnaddestate.Margin = new Padding(2);
             btnaddestate.Name = "btnaddestate";
-            btnaddestate.Size = new Size(67, 36);
+            btnaddestate.Size = new Size(70, 36);
             btnaddestate.TabIndex = 3;
             btnaddestate.Text = "Add";
             btnaddestate.Click += btnaddestate_Click;
@@ -237,11 +256,12 @@ namespace Accounting.Form
             layoutControl1.Controls.Add(confirmasi);
             layoutControl1.Controls.Add(nAMATextEdit);
             layoutControl1.Controls.Add(checkEditaktif);
-            layoutControl1.Location = new Point(22, 2);
+            layoutControl1.Location = new Point(0, 0);
             layoutControl1.Name = "layoutControl1";
             layoutControl1.OptionsCustomizationForm.DesignTimeCustomizationFormPositionAndSize = new Rectangle(464, 0, 650, 400);
             layoutControl1.Root = Root;
-            layoutControl1.Size = new Size(394, 155);
+            layoutControl1.Dock = DockStyle.Fill;
+            layoutControl1.Size = new Size(480, 160);
             layoutControl1.TabIndex = 28;
             layoutControl1.Text = "layoutControl1";
             // 
@@ -301,7 +321,8 @@ namespace Accounting.Form
             // 
             checkEditaktif.Location = new Point(12, 108);
             checkEditaktif.Name = "checkEditaktif";
-            checkEditaktif.Properties.Caption = "Aktif";
+            checkEditaktif.Properties.OffText = "Non-Aktif";
+            checkEditaktif.Properties.OnText = "Aktif";
             checkEditaktif.Size = new Size(370, 20);
             checkEditaktif.StyleController = layoutControl1;
             checkEditaktif.TabIndex = 7;
@@ -388,36 +409,29 @@ namespace Accounting.Form
             layoutControlItem15.TextSize = new Size(0, 0);
             layoutControlItem15.TextVisible = false;
             // 
-            // btnhapus
+            // btnhapus (hidden - managed by WindowsUIButtonPanel)
             // 
-            btnhapus.Location = new Point(434, 92);
-            btnhapus.Margin = new Padding(2);
             btnhapus.Name = "btnhapus";
-            btnhapus.Size = new Size(90, 36);
+            btnhapus.Size = new Size(0, 0);
             btnhapus.TabIndex = 8;
             btnhapus.Text = "Hapus";
             btnhapus.Visible = false;
-            btnhapus.Click += btnhapus_Click;
             // 
-            // btnsimpan
+            // btnsimpan (hidden - managed by WindowsUIButtonPanel)
             // 
-            btnsimpan.Location = new Point(434, 54);
-            btnsimpan.Margin = new Padding(2);
             btnsimpan.Name = "btnsimpan";
-            btnsimpan.Size = new Size(90, 36);
+            btnsimpan.Size = new Size(0, 0);
             btnsimpan.TabIndex = 9;
             btnsimpan.Text = "Add";
-            btnsimpan.Click += btnsimpan_Click;
+            btnsimpan.Visible = false;
             // 
             // gridControl1
             // 
-            gridControl1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            gridControl1.Dock = DockStyle.Fill;
             gridControl1.EmbeddedNavigator.Margin = new Padding(2);
-            gridControl1.Location = new Point(22, 162);
             gridControl1.MainView = gridView1;
             gridControl1.Margin = new Padding(2);
             gridControl1.Name = "gridControl1";
-            gridControl1.Size = new Size(551, 364);
             gridControl1.TabIndex = 26;
             gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView1 });
             // 
@@ -444,41 +458,95 @@ namespace Accounting.Form
             imageCollection1.ImageStream = (DevExpress.Utils.ImageCollectionStreamer)resources.GetObject("imageCollection1.ImageStream");
             imageCollection1.Images.SetKeyName(0, "deletelist_16x16.png");
             // 
-            // sbbaru
+            // sbbaru (hidden - managed by WindowsUIButtonPanel)
             // 
-            sbbaru.Location = new Point(434, 17);
-            sbbaru.Margin = new Padding(2);
             sbbaru.Name = "sbbaru";
-            sbbaru.Size = new Size(90, 36);
+            sbbaru.Size = new Size(0, 0);
             sbbaru.TabIndex = 8;
             sbbaru.Text = "Baru";
-            sbbaru.Click += sbbaru_Click;
+            sbbaru.Visible = false;
             //
-            // btnResetPassword
+            // btnResetPassword (hidden - managed by WindowsUIButtonPanel)
             //
-            btnResetPassword.Location = new Point(434, 130);
-            btnResetPassword.Margin = new Padding(2);
             btnResetPassword.Name = "btnResetPassword";
-            btnResetPassword.Size = new Size(90, 36);
+            btnResetPassword.Size = new Size(0, 0);
             btnResetPassword.TabIndex = 30;
             btnResetPassword.Text = "Reset Pwd";
             btnResetPassword.Visible = false;
-            btnResetPassword.Click += btnResetPassword_Click;
+            //
+            // alertControl1
+            //
+            alertControl1.AutoFormDelay = 3000;
+            alertControl1.FormShowingEffect = AlertFormShowingEffect.SlideHorizontal;
+            alertControl1.FormLocation = AlertFormLocation.TopRight;
+            alertControl1.AutoHeight = true;
+            //
+            // windowsUIButtonPanel1
+            //
+            windowsUIButtonPanel1.Dock = DockStyle.Top;
+            windowsUIButtonPanel1.Name = "windowsUIButtonPanel1";
+            windowsUIButtonPanel1.Size = new Size(600, 50);
+            windowsUIButtonPanel1.TabIndex = 33;
+            windowsUIButtonPanel1.Text = "windowsUIButtonPanel1";
+            windowsUIButtonPanel1.ForeColor = SystemColors.ControlText;
+            var wuiBtnBaru = new DevExpress.XtraBars.Docking2010.WindowsUIButton() { Caption = "Baru", Tag = "BARU" };
+            var wuiBtnSimpan = new DevExpress.XtraBars.Docking2010.WindowsUIButton() { Caption = "Simpan", Tag = "SIMPAN" };
+            var wuiBtnHapus = new DevExpress.XtraBars.Docking2010.WindowsUIButton() { Caption = "Hapus", Tag = "HAPUS", Visible = false };
+            var wuiBtnResetPwd = new DevExpress.XtraBars.Docking2010.WindowsUIButton() { Caption = "Reset Password", Tag = "RESETPWD", Visible = false };
+            windowsUIButtonPanel1.Buttons.AddRange(new DevExpress.XtraBars.Docking2010.WindowsUIButton[] { wuiBtnBaru, wuiBtnSimpan, wuiBtnHapus, wuiBtnResetPwd });
+            windowsUIButtonPanel1.UseButtonBackgroundImages = false;
+            windowsUIButtonPanel1.ButtonClick += windowsUIButtonPanel1_ButtonClick;
+            //
+            // xtraTabControl1
+            //
+            xtraTabControl1.Dock = DockStyle.Fill;
+            xtraTabControl1.Name = "xtraTabControl1";
+            xtraTabControl1.SelectedTabPage = tabPageProfile;
+            xtraTabControl1.TabIndex = 32;
+            xtraTabControl1.TabPages.AddRange(new DevExpress.XtraTab.XtraTabPage[] { tabPageProfile, tabPageAccess });
+            //
+            // tabPageProfile
+            //
+            tabPageProfile.Controls.Add(layoutControl1);
+            tabPageProfile.Controls.Add(windowsUIButtonPanel1);
+            tabPageProfile.Name = "tabPageProfile";
+            tabPageProfile.Text = "  \uD83D\uDC64  Profile  ";
+            tabPageProfile.Padding = new Padding(0);
+            //
+            // tabPageAccess
+            //
+            tabPageAccess.Controls.Add(layoutControl2);
+            tabPageAccess.Controls.Add(btnaddestate);
+            tabPageAccess.Controls.Add(gridControl2);
+            tabPageAccess.Name = "tabPageAccess";
+            tabPageAccess.Text = "  \uD83D\uDD12  Akses Lokasi  ";
+            tabPageAccess.Padding = new Padding(8);
+            //
+            // splitContainerControl1
+            //
+            splitContainerControl1.Dock = DockStyle.Fill;
+            splitContainerControl1.Name = "splitContainerControl1";
+            //
+            // splitContainerControl1.Panel1 (Master - User List)
+            //
+            splitContainerControl1.Panel1.Controls.Add(gridControl1);
+            splitContainerControl1.Panel1.MinSize = 280;
+            splitContainerControl1.Panel1.Text = "Daftar User";
+            //
+            // splitContainerControl1.Panel2 (Detail - Tabbed View)
+            //
+            splitContainerControl1.Panel2.Controls.Add(xtraTabControl1);
+            splitContainerControl1.Panel2.MinSize = 400;
+            splitContainerControl1.Panel2.Text = "Detail User";
+            splitContainerControl1.SplitterPosition = 350;
+            splitContainerControl1.TabIndex = 31;
             //
             // FrmUsers
             // 
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
-            ClientSize = new Size(1202, 552);
-            Controls.Add(layoutControl2);
-            Controls.Add(layoutControl1);
-            Controls.Add(gridControl1);
-            Controls.Add(gridControl2);
-            Controls.Add(btnaddestate);
-            Controls.Add(sbbaru);
-            Controls.Add(btnResetPassword);
-            Controls.Add(btnhapus);
-            Controls.Add(btnsimpan);
+            ClientSize = new Size(1202, 600);
+            Controls.Add(splitContainerControl1);
             Margin = new Padding(2);
             Name = "FrmUsers";
             Text = "Daftar User";
@@ -514,6 +582,16 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)gridView1).EndInit();
             ((System.ComponentModel.ISupportInitialize)layoutControlItem12).EndInit();
             ((System.ComponentModel.ISupportInitialize)imageCollection1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)splitContainerControl1.Panel1).EndInit();
+            splitContainerControl1.Panel1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainerControl1.Panel2).EndInit();
+            splitContainerControl1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainerControl1).EndInit();
+            splitContainerControl1.ResumeLayout(false);
+            tabPageProfile.ResumeLayout(false);
+            tabPageAccess.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)xtraTabControl1).EndInit();
+            xtraTabControl1.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -550,9 +628,15 @@ namespace Accounting.Form
         private DevExpress.XtraLayout.LayoutControlItem layoutControlItem10;
         private DevExpress.XtraLayout.LayoutControlItem layoutControlItem11;
         private DevExpress.Utils.ImageCollection imageCollection1;
-        private DevExpress.XtraEditors.CheckEdit checkEditaktif;
+        private DevExpress.XtraEditors.ToggleSwitch checkEditaktif;
         private DevExpress.XtraLayout.LayoutControlItem layoutControlItem15;
         private DevExpress.XtraEditors.SimpleButton sbbaru;
         private DevExpress.XtraEditors.SimpleButton btnResetPassword;
+        private DevExpress.XtraEditors.SplitContainerControl splitContainerControl1;
+        private DevExpress.XtraTab.XtraTabControl xtraTabControl1;
+        private DevExpress.XtraTab.XtraTabPage tabPageProfile;
+        private DevExpress.XtraTab.XtraTabPage tabPageAccess;
+        private AlertControl alertControl1;
+        private DevExpress.XtraBars.Docking2010.WindowsUIButtonPanel windowsUIButtonPanel1;
     }
 }

@@ -4,9 +4,11 @@ using Dapper;
 using DevExpress.Data.ODataLinq;
 using DevExpress.XtraEditors;
 using Oracle.ManagedDataAccess.Client;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -15,6 +17,7 @@ namespace Accounting.DataLayer
     public class AccountRepository : IAccountRepository
     {
         private readonly OracleConnection conn = new(ConnectionManager.GetOracleConnection());
+        private const int RecalcCommandTimeoutSeconds = 180;
         public DataTable GetCOA(string piddata, int pbulan, int ptahun)
         {
             using OracleCommand _command = new("ACCOUNTING.COA2", conn)
@@ -204,15 +207,16 @@ namespace Accounting.DataLayer
         }
         public int RekalkulasiByNoJurnal(string piddata, int p_bulan, int p_tahun, string p_NoJurnal, string p_Periode, string p_Userid)
         {
-            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.ReCalcByNoJurnal", conn)
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
+            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.ReCalcByNoJurnal", connection)
             {
                 CommandType = CommandType.StoredProcedure
             })
             {
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
+                connection.Open();
+                cmd.BindByName = true;
+                cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
                 cmd.Parameters.Add("Record", OracleDbType.Int32).Direction = ParameterDirection.ReturnValue;
                 cmd.Parameters.Add(":piddata", OracleDbType.Varchar2, 20).Value = piddata;
                 cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
@@ -222,22 +226,23 @@ namespace Accounting.DataLayer
                 cmd.Parameters.Add(":p_Userid", OracleDbType.Varchar2, 20).Value = p_Userid;
                 cmd.ExecuteScalar();
                 int result = Convert.ToInt32(cmd.Parameters["Record"].Value.ToString());
-                conn.Close();
+                Log.Information("PERF AccountRepository.RekalkulasiByNoJurnal elapsed_ms={ElapsedMs} periode={Periode} nojurnal={NoJurnal}", stopwatch.ElapsedMilliseconds, p_Periode, p_NoJurnal);
                 return result;
             }
         }
         
             public int ReCalcByNoHID(string piddata, int p_bulan, int p_tahun, string p_HID, string p_Periode, string p_Userid)
         {
-            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.ReCalcByNoHID", conn)
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
+            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.ReCalcByNoHID", connection)
             {
                 CommandType = CommandType.StoredProcedure
             })
             {
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
+                connection.Open();
+                cmd.BindByName = true;
+                cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
                 cmd.Parameters.Add("Record", OracleDbType.Int32).Direction = ParameterDirection.ReturnValue;
                 cmd.Parameters.Add(":piddata", OracleDbType.Varchar2, 20).Value = piddata;
                 cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
@@ -247,49 +252,51 @@ namespace Accounting.DataLayer
                 cmd.Parameters.Add(":p_Userid", OracleDbType.Varchar2, 20).Value = p_Userid;
                 cmd.ExecuteScalar();
                 int result = Convert.ToInt32(cmd.Parameters["Record"].Value.ToString());
-                conn.Close();
+                Log.Information("PERF AccountRepository.ReCalcByNoHID elapsed_ms={ElapsedMs} periode={Periode} hid={Hid}", stopwatch.ElapsedMilliseconds, p_Periode, p_HID);
                 return result;
             }
         }
 
         public void RekalkulasiSaldo(string piddata, int p_bulan, int p_tahun, string p_Userid)
         {
-            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.RecalkulasiSaldoDetail", conn)
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
+            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.RecalkulasiSaldoDetail", connection)
             {
                 CommandType = CommandType.StoredProcedure
             })
             {
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
+                connection.Open();
+                cmd.BindByName = true;
+                cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
                 cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
                 cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
                 cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
                 cmd.Parameters.Add(":p_Userid", OracleDbType.Varchar2, 20).Value = p_Userid;
                 
                 cmd.ExecuteScalar();
-                conn.Close();
+                Log.Information("PERF AccountRepository.RekalkulasiSaldo elapsed_ms={ElapsedMs} periode={Periode}", stopwatch.ElapsedMilliseconds, $"{p_bulan:00}/{p_tahun}");
             }
         }
         public void RekalkulasiSaldoV2(string piddata, int p_bulan, int p_tahun, string p_Userid)
         {
-            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.RecalkulasiSaldoDetailV2", conn)
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
+            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.RecalkulasiSaldoDetailV2", connection)
             {
                 CommandType = CommandType.StoredProcedure
             })
             {
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
+                connection.Open();
+                cmd.BindByName = true;
+                cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
                 cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
                 cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
                 cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
                 cmd.Parameters.Add(":p_Userid", OracleDbType.Varchar2, 20).Value = p_Userid;
 
                 cmd.ExecuteScalar();
-                conn.Close();
+                Log.Information("PERF AccountRepository.RekalkulasiSaldoV2 elapsed_ms={ElapsedMs} periode={Periode}", stopwatch.ElapsedMilliseconds, $"{p_bulan:00}/{p_tahun}");
             }
         }
         public void CreateNextPeriode(string piddata, int p_bulan, int p_tahun)
@@ -772,24 +779,82 @@ namespace Accounting.DataLayer
 
         public void RekalkulasiByJurnalID(string piddata, int p_bulan, int p_tahun, double p_JurnalID, string p_Periode, string p_Userid)
         {
-            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.ReCalcByNoJurnalID", conn)
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
+            connection.Open();
+
+            string usedEntrypoint = "v2";
+            try
             {
-                CommandType = CommandType.StoredProcedure
-            })
-            {
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
-                cmd.Parameters.Add(":piddata", OracleDbType.Varchar2, 20).Value = piddata;
-                cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-                cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-                cmd.Parameters.Add(":p_HID", OracleDbType.Double).Value = p_JurnalID;
-                cmd.Parameters.Add(":p_Periode", OracleDbType.Varchar2, 7).Value = p_Periode;
-                cmd.Parameters.Add(":p_Userid", OracleDbType.Varchar2, 20).Value = p_Userid;
-                cmd.ExecuteNonQuery();
-                conn.Close();
+                ExecuteRekalkulasiByJurnalIdProcedure(
+                    connection,
+                    "ACCT_RECALLCULATIONS_V2.ReCalcByJurnalID",
+                    piddata,
+                    p_bulan,
+                    p_tahun,
+                    p_JurnalID,
+                    p_Periode,
+                    p_Userid);
             }
+            catch (OracleException ex) when (IsRecalcV2EntrypointUnavailable(ex))
+            {
+                usedEntrypoint = "legacy";
+                ExecuteRekalkulasiByJurnalIdProcedure(
+                    connection,
+                    "ACCT_RECALLCULATIONS.ReCalcByNoJurnalID",
+                    piddata,
+                    p_bulan,
+                    p_tahun,
+                    p_JurnalID,
+                    p_Periode,
+                    p_Userid);
+            }
+
+            Log.Information(
+                "PERF AccountRepository.RekalkulasiByJurnalID elapsed_ms={ElapsedMs} jurnal_id={JurnalId} periode={Periode} entrypoint={Entrypoint}",
+                stopwatch.ElapsedMilliseconds,
+                p_JurnalID,
+                p_Periode,
+                usedEntrypoint);
+        }
+
+        private static void ExecuteRekalkulasiByJurnalIdProcedure(
+            OracleConnection connection,
+            string procedureName,
+            string piddata,
+            int p_bulan,
+            int p_tahun,
+            double p_JurnalID,
+            string p_Periode,
+            string p_Userid)
+        {
+            string plsql = $"BEGIN {procedureName}(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_JURNALID, :p_PERIODE, :p_USERID); END;";
+            using OracleCommand cmd = new(plsql, connection)
+            {
+                CommandType = CommandType.Text
+            };
+
+            cmd.BindByName = true;
+            cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
+            cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+            cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
+            cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
+            cmd.Parameters.Add("p_JURNALID", OracleDbType.Double).Value = p_JurnalID;
+            cmd.Parameters.Add("p_PERIODE", OracleDbType.Varchar2, 7).Value = p_Periode;
+            cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = p_Userid;
+            cmd.ExecuteNonQuery();
+        }
+
+        private static bool IsRecalcV2EntrypointUnavailable(OracleException ex)
+        {
+            string message = ex.Message ?? string.Empty;
+            bool missingIdentifier = message.Contains("PLS-00201", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("ORA-04043", StringComparison.OrdinalIgnoreCase);
+            bool invalidEntrypoint = message.Contains("ORA-06550", StringComparison.OrdinalIgnoreCase)
+                && (message.Contains("ACCT_RECALLCULATIONS_V2", StringComparison.OrdinalIgnoreCase)
+                    || message.Contains("RECALCBYJURNALID", StringComparison.OrdinalIgnoreCase));
+
+            return missingIdentifier || invalidEntrypoint;
         }
 
         public IEnumerable<coaHIA> GetPerkiraanSaldo_TreeView(string p_iddata, int p_tahun, int p_bulan)

@@ -1,746 +1,1236 @@
-﻿using DevExpress.XtraEditors;
-using DevExpress.XtraEditors.Controls;
-using DevExpress.XtraEditors.Repository;
-using DevExpress.XtraGrid.Columns;
-using DevExpress.XtraGrid.Views.Base;
-using DevExpress.XtraGrid.Views.Grid;
-using Accounting._1.Interface;
-using Accounting._2.DataAccess;
-using Accounting._3.Services;
-using Accounting.Models.Login;
-using Oracle.ManagedDataAccess.Client;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using System.Collections.Generic;
-using System.Drawing;
+using Accounting._3.Services;
+using Accounting.Models.Login;
+using Accounting.Services;
+using DevExpress.XtraEditors;
+using DevExpress.XtraGrid;
+using DevExpress.XtraGrid.Views.Base;
+using DevExpress.XtraGrid.Views.Grid;
+using DevExpress.XtraTab;
+using Oracle.ManagedDataAccess.Client;
 
 namespace Accounting.UC
 {
     public partial class uc_Level_Akses : UserControl
     {
-        private object originalValue;
-        private readonly IRolesAndUsers _rolesAndUsersService;
-        int moduleId;
-        DataTable RolesList; 
-        public uc_Level_Akses() 
+        private readonly BindingSource roleBindingSource = new();
+        private readonly BindingSource permissionBindingSource = new();
+        private readonly BindingSource availableUserBindingSource = new();
+        private readonly BindingSource assignedUserBindingSource = new();
+
+        private readonly HashSet<string> highRiskPermissions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "USER_AKSES",
+            "SETTING_DEVELOPER",
+            "AUDIT_TRAIL_VIEW"
+        };
+
+        private XtraTabControl xtraTabControl1 = null!;
+        private XtraTabPage tabRoles = null!;
+        private XtraTabPage tabUsers = null!;
+        private GroupControl groupRoles = null!;
+        private GroupControl groupPermissions = null!;
+        private GroupControl groupRoleActions = null!;
+        private GroupControl groupRoleInsights = null!;
+        private GroupControl groupAvailableUsers = null!;
+        private GroupControl groupAssignedUsers = null!;
+        private GridControl gridRoles = null!;
+        private GridView gridViewRoles = null!;
+        private GridControl gridPermissions = null!;
+        private GridView gridViewPermissions = null!;
+        private GridControl gridAvailableUsers = null!;
+        private GridView gridViewAvailableUsers = null!;
+        private GridControl gridAssignedUsers = null!;
+        private GridView gridViewAssignedUsers = null!;
+        private SimpleButton btnGrantReadOnly = null!;
+        private SimpleButton btnGrantFullAccess = null!;
+        private SimpleButton btnClearPermissions = null!;
+        private SimpleButton btnSavePermissions = null!;
+        private SimpleButton btnDiscardPermissions = null!;
+        private SimpleButton btnDuplicateRole = null!;
+        private SimpleButton btnRenameRole = null!;
+        private SimpleButton btnDeleteRole = null!;
+        private SimpleButton btnRefreshRoles = null!;
+        private SimpleButton btnAssignUsersToRole = null!;
+        private SimpleButton btnRemoveUsersFromRole = null!;
+        private TextEdit txtNewRoleName = null!;
+        private TextEdit txtRenameRoleName = null!;
+        private MemoEdit memoRoleImpact = null!;
+        private LabelControl lblRoleNameValue = null!;
+        private LabelControl lblRoleStatusValue = null!;
+        private LabelControl lblRoleUserCountValue = null!;
+        private LabelControl lblRolePermissionCountValue = null!;
+        private LabelControl lblRoleHighRiskValue = null!;
+        private LabelControl lblUserRoleHint = null!;
+        private LabelControl lblRolePanelHint = null!;
+
+        private int moduleId;
+        private bool isDirty;
+        private bool isLoadingRole;
+        private List<RoleSummary> roleSummaries = new();
+        private List<Permission> originalPermissionSnapshot = new();
+        private BindingList<Permission> permissionDraft = new();
+        private List<Permission_Users> allUsers = new();
+        private List<Permission_Users> moduleUserAssignments = new();
+        private Dictionary<int, string> roleNameLookup = new();
+
+        public uc_Level_Akses()
         {
             InitializeComponent();
-
-            _rolesAndUsersService = new RolesAndUsersService();
-            gridView2.RowUpdated += GridView_RowUpdated; 
-           
+            BuildLayout();
+            ConfigureGrids();
+            Load += uc_Level_Akses_Load;
         }
 
-
-
-        private void SetupGridView()
+        private void BuildLayout()
         {
-            ConfigureColumns();
-            ConfigureToggleSwitch();
-        }
-
-        private void ConfigureColumns()
-        {
-            gridView1.Columns["DIVISIID"].OptionsColumn.ReadOnly = true;
-            gridView1.Columns["DIVISI"].OptionsColumn.ReadOnly = true;
-
-            // Set the DIVISIID column to be invisible
-            gridView1.Columns["IDDATA"].Visible = false;
-            gridView1.Columns["DIVISIID"].Visible = false;
-        }
-
-        private void ConfigureToggleSwitch()
-        {
-            RepositoryItemToggleSwitch toggleSwitch1 = CreateToggleSwitch();
-
-            gridControl1.RepositoryItems.Add(toggleSwitch1);
-
-            GridColumn isActiveColumn = gridView1.Columns["AKTIF"];
-            GridColumn isDisplayColumn = gridView1.Columns["DISPLAY_AIS"];
-
-            isActiveColumn.ColumnEdit = toggleSwitch1;
-            isDisplayColumn.ColumnEdit = toggleSwitch1;
-        }
-
-        private RepositoryItemToggleSwitch CreateToggleSwitch()
-        {
-#pragma warning disable CS0618 // Type or member is obsolete
-            var toggleSwitch = new RepositoryItemToggleSwitch
+            xtraTabControl1 = new XtraTabControl
             {
-                Name = "repositoryItemToggleSwitch",
-                Properties =
+                Dock = DockStyle.Fill
+            };
+
+            tabRoles = new XtraTabPage { Text = "Roles" };
+            tabUsers = new XtraTabPage { Text = "Assignments" };
+
+            xtraTabControl1.TabPages.AddRange(new[] { tabRoles, tabUsers });
+            Controls.Add(xtraTabControl1);
+
+            BuildRoleTab();
+            BuildAssignmentTab();
+            ApplyWorkspaceStyling();
+        }
+
+        private void BuildRoleTab()
+        {
+            SidePanel leftPanel = new() { Dock = DockStyle.Left, Width = 290 };
+            SidePanel rightPanel = new() { Dock = DockStyle.Right, Width = 340 };
+            SidePanel centerPanel = new() { Dock = DockStyle.Fill };
+
+            tabRoles.Controls.Add(centerPanel);
+            tabRoles.Controls.Add(rightPanel);
+            tabRoles.Controls.Add(leftPanel);
+
+            groupRoles = new GroupControl { Dock = DockStyle.Fill, Text = "Role Directory" };
+            gridRoles = new GridControl { Dock = DockStyle.Fill, DataSource = roleBindingSource };
+            gridViewRoles = new GridView(gridRoles);
+            gridRoles.MainView = gridViewRoles;
+            gridRoles.ViewCollection.Add(gridViewRoles);
+            groupRoles.Controls.Add(gridRoles);
+            leftPanel.Controls.Add(groupRoles);
+
+            groupPermissions = new GroupControl { Dock = DockStyle.Fill, Text = "Permission Matrix" };
+            SidePanel permissionActions = new() { Dock = DockStyle.Top, Height = 72 };
+            gridPermissions = new GridControl { Dock = DockStyle.Fill, DataSource = permissionBindingSource };
+            gridViewPermissions = new GridView(gridPermissions);
+            gridPermissions.MainView = gridViewPermissions;
+            gridPermissions.ViewCollection.Add(gridViewPermissions);
+            groupPermissions.Controls.Add(gridPermissions);
+            groupPermissions.Controls.Add(permissionActions);
+            centerPanel.Controls.Add(groupPermissions);
+
+            lblRolePanelHint = new LabelControl
+            {
+                Location = new Point(14, 8),
+                Size = new Size(430, 16),
+                Text = "Gunakan bulk actions untuk row terpilih, atau tanpa selection untuk seluruh matrix."
+            };
+            btnGrantReadOnly = new SimpleButton { Text = "Read Only", Size = new Size(96, 32), Location = new Point(13, 28) };
+            btnGrantFullAccess = new SimpleButton { Text = "Full Access", Size = new Size(96, 32), Location = new Point(115, 28) };
+            btnClearPermissions = new SimpleButton { Text = "Clear Access", Size = new Size(96, 32), Location = new Point(217, 28) };
+            btnSavePermissions = new SimpleButton { Text = "Save", Size = new Size(76, 32), Location = new Point(319, 28) };
+            btnDiscardPermissions = new SimpleButton { Text = "Discard", Size = new Size(76, 32), Location = new Point(401, 28) };
+            btnGrantReadOnly.Click += btnGrantReadOnly_Click;
+            btnGrantFullAccess.Click += btnGrantFullAccess_Click;
+            btnClearPermissions.Click += btnClearPermissions_Click;
+            btnSavePermissions.Click += btnSavePermissions_Click;
+            btnDiscardPermissions.Click += btnDiscardPermissions_Click;
+            permissionActions.Controls.Add(lblRolePanelHint);
+            permissionActions.Controls.Add(btnGrantReadOnly);
+            permissionActions.Controls.Add(btnGrantFullAccess);
+            permissionActions.Controls.Add(btnClearPermissions);
+            permissionActions.Controls.Add(btnSavePermissions);
+            permissionActions.Controls.Add(btnDiscardPermissions);
+
+            groupRoleActions = new GroupControl { Dock = DockStyle.Top, Height = 220, Text = "Role Actions" };
+            groupRoleInsights = new GroupControl { Dock = DockStyle.Fill, Text = "Impact Review" };
+            rightPanel.Controls.Add(groupRoleInsights);
+            rightPanel.Controls.Add(groupRoleActions);
+
+            LabelControl lblRenameRoleName = new() { Location = new Point(16, 34), Text = "Rename selected role:" };
+            txtRenameRoleName = new TextEdit { Location = new Point(16, 55), Size = new Size(308, 24) };
+            txtRenameRoleName.Properties.NullValuePrompt = "Contoh: GL_CONTROLLER";
+            txtRenameRoleName.Properties.NullValuePromptShowForEmptyValue = true;
+            btnRenameRole = new SimpleButton { Text = "Rename", Size = new Size(96, 32), Location = new Point(16, 87) };
+            btnRenameRole.Click += btnRenameRole_Click;
+
+            LabelControl lblNewRoleName = new() { Location = new Point(16, 131), Text = "Create from selected role:" };
+            txtNewRoleName = new TextEdit { Location = new Point(16, 152), Size = new Size(308, 24) };
+            txtNewRoleName.Properties.NullValuePrompt = "Contoh: GL_AUDITOR";
+            txtNewRoleName.Properties.NullValuePromptShowForEmptyValue = true;
+            btnRefreshRoles = new SimpleButton { Text = "Refresh", Size = new Size(86, 32), Location = new Point(16, 184) };
+            btnDuplicateRole = new SimpleButton { Text = "Duplicate", Size = new Size(98, 32), Location = new Point(108, 184) };
+            btnDeleteRole = new SimpleButton { Text = "Delete Role", Size = new Size(118, 32), Location = new Point(212, 184) };
+            btnRefreshRoles.Click += btnRefreshRoles_Click;
+            btnDuplicateRole.Click += btnDuplicateRole_Click;
+            btnDeleteRole.Click += btnDeleteRole_Click;
+            groupRoleActions.Controls.Add(lblRenameRoleName);
+            groupRoleActions.Controls.Add(txtRenameRoleName);
+            groupRoleActions.Controls.Add(btnRenameRole);
+            groupRoleActions.Controls.Add(lblNewRoleName);
+            groupRoleActions.Controls.Add(txtNewRoleName);
+            groupRoleActions.Controls.Add(btnRefreshRoles);
+            groupRoleActions.Controls.Add(btnDuplicateRole);
+            groupRoleActions.Controls.Add(btnDeleteRole);
+
+            CreateInsightLabels();
+        }
+
+        private void BuildAssignmentTab()
+        {
+            SidePanel leftPanel = new() { Dock = DockStyle.Left, Width = 390 };
+            SidePanel actionPanel = new() { Dock = DockStyle.Left, Width = 128 };
+            SidePanel rightPanel = new() { Dock = DockStyle.Fill };
+
+            tabUsers.Controls.Add(rightPanel);
+            tabUsers.Controls.Add(actionPanel);
+            tabUsers.Controls.Add(leftPanel);
+
+            groupAvailableUsers = new GroupControl { Dock = DockStyle.Fill, Text = "Available Users" };
+            groupAssignedUsers = new GroupControl { Dock = DockStyle.Fill, Text = "Assigned Users" };
+
+            gridAvailableUsers = new GridControl { Dock = DockStyle.Fill, DataSource = availableUserBindingSource };
+            gridAssignedUsers = new GridControl { Dock = DockStyle.Fill, DataSource = assignedUserBindingSource };
+            gridViewAvailableUsers = new GridView(gridAvailableUsers);
+            gridViewAssignedUsers = new GridView(gridAssignedUsers);
+            gridAvailableUsers.MainView = gridViewAvailableUsers;
+            gridAssignedUsers.MainView = gridViewAssignedUsers;
+            gridAvailableUsers.ViewCollection.Add(gridViewAvailableUsers);
+            gridAssignedUsers.ViewCollection.Add(gridViewAssignedUsers);
+            groupAvailableUsers.Controls.Add(gridAvailableUsers);
+            groupAssignedUsers.Controls.Add(gridAssignedUsers);
+            leftPanel.Controls.Add(groupAvailableUsers);
+            rightPanel.Controls.Add(groupAssignedUsers);
+
+            lblUserRoleHint = new LabelControl
+            {
+                AutoSizeMode = LabelAutoSizeMode.Vertical,
+                Location = new Point(14, 24),
+                Size = new Size(100, 42),
+                Text = "Pilih role dulu di tab Roles"
+            };
+
+            btnAssignUsersToRole = new SimpleButton { Text = "<< Assign", Size = new Size(100, 38), Location = new Point(14, 88) };
+            btnRemoveUsersFromRole = new SimpleButton { Text = "Remove >>", Size = new Size(100, 38), Location = new Point(14, 138) };
+            btnAssignUsersToRole.Click += btnAssignUsersToRole_Click;
+            btnRemoveUsersFromRole.Click += btnRemoveUsersFromRole_Click;
+            actionPanel.Controls.Add(lblUserRoleHint);
+            actionPanel.Controls.Add(btnAssignUsersToRole);
+            actionPanel.Controls.Add(btnRemoveUsersFromRole);
+        }
+
+        private void CreateInsightLabels()
+        {
+            LabelControl lblRoleName = new() { Location = new Point(16, 20), Text = "Selected role:" };
+            LabelControl lblRoleStatus = new() { Location = new Point(16, 47), Text = "Status:" };
+            LabelControl lblRoleUserCount = new() { Location = new Point(16, 74), Text = "Assigned users:" };
+            LabelControl lblRolePermissionCount = new() { Location = new Point(16, 101), Text = "Granted entries:" };
+            LabelControl lblRoleHighRisk = new() { Location = new Point(16, 128), Text = "High-risk changes:" };
+
+            lblRoleNameValue = CreateInsightValue(new Point(124, 20));
+            lblRoleStatusValue = CreateInsightValue(new Point(124, 47));
+            lblRoleUserCountValue = CreateInsightValue(new Point(124, 74));
+            lblRolePermissionCountValue = CreateInsightValue(new Point(124, 101));
+            lblRoleHighRiskValue = CreateInsightValue(new Point(124, 128));
+
+            memoRoleImpact = new MemoEdit
+            {
+                Dock = DockStyle.Bottom,
+                Height = 300
+            };
+            memoRoleImpact.Properties.ReadOnly = true;
+
+            groupRoleInsights.Controls.Add(lblRoleName);
+            groupRoleInsights.Controls.Add(lblRoleStatus);
+            groupRoleInsights.Controls.Add(lblRoleUserCount);
+            groupRoleInsights.Controls.Add(lblRolePermissionCount);
+            groupRoleInsights.Controls.Add(lblRoleHighRisk);
+            groupRoleInsights.Controls.Add(lblRoleNameValue);
+            groupRoleInsights.Controls.Add(lblRoleStatusValue);
+            groupRoleInsights.Controls.Add(lblRoleUserCountValue);
+            groupRoleInsights.Controls.Add(lblRolePermissionCountValue);
+            groupRoleInsights.Controls.Add(lblRoleHighRiskValue);
+            groupRoleInsights.Controls.Add(memoRoleImpact);
+        }
+
+        private static LabelControl CreateInsightValue(Point location)
+        {
+            return new LabelControl
+            {
+                Location = location,
+                Text = "-",
+                Appearance =
                 {
-                    OnText = "Yes",
-                    OffText = "No",
-                    ShowText = true,
-                    GlyphAlignment = DevExpress.Utils.HorzAlignment.Near,
-                    AutoWidth = true,
-                    UseParentBackground = true,
-                    Appearance =
-                    {
-                        TextOptions =
-                        {
-                            HAlignment = DevExpress.Utils.HorzAlignment.Near,
-                            VAlignment = DevExpress.Utils.VertAlignment.Center
-                        }
-                    }
+                    Font = new Font("Tahoma", 8.25F, FontStyle.Bold)
                 }
             };
-#pragma warning restore CS0618 // Type or member is obsolete
-
-            return toggleSwitch;
         }
 
-       
-     
-      
-
-        private void GridView_RowUpdated(object sender, RowObjectEventArgs e)
+        private void ApplyWorkspaceStyling()
         {
-            if (e.Row is Permission updatedRow)
+            BackColor = Color.FromArgb(244, 246, 248);
+
+            xtraTabControl1.Appearance.BackColor = BackColor;
+            xtraTabControl1.Appearance.Options.UseBackColor = true;
+            xtraTabControl1.AppearancePage.Header.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            xtraTabControl1.AppearancePage.Header.Options.UseFont = true;
+            xtraTabControl1.AppearancePage.PageClient.BackColor = BackColor;
+            xtraTabControl1.AppearancePage.PageClient.Options.UseBackColor = true;
+
+            StyleGroup(groupRoles);
+            StyleGroup(groupPermissions);
+            StyleGroup(groupRoleActions);
+            StyleGroup(groupRoleInsights);
+            StyleGroup(groupAvailableUsers);
+            StyleGroup(groupAssignedUsers);
+
+            StyleActionButton(btnGrantReadOnly, false);
+            StyleActionButton(btnGrantFullAccess, false);
+            StyleActionButton(btnClearPermissions, false);
+            StyleActionButton(btnDiscardPermissions, false);
+            StyleActionButton(btnRefreshRoles, false);
+            StyleActionButton(btnDuplicateRole, true);
+            StyleActionButton(btnRenameRole, true);
+            StyleActionButton(btnDeleteRole, false, Color.FromArgb(135, 47, 58), Color.White);
+            StyleActionButton(btnSavePermissions, true);
+            StyleActionButton(btnAssignUsersToRole, true);
+            StyleActionButton(btnRemoveUsersFromRole, false);
+
+            StyleGrid(gridViewRoles);
+            StyleGrid(gridViewPermissions);
+            StyleGrid(gridViewAvailableUsers);
+            StyleGrid(gridViewAssignedUsers);
+
+            lblRolePanelHint.Appearance.ForeColor = Color.FromArgb(90, 96, 110);
+            lblRolePanelHint.Appearance.Options.UseForeColor = true;
+            lblUserRoleHint.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            lblUserRoleHint.Appearance.Options.UseFont = true;
+            memoRoleImpact.Properties.Appearance.BackColor = Color.FromArgb(252, 252, 252);
+            memoRoleImpact.Properties.Appearance.Options.UseBackColor = true;
+            memoRoleImpact.Properties.Appearance.Font = new Font("Consolas", 9F, FontStyle.Regular);
+            memoRoleImpact.Properties.Appearance.Options.UseFont = true;
+        }
+
+        private static void StyleGroup(GroupControl groupControl)
+        {
+            groupControl.AppearanceCaption.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
+            groupControl.AppearanceCaption.ForeColor = Color.FromArgb(29, 42, 58);
+            groupControl.AppearanceCaption.Options.UseFont = true;
+            groupControl.AppearanceCaption.Options.UseForeColor = true;
+            groupControl.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
+        }
+
+        private static void StyleActionButton(SimpleButton button, bool primary)
+        {
+            Color backColor = primary ? Color.FromArgb(28, 91, 168) : Color.FromArgb(232, 236, 240);
+            Color foreColor = primary ? Color.White : Color.FromArgb(38, 50, 56);
+            StyleActionButton(button, primary, backColor, foreColor);
+        }
+
+        private static void StyleActionButton(SimpleButton button, bool primary, Color backColor, Color foreColor)
+        {
+            button.Appearance.BackColor = backColor;
+            button.Appearance.ForeColor = foreColor;
+            button.Appearance.Font = new Font("Segoe UI Semibold", primary ? 9F : 8.75F, FontStyle.Bold);
+            button.Appearance.Options.UseBackColor = true;
+            button.Appearance.Options.UseForeColor = true;
+            button.Appearance.Options.UseFont = true;
+            button.LookAndFeel.UseDefaultLookAndFeel = false;
+            button.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
+        }
+
+        private static void StyleGrid(GridView gridView)
+        {
+            gridView.Appearance.HeaderPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+            gridView.Appearance.HeaderPanel.Options.UseFont = true;
+            gridView.Appearance.Row.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            gridView.Appearance.Row.Options.UseFont = true;
+            gridView.Appearance.FocusedRow.BackColor = Color.FromArgb(222, 235, 252);
+            gridView.Appearance.FocusedRow.Options.UseBackColor = true;
+            gridView.Appearance.HideSelectionRow.BackColor = Color.FromArgb(238, 242, 246);
+            gridView.Appearance.HideSelectionRow.Options.UseBackColor = true;
+            gridView.OptionsView.EnableAppearanceEvenRow = true;
+            gridView.Appearance.EvenRow.BackColor = Color.FromArgb(249, 250, 251);
+            gridView.Appearance.EvenRow.Options.UseBackColor = true;
+            gridView.OptionsView.ShowIndicator = false;
+        }
+
+        private void ConfigureGrids()
+        {
+            ConfigureRoleGrid();
+            ConfigurePermissionGrid();
+            ConfigureUserGrid(gridViewAvailableUsers);
+            ConfigureUserGrid(gridViewAssignedUsers);
+        }
+
+        private void ConfigureRoleGrid()
+        {
+            gridViewRoles.OptionsBehavior.Editable = false;
+            gridViewRoles.OptionsBehavior.ReadOnly = true;
+            gridViewRoles.OptionsFind.AlwaysVisible = true;
+            gridViewRoles.OptionsFind.FindNullPrompt = "Cari role";
+            gridViewRoles.OptionsView.ShowGroupPanel = false;
+            gridViewRoles.FocusedRowChanged += gridViewRoles_FocusedRowChanged;
+        }
+
+        private void ConfigurePermissionGrid()
+        {
+            gridViewPermissions.OptionsFind.AlwaysVisible = true;
+            gridViewPermissions.OptionsFind.FindNullPrompt = "Cari permission";
+            gridViewPermissions.OptionsSelection.MultiSelect = true;
+            gridViewPermissions.OptionsSelection.MultiSelectMode = GridMultiSelectMode.CheckBoxRowSelect;
+            gridViewPermissions.OptionsView.ShowAutoFilterRow = true;
+            gridViewPermissions.OptionsView.ShowGroupPanel = false;
+            gridViewPermissions.CellValueChanged += gridViewPermissions_CellValueChanged;
+            gridViewPermissions.ShowingEditor += gridViewPermissions_ShowingEditor;
+            gridViewPermissions.RowStyle += gridViewPermissions_RowStyle;
+        }
+
+        private static void ConfigureUserGrid(GridView view)
+        {
+            view.OptionsFind.AlwaysVisible = true;
+            view.OptionsSelection.MultiSelect = true;
+            view.OptionsSelection.MultiSelectMode = GridMultiSelectMode.CheckBoxRowSelect;
+            view.OptionsView.ShowAutoFilterRow = true;
+            view.OptionsView.ShowGroupPanel = false;
+            view.OptionsBehavior.Editable = false;
+            view.OptionsBehavior.ReadOnly = true;
+        }
+
+        private RoleSummary? SelectedRole => gridViewRoles.GetFocusedRow() as RoleSummary;
+
+        private void uc_Level_Akses_Load(object? sender, EventArgs e)
+        {
+            try
             {
+                AuthorizationService.EnsureCanViewRoleManagement();
+                moduleId = Permission_Services.GetModuleId(LoginInfo.MODULE);
+                ReloadWorkspace();
+                ApplyAuthorizationState();
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Enabled = false;
+            }
+        }
+
+        private void ReloadWorkspace(int? selectedRoleId = null)
+        {
+            LoadRoles(selectedRoleId);
+            LoadUsers();
+            RefreshUserAssignmentViews();
+        }
+
+        private void LoadRoles(int? selectedRoleId = null)
+        {
+            int? currentRoleId = selectedRoleId ?? SelectedRole?.RoleId;
+
+            roleSummaries = Permission_Services.GetRoleSummaries(moduleId).ToList();
+            roleNameLookup = roleSummaries.ToDictionary(role => role.RoleId, role => role.RoleName);
+            roleBindingSource.DataSource = roleSummaries;
+            ConfigureRoleColumns();
+
+            if (roleSummaries.Count == 0)
+            {
+                originalPermissionSnapshot = new List<Permission>();
+                permissionDraft = new BindingList<Permission>();
+                permissionBindingSource.DataSource = permissionDraft;
+                txtRenameRoleName.Text = string.Empty;
+                txtNewRoleName.Text = string.Empty;
+                UpdateRoleDetails();
+                ApplyAuthorizationState();
+                return;
+            }
+
+            int roleIndex = currentRoleId.HasValue
+                ? roleSummaries.FindIndex(role => role.RoleId == currentRoleId.Value)
+                : 0;
+
+            isLoadingRole = true;
+            gridViewRoles.FocusedRowHandle = roleIndex >= 0 ? roleIndex : 0;
+            isLoadingRole = false;
+            LoadSelectedRole();
+        }
+
+        private void LoadUsers()
+        {
+            allUsers = Permission_Services.GetUserList().Select(CloneUser).ToList();
+            moduleUserAssignments = Permission_Services.GetUserLevelList(moduleId).Select(CloneUser).ToList();
+
+            foreach (Permission_Users assignment in moduleUserAssignments)
+            {
+                assignment.ROLE_NAME = ResolveRoleName(assignment.ROLE_ID, assignment.ROLE_NAME);
+            }
+        }
+
+        private void ConfigureRoleColumns()
+        {
+            if (gridViewRoles.Columns.Count == 0)
+            {
+                return;
+            }
+
+            gridViewRoles.Columns[nameof(RoleSummary.RoleId)].Visible = false;
+            gridViewRoles.Columns[nameof(RoleSummary.IsProtected)].Visible = false;
+            gridViewRoles.Columns[nameof(RoleSummary.IsSystemRole)].Visible = false;
+            gridViewRoles.Columns[nameof(RoleSummary.RoleName)].Caption = "Role";
+            gridViewRoles.Columns[nameof(RoleSummary.UserCount)].Caption = "Users";
+            gridViewRoles.Columns[nameof(RoleSummary.Status)].Caption = "Status";
+            gridViewRoles.BestFitColumns();
+        }
+
+        private void LoadSelectedRole()
+        {
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
+            {
+                return;
+            }
+
+            isLoadingRole = true;
+            try
+            {
+                originalPermissionSnapshot = Permission_Services.GetRolePermissionMatrix(selectedRole.RoleId, LoginInfo.MODULE)
+                    .Select(ClonePermission)
+                    .ToList();
+
+                permissionDraft = new BindingList<Permission>(originalPermissionSnapshot.Select(ClonePermission).ToList());
+                permissionBindingSource.DataSource = permissionDraft;
+                ConfigurePermissionColumns();
+                txtRenameRoleName.Text = selectedRole.RoleName;
+                isDirty = false;
+                UpdateRoleDetails();
+                RefreshUserAssignmentViews();
+            }
+            finally
+            {
+                isLoadingRole = false;
+            }
+        }
+
+        private void ConfigurePermissionColumns()
+        {
+            if (gridViewPermissions.Columns.Count == 0)
+            {
+                return;
+            }
+
+            gridViewPermissions.Columns[nameof(Permission.RoleId)].Visible = false;
+            gridViewPermissions.Columns[nameof(Permission.PermissionId)].Visible = false;
+            gridViewPermissions.Columns[nameof(Permission.PermissionName)].Visible = false;
+
+            gridViewPermissions.Columns[nameof(Permission.Category)].Caption = "Area";
+            gridViewPermissions.Columns[nameof(Permission.Menu)].Caption = "Menu";
+            gridViewPermissions.Columns[nameof(Permission.Description)].Caption = "Description";
+            gridViewPermissions.Columns[nameof(Permission.CanCreate)].Caption = "Create";
+            gridViewPermissions.Columns[nameof(Permission.CanRead)].Caption = "Read";
+            gridViewPermissions.Columns[nameof(Permission.CanUpdate)].Caption = "Update";
+            gridViewPermissions.Columns[nameof(Permission.CanDelete)].Caption = "Delete";
+
+            gridViewPermissions.Columns[nameof(Permission.Category)].GroupIndex = 0;
+            gridViewPermissions.Columns[nameof(Permission.Category)].SortMode = DevExpress.XtraGrid.ColumnSortMode.DisplayText;
+            gridViewPermissions.ExpandAllGroups();
+            gridViewPermissions.BestFitColumns();
+        }
+
+        private void RefreshUserAssignmentViews()
+        {
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
+            {
+                availableUserBindingSource.DataSource = new List<Permission_Users>();
+                assignedUserBindingSource.DataSource = new List<Permission_Users>();
+                groupAssignedUsers.Text = "Assigned Users";
+                lblUserRoleHint.Text = "Pilih role dulu di tab Roles";
+                return;
+            }
+
+            lblUserRoleHint.Text = $"Assign ke role:\n{selectedRole.RoleName}";
+            groupAssignedUsers.Text = $"Assigned Users - {selectedRole.RoleName}";
+
+            List<Permission_Users> assignedUsers = moduleUserAssignments
+                .Where(user => user.ROLE_ID == selectedRole.RoleId)
+                .OrderBy(user => user.NAMA)
+                .Select(CloneUser)
+                .ToList();
+
+            Dictionary<string, Permission_Users> assignmentsByUser = moduleUserAssignments
+                .GroupBy(user => user.USERID, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToDictionary(user => user.USERID, CloneUser, StringComparer.OrdinalIgnoreCase);
+
+            List<Permission_Users> availableUsers = allUsers
+                .Where(user => !assignedUsers.Any(assigned =>
+                    string.Equals(assigned.USERID, user.USERID, StringComparison.OrdinalIgnoreCase)))
+                .Select(user =>
+                {
+                    Permission_Users clone = CloneUser(user);
+                    if (assignmentsByUser.TryGetValue(user.USERID, out Permission_Users? currentAssignment))
+                    {
+                        clone.ROLE_ID = currentAssignment.ROLE_ID;
+                        clone.ROLE_NAME = ResolveRoleName(currentAssignment.ROLE_ID, currentAssignment.ROLE_NAME);
+                    }
+
+                    return clone;
+                })
+                .OrderBy(user => user.NAMA)
+                .ToList();
+
+            availableUserBindingSource.DataSource = availableUsers;
+            assignedUserBindingSource.DataSource = assignedUsers;
+            ConfigureUserColumns(gridViewAvailableUsers, true);
+            ConfigureUserColumns(gridViewAssignedUsers, false);
+        }
+
+        private void ConfigureUserColumns(GridView view, bool showCurrentRole)
+        {
+            if (view.Columns.Count == 0)
+            {
+                return;
+            }
+
+            view.Columns[nameof(Permission_Users.AKTIF)].Visible = false;
+            view.Columns[nameof(Permission_Users.ROLE_ID)].Visible = false;
+            view.Columns[nameof(Permission_Users.USERID)].Caption = "User ID";
+            view.Columns[nameof(Permission_Users.NAMA)].Caption = "Nama";
+            view.Columns[nameof(Permission_Users.DEPT)].Caption = "Dept";
+            view.Columns[nameof(Permission_Users.JABATAN)].Caption = "Jabatan";
+            view.Columns[nameof(Permission_Users.ROLE_NAME)].Caption = showCurrentRole ? "Current Role" : "Role";
+            view.Columns[nameof(Permission_Users.ROLE_NAME)].Visible = true;
+            view.BestFitColumns();
+        }
+
+        private void UpdateRoleDetails()
+        {
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
+            {
+                lblRoleNameValue.Text = "-";
+                lblRoleStatusValue.Text = "-";
+                lblRoleUserCountValue.Text = "-";
+                lblRolePermissionCountValue.Text = "-";
+                lblRoleHighRiskValue.Text = "-";
+                memoRoleImpact.Text = "Pilih role untuk melihat detail.";
+                return;
+            }
+
+            int grantedEntries = permissionDraft.Count(permission => HasAnyAccess(permission));
+            int highRiskChangesCount = GetPermissionDiffs().Count(diff => highRiskPermissions.Contains(diff.PermissionName));
+            List<Permission_Users> impactedUsers = moduleUserAssignments
+                .Where(user => user.ROLE_ID == selectedRole.RoleId)
+                .OrderBy(user => user.NAMA)
+                .ToList();
+
+            lblRoleNameValue.Text = selectedRole.RoleName;
+            lblRoleStatusValue.Text = selectedRole.Status;
+            lblRoleUserCountValue.Text = impactedUsers.Count.ToString();
+            lblRolePermissionCountValue.Text = grantedEntries.ToString();
+            lblRoleHighRiskValue.Text = highRiskChangesCount.ToString();
+
+            string[] affectedUsers = impactedUsers.Select(user => user.NAMA).Take(8).ToArray();
+            string previewUsers = affectedUsers.Length == 0
+                ? "Belum ada user yang memakai role ini."
+                : string.Join(", ", affectedUsers);
+
+            List<string> diffLines = GetPermissionDiffs()
+                .Take(10)
+                .Select(diff => $"{diff.PermissionName}: {diff.ChangeSummary}")
+                .ToList();
+
+            memoRoleImpact.Text = string.Join(Environment.NewLine, new[]
+            {
+                $"Module: {LoginInfo.MODULE}",
+                $"Users impacted: {impactedUsers.Count}",
+                $"Role status: {selectedRole.Status}",
+                string.Empty,
+                "Sample users:",
+                previewUsers,
+                string.Empty,
+                "Pending changes:",
+                diffLines.Count == 0 ? "Tidak ada perubahan draft." : string.Join(Environment.NewLine, diffLines)
+            });
+
+            ApplyAuthorizationState();
+        }
+
+        private void ApplyAuthorizationState()
+        {
+            RoleSummary? selectedRole = SelectedRole;
+            bool canManageRoleAssignments = AuthorizationService.CanManageRoleAssignments();
+            bool canManageRolePermissions = AuthorizationService.CanManageRolePermissions();
+            bool canEditSelectedRole = canManageRolePermissions
+                && selectedRole != null
+                && !AuthorizationService.IsProtectedRoleId(selectedRole.RoleId);
+
+            btnGrantReadOnly.Enabled = canEditSelectedRole;
+            btnGrantFullAccess.Enabled = canEditSelectedRole;
+            btnClearPermissions.Enabled = canEditSelectedRole;
+            btnSavePermissions.Enabled = canEditSelectedRole && isDirty;
+            btnDiscardPermissions.Enabled = canEditSelectedRole && isDirty;
+            txtRenameRoleName.Enabled = canEditSelectedRole;
+            btnRenameRole.Enabled = canEditSelectedRole;
+            btnDuplicateRole.Enabled = canManageRolePermissions && selectedRole != null;
+            btnDeleteRole.Enabled = canEditSelectedRole;
+            btnAssignUsersToRole.Enabled = canManageRoleAssignments && selectedRole != null;
+            btnRemoveUsersFromRole.Enabled = canManageRoleAssignments && selectedRole != null;
+        }
+
+        private void gridViewRoles_FocusedRowChanged(object sender, FocusedRowChangedEventArgs e)
+        {
+            if (isLoadingRole)
+            {
+                return;
+            }
+
+            if (!ConfirmDiscardIfNeeded())
+            {
+                isLoadingRole = true;
                 try
                 {
-                    _rolesAndUsersService.UpdatePermissionInDatabase(updatedRow);
+                    gridViewRoles.FocusedRowHandle = e.PrevFocusedRowHandle;
                 }
-                catch (Exception ex)
+                finally
                 {
-                    MessageBox.Show($"Error updating data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    isLoadingRole = false;
                 }
+
+                return;
             }
+
+            LoadSelectedRole();
         }
 
-
-        private void uc_Level_Akses_Load(object sender, EventArgs e)
+        private bool ConfirmDiscardIfNeeded()
         {
-            RolesList = Permission_Services.GetRoleList();
-            moduleId = Permission_Services.GetModuleId(LoginInfo.MODULE);
-
-            SetSidePanelWidth();
-
-            ConfigureLookUpEdit();
-            ConfigureGridControl1();
-            ConfigureGridControl3();
-            LoadUsersLevel();
-        }
-
-        private void SetSidePanelWidth()
-        {
-            int screenWidth = Screen.PrimaryScreen.Bounds.Width;
-            sidePanel5.Width = screenWidth / 2;
-        }
-
-        private void ConfigureLookUpEdit()
-        {
-            if (RolesList != null && RolesList.Rows.Count > 0)
+            if (!isDirty)
             {
-                lookUpEdit1.Properties.DataSource = RolesList;
-                lookUpEdit1.Properties.ValueMember = "ROLE_ID";
-                lookUpEdit1.Properties.DisplayMember = "ROLE_NAME";
-                lookUpEdit1.Properties.PopulateColumns();
-                lookUpEdit1.Properties.Columns["ROLE_ID"].Visible = false;
-                lookUpEdit1.EditValue = RolesList.Rows[0]["ROLE_ID"];
+                return true;
             }
-        }
 
-        private void ConfigureGridControl1()
-        {
-            var masterakses = Permission_Services.GetMasterAkses(LoginInfo.MODULE);
-            gridControl1.DataSource = masterakses;
-            gridView1.OptionsSelection.MultiSelect = true;
-            gridView1.OptionsSelection.MultiSelectMode = GridMultiSelectMode.CheckBoxRowSelect;
+            DialogResult result = XtraMessageBox.Show(
+                "Ada perubahan permission yang belum disimpan. Simpan sekarang?",
+                "Unsaved Changes",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question);
 
-            HideGridControl1Columns();
-            gridView1.BestFitColumns();
-            gridView1.OptionsBehavior.Editable = false;
-            gridView1.CustomDrawCell += gridView1_CustomDrawCell;
-        }
-
-        private void HideGridControl1Columns()
-        {
-            gridView1.Columns["RoleId"].Visible = false;
-            gridView1.Columns["PermissionId"].Visible = false;
-            gridView1.Columns["PermissionName"].Visible = false;
-            gridView1.Columns["CanCreate"].Visible = false;
-            gridView1.Columns["CanRead"].Visible = false;
-            gridView1.Columns["CanUpdate"].Visible = false;
-            gridView1.Columns["CanDelete"].Visible = false;
-        }
-
-        private void ConfigureGridControl3()
-        {
-            var users = Permission_Services.GetUserList();
-            gridControl3.DataSource = users;
-            gridView3.Columns["ROLE_ID"].Visible = false;
-            gridView3.BestFitColumns();
-            gridView3.OptionsBehavior.Editable = false;
-        }
-
-        private void LoadUsersLevel()
-        {
-
-            var userslevelList = Permission_Services.GetUserLevelList(moduleId).ToList();
-            gridControl4.DataSource = userslevelList;
-            gridView4.Columns["AKTIF"].Visible = false;
-            gridView4.Columns["ROLE_ID"].Caption = "AKSES";
-            gridView4.BestFitColumns();
-
-            ConfigureRepositoryItemLookUpEdit();
-
-            // Subscribe to the ShowingEditor event to control cell editing
-            gridView4.ShowingEditor += GridView4_ShowingEditor;
-        }
-
-        private void GridView4_ShowingEditor(object? sender, CancelEventArgs e)
-        {
-            if (sender is GridView view)
+            if (result == DialogResult.Cancel)
             {
-                // Check if the focused column is ROLE_ID
-                if (view.FocusedColumn.FieldName == "ROLE_ID")
-                {
-                    // Get the value of the USERID column for the focused row
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-                    string userId = view.GetRowCellValue(view.FocusedRowHandle, "USERID")?.ToString();
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-
-                    // If USERID is "Administrator", cancel the editing
-                    if (userId == "Administrator")
-                    {
-                        e.Cancel = true;
-                        MessageBox.Show("Editing is not allowed for the Administrator role.", "Edit Restricted", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                }
-                else
-                {
-                    // Prevent editing for all columns except ROLE_ID
-                    e.Cancel = true;
-                }
+                return false;
             }
-        }
 
-
-        private void ConfigureRepositoryItemLookUpEdit()
-        {
-            RepositoryItemLookUpEdit lookUpEdit = new()
+            if (result == DialogResult.Yes)
             {
-                DataSource = RolesList,
-                DisplayMember = "ROLE_NAME",
-                ValueMember = "ROLE_ID",
-                NullText = "Select a role"
-            };
-
-            lookUpEdit.PopulateColumns();
-            lookUpEdit.Columns["ROLE_ID"].Visible = false;
-
-            gridControl4.RepositoryItems.Add(lookUpEdit);
-
-            if (gridControl4.MainView is GridView gridView)
-            {
-                ConfigureGridView(gridView, lookUpEdit);
-            } 
-            lookUpEdit.EditValueChanged += LookUpEdit_EditValueChanged; 
-            lookUpEdit.EditValueChanging += LookUpEdit_EditValueChanging;
-
-            gridView3.CustomDrawCell += gridView3_CustomDrawCell;
-        }
-
-        private void LookUpEdit_EditValueChanging(object sender, ChangingEventArgs e)
-        {
-            if (sender is LookUpEdit edit)
-            {
-                // Store the original value before it changes
-                originalValue = edit.EditValue;
+                return SavePermissionDraft();
             }
+
+            ReloadPermissionDraft();
+            return true;
         }
 
-        private void ConfigureGridView(GridView gridView, RepositoryItemLookUpEdit lookUpEdit)
+        private void ReloadPermissionDraft()
         {
-            gridView.Columns["ROLE_ID"].ColumnEdit = lookUpEdit;
-            gridView.BestFitColumns();
-        }
-
-
-
-        private void gridView3_CustomDrawCell(object sender, RowCellCustomDrawEventArgs e)
-        {
-            // Ensure view is not null
-            if (sender is not GridView view) return;
-
-            // Retrieve the data sources
-
-            // Ensure data sources are not null
-            if (gridControl3.DataSource is not List<Permission_Users> || gridControl4.DataSource is not List<Permission_Users> list2) return;
-
-            // Get the current item
-
-            // Ensure the current item is not null and not in the second list
-            if (view.GetRow(e.RowHandle) is Permission_Users currentItem && !IsInListUsers(currentItem, list2))
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
             {
-                e.Appearance.BackColor = Color.Red;
+                return;
             }
+
+            permissionDraft = new BindingList<Permission>(originalPermissionSnapshot.Select(ClonePermission).ToList());
+            permissionBindingSource.DataSource = permissionDraft;
+            ConfigurePermissionColumns();
+            isDirty = false;
+            UpdateRoleDetails();
         }
 
-        private bool IsInListUsers(Permission_Users currentItem, List<Permission_Users> list2)
+        private void gridViewPermissions_ShowingEditor(object? sender, CancelEventArgs e)
         {
-            // Convert list2 to a HashSet for faster lookups
-            HashSet<string> list2Ids = new(list2.Select(p => p.USERID));
-            return list2Ids.Contains(currentItem.USERID);
-        }
-
-
-
-
-
-        // Event handler to update the database when the role is changed
-        private void LookUpEdit_EditValueChanged(object sender, EventArgs e)
-        {
-            try
-            {
-                if (sender is LookUpEdit edit)
-                {
-                    // Try to cast the new value to an integer safely
-                    if (int.TryParse(edit.EditValue.ToString(), out int newRoleId))
-                    {
-                        // Get the focused row handle
-                        if (gridControl4.FocusedView is GridView gridView)
-                        {
-                            int rowHandle = gridView.FocusedRowHandle;
-
-                            // Get the other necessary values to update the database
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-                            string userId = gridView.GetRowCellValue(rowHandle, "USERID")?.ToString();
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-
-
-                            if (!string.IsNullOrEmpty(userId))
-                            {
-                                // Call your database update method here
-                                UpdateUserRoleInDatabase(newRoleId, userId, moduleId);
-
-                                // Update the list item in the grid's data source
-                                if (gridControl4.DataSource is List<Permission_Users> userslevelList)
-                                {
-                                    var user = userslevelList.FirstOrDefault(u => u.USERID == userId);
-                                    if (user != null)
-                                    {
-                                        user.ROLE_ID = newRoleId;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // Log or handle the case where userId is null or empty
-                                MessageBox.Show("Error: USERID is null or empty.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            }
-                        }
-                        else
-                        {
-                            // Log or handle the case where gridView is null
-                            MessageBox.Show("Error: GridView is null.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                    else
-                    {
-                        // Log or handle the case where EditValue is not a valid integer
-                        MessageBox.Show("Error: Invalid ROLE_ID value.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                else
-                {
-                    // Log or handle the case where sender is not a LookUpEdit
-                    MessageBox.Show("Error: Sender is not a LookUpEdit.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log the exception
-                MessageBox.Show($"Exception: {ex.Message}", "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-
-        private void UpdateUserRoleInDatabase(int newRoleId, string? userId, int moduleId)
-        {
-#pragma warning disable CS8604 // Possible null reference argument.
-            Permission_Services.UpdateUserRole(newRoleId, userId, moduleId);
-#pragma warning restore CS8604 // Possible null reference argument.
-        }
-
-        private void lookUpEdit1_EditValueChanged(object sender, EventArgs e)
-        {
-            LoadDaftarAksesbyRole();
-            gridView1.RefreshData(); // Refresh gridView1 to trigger CustomDrawCell
-
-        }
-
-        private void LoadDaftarAksesbyRole()
-        {
-            try
-            {
-                // Fetch permissions for the selected role and module
-                var akses = Permission_Services.GetRolePermissions(lookUpEdit1.Text, LoginInfo.MODULE);
-
-                // Check if the result is not null
-                if (akses != null)
-                {
-                    // Set the fetched permissions as the data source for the grid control
-                    gridControl2.DataSource = akses;
-
-                    // Make specific columns invisible in the grid view
-                    gridView2.Columns["RoleId"].Visible = false;
-                    gridView2.Columns["PermissionId"].Visible = false;
-                    gridView2.Columns["PermissionName"].Visible = false;
-
-                    // Adjust column widths to fit the content
-                    gridView2.BestFitColumns();
-
-                    // Subscribe to the ShowingEditor event to disable editing for the Admin role
-#pragma warning disable CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
-                    gridView2.ShowingEditor -= gridView2_ShowingEditor; // Unsubscribe first to avoid multiple subscriptions
-#pragma warning restore CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
-#pragma warning disable CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
-                    gridView2.ShowingEditor += gridView2_ShowingEditor;
-#pragma warning restore CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
-                }
-                else
-                {
-                    // Handle the case where no permissions are returned
-                    MessageBox.Show("No permissions found for the selected role and module.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Handle any exceptions that may occur
-                MessageBox.Show($"An error occurred while loading permissions: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void gridView2_ShowingEditor(object sender, CancelEventArgs e)
-        {
-            // Disable editing if the role is "Admin"
-            if (lookUpEdit1.Text == "Admin")
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
             {
                 e.Cancel = true;
-                // MessageBox.Show("Akses Role Admin tidak dapat diubah .", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                // Allow editing only for columns a, b, c, d, e
-                if (sender is GridView view)
-                {
-                    string fieldName = view.FocusedColumn.FieldName;
-                    if (fieldName != "CanCreate" && fieldName != "CanRead" && fieldName != "CanUpdate" && fieldName != "CanDelete")
-                    {
-                        e.Cancel = true;
-                    }
-                }
-            }
-        }
-
-
-        private void gridView1_CustomDrawCell(object sender, RowCellCustomDrawEventArgs e)
-        {
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            GridView view = sender as GridView;
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-
-            // Ensure view is not null
-            if (view == null) return;
-
-            // Retrieve the data sources
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            List<Permission> list1 = gridControl1.DataSource as List<Permission>;
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            List<Permission> list2 = gridControl2.DataSource as List<Permission>;
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-
-            // Ensure data sources are not null
-            if (list1 == null || list2 == null) return;
-
-            // Get the current item
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            Permission currentItem = view.GetRow(e.RowHandle) as Permission;
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-
-            // Ensure the current item is not null and not in the second list
-            if (currentItem != null && !IsInList(currentItem, list2))
-            {
-                e.Appearance.BackColor = Color.Red;
-            }
-        }
-
-        private bool IsInList(Permission currentItem, List<Permission> list2)
-        {
-            // Convert list2 to a HashSet for faster lookups
-            HashSet<int> list2Ids = new HashSet<int>(list2.Select(p => p.PermissionId));
-            return list2Ids.Contains(currentItem.PermissionId);
-        }
-
-
-        private void btncopycheckrow_Click(object sender, EventArgs e)
-        {
-            var list1 = _rolesAndUsersService.GetPermissionsFromGridControl(gridControl1);
-            var list2 = _rolesAndUsersService.GetPermissionsFromGridControl(gridControl2);
-
-            if (list1 == null || list2 == null)
-            {
-                _rolesAndUsersService.ShowMessage("Failed to retrieve permissions from grid controls.");
                 return;
             }
 
-            if (!_rolesAndUsersService.TryGetRoleId(lookUpEdit1.EditValue, out int roleId))
+            if (!AuthorizationService.CanManageRolePermissions() || AuthorizationService.IsProtectedRoleId(selectedRole.RoleId))
             {
-                _rolesAndUsersService.ShowMessage("Invalid Role ID. Please select a valid role.");
+                e.Cancel = true;
                 return;
             }
 
-            using var conn = new OracleConnection(LoginInfo.OracleConnString);
-            conn.Open();
+            if (sender is not GridView view || view.FocusedColumn == null)
+            {
+                e.Cancel = true;
+                return;
+            }
 
-            using var transaction = conn.BeginTransaction();
-            using var cmd = conn.CreateCommand();
-            cmd.Transaction = transaction;
+            string fieldName = view.FocusedColumn.FieldName;
+            e.Cancel = fieldName != nameof(Permission.CanCreate)
+                && fieldName != nameof(Permission.CanRead)
+                && fieldName != nameof(Permission.CanUpdate)
+                && fieldName != nameof(Permission.CanDelete);
+        }
+
+        private void gridViewPermissions_CellValueChanged(object sender, CellValueChangedEventArgs e)
+        {
+            if (isLoadingRole)
+            {
+                return;
+            }
+
+            if (e.Column.FieldName != nameof(Permission.CanCreate)
+                && e.Column.FieldName != nameof(Permission.CanRead)
+                && e.Column.FieldName != nameof(Permission.CanUpdate)
+                && e.Column.FieldName != nameof(Permission.CanDelete))
+            {
+                return;
+            }
+
+            isDirty = true;
+            UpdateRoleDetails();
+        }
+
+        private void gridViewPermissions_RowStyle(object sender, RowStyleEventArgs e)
+        {
+            if (gridViewPermissions.GetRow(e.RowHandle) is not Permission permission)
+            {
+                return;
+            }
+
+            if (highRiskPermissions.Contains(permission.PermissionName))
+            {
+                e.Appearance.BackColor = Color.FromArgb(255, 244, 230);
+            }
+        }
+
+        private void btnGrantReadOnly_Click(object? sender, EventArgs e)
+        {
+            ApplyPermissionPreset(permission =>
+            {
+                permission.CanCreate = false;
+                permission.CanRead = true;
+                permission.CanUpdate = false;
+                permission.CanDelete = false;
+            });
+        }
+
+        private void btnGrantFullAccess_Click(object? sender, EventArgs e)
+        {
+            ApplyPermissionPreset(permission =>
+            {
+                permission.CanCreate = true;
+                permission.CanRead = true;
+                permission.CanUpdate = true;
+                permission.CanDelete = true;
+            });
+        }
+
+        private void btnClearPermissions_Click(object? sender, EventArgs e)
+        {
+            ApplyPermissionPreset(permission =>
+            {
+                permission.CanCreate = false;
+                permission.CanRead = false;
+                permission.CanUpdate = false;
+                permission.CanDelete = false;
+            });
+        }
+
+        private void ApplyPermissionPreset(Action<Permission> applyPreset)
+        {
+            if (!AuthorizationService.CanManageRolePermissions())
+            {
+                XtraMessageBox.Show("Anda tidak memiliki izin mengubah permission role.", "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int[] selectedRows = gridViewPermissions.GetSelectedRows().Where(rowHandle => rowHandle >= 0).ToArray();
+            List<Permission> targets = selectedRows.Length > 0
+                ? selectedRows.Select(rowHandle => gridViewPermissions.GetRow(rowHandle) as Permission).Where(permission => permission != null).Cast<Permission>().ToList()
+                : permissionDraft.ToList();
+
+            foreach (Permission permission in targets)
+            {
+                applyPreset(permission);
+            }
+
+            gridViewPermissions.RefreshData();
+            isDirty = true;
+            UpdateRoleDetails();
+        }
+
+        private void btnSavePermissions_Click(object? sender, EventArgs e)
+        {
+            _ = SavePermissionDraft();
+        }
+
+        private bool SavePermissionDraft()
+        {
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
+            {
+                return false;
+            }
+
+            List<PermissionDiff> diffs = GetPermissionDiffs();
+            if (diffs.Count == 0)
+            {
+                isDirty = false;
+                UpdateRoleDetails();
+                return true;
+            }
+
+            List<Permission_Users> impactedUsers = moduleUserAssignments
+                .Where(user => user.ROLE_ID == selectedRole.RoleId)
+                .OrderBy(user => user.NAMA)
+                .ToList();
+
+            string diffSummary = string.Join(Environment.NewLine, diffs.Take(10).Select(diff => $"- {diff.PermissionName}: {diff.ChangeSummary}"));
+            string riskWarning = diffs.Any(diff => highRiskPermissions.Contains(diff.PermissionName))
+                ? $"{Environment.NewLine}{Environment.NewLine}Perhatian: perubahan menyentuh permission high-risk."
+                : string.Empty;
+
+            DialogResult result = XtraMessageBox.Show(
+                $"Role: {selectedRole.RoleName}{Environment.NewLine}" +
+                $"Users impacted: {impactedUsers.Count}{Environment.NewLine}{Environment.NewLine}" +
+                $"Perubahan:{Environment.NewLine}{diffSummary}{riskWarning}{Environment.NewLine}{Environment.NewLine}" +
+                "Simpan perubahan ini?",
+                "Review Impact",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes)
+            {
+                return false;
+            }
 
             try
             {
-                foreach (var rowHandle in gridView1.GetSelectedRows())
-                {
-                    var item = (Permission)gridView1.GetRow(rowHandle);
-
-                    if (!list2.Any(p => p.PermissionId == item.PermissionId))
-                    {
-                        _rolesAndUsersService.AddPermission(list2, item);
-                        _rolesAndUsersService.InsertPermissionToDatabase(roleId, item, cmd);
-                    }
-                }
-
-                transaction.Commit();
-                _rolesAndUsersService.RefreshGridData(gridView1);
-                _rolesAndUsersService.ClearSelection(gridView1);
+                Permission_Services.SaveRolePermissions(selectedRole.RoleId, permissionDraft.ToList(), LoginInfo.MODULE);
+                originalPermissionSnapshot = permissionDraft.Select(ClonePermission).ToList();
+                isDirty = false;
+                UpdateRoleDetails();
+                XtraMessageBox.Show("Permission role berhasil disimpan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return true;
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
-                _rolesAndUsersService.ShowMessage($"An error occurred: {ex.Message}");
+                XtraMessageBox.Show(ex.Message, "Gagal Menyimpan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
-
-            _rolesAndUsersService.RefreshGridData(gridView2);
-
         }
 
-        private void btnremoveakses_Click(object sender, EventArgs e)
+        private void btnDiscardPermissions_Click(object? sender, EventArgs e)
         {
-            if (!_rolesAndUsersService.TryGetRoleId(lookUpEdit1.EditValue, out int roleId))
+            ReloadPermissionDraft();
+        }
+
+        private void btnDuplicateRole_Click(object? sender, EventArgs e)
+        {
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
             {
-                _rolesAndUsersService.ShowMessage("Invalid Role ID. Please select a valid role.");
                 return;
             }
 
-            if (roleId == 1)
+            string newRoleName = txtNewRoleName.Text?.Trim() ?? string.Empty;
+            if (newRoleName.Length == 0)
             {
-                _rolesAndUsersService.ShowMessage("Akses Level ini tidak dapat dihapus.");
+                XtraMessageBox.Show("Isi nama role baru terlebih dahulu.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtNewRoleName.Focus();
                 return;
             }
 
-            var permissionsToDelete = new List<Permission>();
-            foreach (var rowHandle in gridView2.GetSelectedRows())
+            try
             {
-                var item = (Permission)gridView2.GetRow(rowHandle);
-                if (item != null)
-                {
-                    permissionsToDelete.Add(item);
-                }
+                int newRoleId = Permission_Services.DuplicateRole(newRoleName, selectedRole.RoleId, LoginInfo.MODULE);
+                txtNewRoleName.Text = string.Empty;
+                ReloadWorkspace(newRoleId);
+                XtraMessageBox.Show("Role baru berhasil dibuat dari role terpilih.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-
-            if (permissionsToDelete.Count == 0)
+            catch (OracleException ex) when (ex.Message.Contains("ORA-00001", StringComparison.OrdinalIgnoreCase))
             {
-                _rolesAndUsersService.ShowMessage("No permissions selected to delete.");
+                XtraMessageBox.Show("Nama role sudah ada. Gunakan nama lain.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Gagal Membuat Role", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnRenameRole_Click(object? sender, EventArgs e)
+        {
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
+            {
                 return;
             }
 
-            var permissionList = string.Join("\n", permissionsToDelete.Select(p => $"Menu: {p.Menu}, Keterangan: {p.Description}"));
-            var result = _rolesAndUsersService.ShowConfirmationDialog($"The following permissions will be deleted:\n\n{permissionList}\n\nDo you want to proceed?");
+            string newRoleName = txtRenameRoleName.Text?.Trim() ?? string.Empty;
+            if (newRoleName.Length == 0)
+            {
+                XtraMessageBox.Show("Isi nama role baru untuk rename.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtRenameRoleName.Focus();
+                return;
+            }
 
-            if (result == DialogResult.No)
+            if (string.Equals(newRoleName, selectedRole.RoleName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            DialogResult result = XtraMessageBox.Show(
+                $"Ubah nama role {selectedRole.RoleName} menjadi {newRoleName}?",
+                "Konfirmasi Rename",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes)
+            {
+                txtRenameRoleName.Text = selectedRole.RoleName;
+                return;
+            }
+
+            try
+            {
+                Permission_Services.RenameRole(selectedRole.RoleId, newRoleName);
+                ReloadWorkspace(selectedRole.RoleId);
+                XtraMessageBox.Show("Nama role berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (OracleException ex) when (ex.Message.Contains("ORA-00001", StringComparison.OrdinalIgnoreCase))
+            {
+                XtraMessageBox.Show("Nama role sudah digunakan. Pilih nama lain.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Gagal Rename Role", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtRenameRoleName.Text = selectedRole.RoleName;
+            }
+        }
+
+        private void btnDeleteRole_Click(object? sender, EventArgs e)
+        {
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
             {
                 return;
             }
 
             try
             {
-                using var conn = new OracleConnection(LoginInfo.OracleConnString);
-                conn.Open();
-                using var cmd = conn.CreateCommand();
-                _rolesAndUsersService.DeletePermissionsFromDatabase(roleId, permissionsToDelete, cmd);
-
-                LoadDaftarAksesbyRole();
-                _rolesAndUsersService.RefreshGridData(gridView1);
-
-                _rolesAndUsersService.ShowMessage("Selected permissions have been deleted successfully.");
-            }
-            catch (OracleException ex)
-            {
-                _rolesAndUsersService.ShowMessage($"Database error: {ex.Message}");
+                AuthorizationService.EnsureCanManageRolePermissions(selectedRole.RoleId);
             }
             catch (Exception ex)
             {
-                _rolesAndUsersService.ShowMessage($"An error occurred: {ex.Message}");
-            }
-        }
-
-        private void BtnAddUser_Click(object sender, EventArgs e)
-        {
-            // Get the data sources of gridView3 and gridView4
-            List<Permission_Users> list1 = (List<Permission_Users>)gridControl3.DataSource;
-            List<Permission_Users> list2 = (List<Permission_Users>)gridControl4.DataSource;
-
-            // Get selected rows in gridView3
-            int[] selectedRows = gridView3.GetSelectedRows();
-
-            // Check if exactly one row is selected
-            if (selectedRows.Length != 1)
-            {
-                MessageBox.Show("Please select exactly one user to add.");
+                XtraMessageBox.Show(ex.Message, "Akses Ditolak", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Get the data item from the selected row
-            Permission_Users selectedItem = (Permission_Users)gridView3.GetRow(selectedRows[0]);
+            List<Permission_Users> assignedUsers = Permission_Services.GetUsersByRole(selectedRole.RoleId, null).ToList();
+            if (assignedUsers.Count > 0)
+            {
+                string userPreview = string.Join(Environment.NewLine, assignedUsers.Take(10).Select(user => $"{user.USERID} - {user.NAMA}"));
+                XtraMessageBox.Show(
+                    $"Role tidak bisa dihapus karena masih dipakai {assignedUsers.Count} user.{Environment.NewLine}{Environment.NewLine}{userPreview}",
+                    "Delete Blocked",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
 
-            // Set default role to User
-            selectedItem.ROLE_ID = 6;
+            DialogResult result = XtraMessageBox.Show(
+                $"Hapus role {selectedRole.RoleName}?",
+                "Konfirmasi Hapus",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (result != DialogResult.Yes)
+            {
+                return;
+            }
 
             try
             {
-                // Initialize Oracle connection
-                using OracleConnection conn = new OracleConnection(LoginInfo.OracleConnString);
-                conn.Open();
-
-                // Start a transaction
-                using OracleTransaction transaction = conn.BeginTransaction();
-                using OracleCommand cmd = conn.CreateCommand();
-                cmd.Transaction = transaction;
-
-                // Check if the item already exists in list2
-                if (!list2.Any(p => p.USERID == selectedItem.USERID))
-                {
-                    // Add the item to the data source of gridView4 if it doesn't exist
-                    list2.Add(selectedItem);
-
-                    // Prepare the insert command
-                    cmd.CommandText = @"
-                                INSERT INTO MASTER_USER_ROLES (User_Id, Role_Id, Module_Id)
-                                VALUES (:UserId, :RoleId, :ModuleId)";
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add(new OracleParameter("UserId", selectedItem.USERID));
-                    cmd.Parameters.Add(new OracleParameter("RoleId", selectedItem.ROLE_ID)); //default as User
-                    cmd.Parameters.Add(new OracleParameter("ModuleId", moduleId));
-
-                    // Execute the command
-                    cmd.ExecuteNonQuery();
-                }
-
-                // Commit the transaction
-                transaction.Commit();
-
-                // Refresh gridView3 and clear selection
-                gridView3.RefreshData();
-                gridView3.ClearSelection();
-
-                // Refresh gridView4 to show the new rows
-                gridView4.RefreshData();
+                Permission_Services.DeleteRole(selectedRole.RoleId);
+                ReloadWorkspace();
             }
             catch (Exception ex)
             {
-                // Rollback the transaction on error
-                MessageBox.Show($"An error occurred: {ex.Message}");
+                XtraMessageBox.Show(ex.Message, "Gagal Menghapus Role", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void BtnRemoveUser_Click(object sender, EventArgs e)
+        private void btnRefreshRoles_Click(object? sender, EventArgs e)
         {
-            // Get the selected row handle
-            var rowHandle = gridView4.GetSelectedRows().FirstOrDefault();
+            ReloadWorkspace(SelectedRole?.RoleId);
+        }
 
-            // Retrieve the user from the selected row
-            var userToDelete = (Permission_Users)gridView4.GetRow(rowHandle);
-
-            // Check if no user is selected
-            if (userToDelete == null)
-            {
-                _rolesAndUsersService.ShowMessage("No User selected to delete.");
-                return;
-            }
-
-            // Prevent deletion of the Administrator user
-            if (userToDelete.USERID == "Administrator")
-            {
-                _rolesAndUsersService.ShowMessage("The Administrator user cannot be deleted.");
-                return;
-            }
-
-            // Confirm deletion
-            var result = _rolesAndUsersService.ShowConfirmationDialog(
-                $"The following User will be deleted:\n\nUserID: {userToDelete.USERID}, Name: {userToDelete.NAMA}\n\nDo you want to proceed?"
-            );
-
-            if (result == DialogResult.No)
+        private void btnAssignUsersToRole_Click(object? sender, EventArgs e)
+        {
+            RoleSummary? selectedRole = SelectedRole;
+            if (selectedRole == null)
             {
                 return;
             }
 
-            // Attempt to delete the user from the database
+            List<Permission_Users> selectedUsers = GetSelectedUsers(gridViewAvailableUsers);
+            if (selectedUsers.Count == 0)
+            {
+                XtraMessageBox.Show("Pilih user yang ingin di-assign.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             try
             {
-                using var conn = new OracleConnection(LoginInfo.OracleConnString);
-                conn.Open();
-                using (var cmd = conn.CreateCommand())
-                {
-                    // Ensure that the required parameters are correctly assigned
-                    var userid = userToDelete.USERID;
-
-                    _rolesAndUsersService.DeleteUser(userid, moduleId);
-
-                    LoadUsersLevel();
-                    _rolesAndUsersService.RefreshGridData(gridView3);
-
-                    //_rolesAndUsersService.ShowMessage("Selected User has been deleted successfully.");
-                }
-            }
-            catch (OracleException ex)
-            {
-                _rolesAndUsersService.ShowMessage($"Database error: {ex.Message}");
+                Permission_Services.AssignUsersToRole(selectedUsers.Select(user => user.USERID), selectedRole.RoleId, moduleId);
+                LoadUsers();
+                RefreshUserAssignmentViews();
             }
             catch (Exception ex)
             {
-                _rolesAndUsersService.ShowMessage($"An error occurred: {ex.Message}");
+                XtraMessageBox.Show(ex.Message, "Gagal Assign User", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-
-
-    }
-
-    internal class PermissionIdComparer : IEqualityComparer<Permission>
-    {
-#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
-#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
-        public bool Equals(Permission x, Permission y)
-#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
-#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
+        private void btnRemoveUsersFromRole_Click(object? sender, EventArgs e)
         {
-            // Check if PermissionIds are equal
-            return x.PermissionId == y.PermissionId;
+            List<Permission_Users> selectedUsers = GetSelectedUsers(gridViewAssignedUsers);
+            if (selectedUsers.Count == 0)
+            {
+                XtraMessageBox.Show("Pilih user yang ingin dilepas dari role.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                Permission_Services.RemoveUsersFromRole(selectedUsers.Select(user => user.USERID), moduleId);
+                LoadUsers();
+                RefreshUserAssignmentViews();
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show(ex.Message, "Gagal Remove User", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        public int GetHashCode(Permission obj)
+        private static List<Permission_Users> GetSelectedUsers(GridView view)
         {
-            // Return hash code based on PermissionId
-            return obj.PermissionId.GetHashCode();
+            return view.GetSelectedRows()
+                .Where(rowHandle => rowHandle >= 0)
+                .Select(rowHandle => view.GetRow(rowHandle) as Permission_Users)
+                .Where(user => user != null)
+                .Cast<Permission_Users>()
+                .Select(CloneUser)
+                .ToList();
+        }
+
+        private List<PermissionDiff> GetPermissionDiffs()
+        {
+            Dictionary<int, Permission> originalById = originalPermissionSnapshot
+                .ToDictionary(permission => permission.PermissionId, ClonePermission);
+
+            return permissionDraft
+                .Select(permission =>
+                {
+                    Permission original = originalById[permission.PermissionId];
+                    string before = AccessSummary(original);
+                    string after = AccessSummary(permission);
+                    return new PermissionDiff(permission.PermissionName, before, after);
+                })
+                .Where(diff => !string.Equals(diff.Before, diff.After, StringComparison.Ordinal))
+                .ToList();
+        }
+
+        private static string AccessSummary(Permission permission)
+        {
+            List<string> flags = new();
+            if (permission.CanCreate)
+            {
+                flags.Add("C");
+            }
+
+            if (permission.CanRead)
+            {
+                flags.Add("R");
+            }
+
+            if (permission.CanUpdate)
+            {
+                flags.Add("U");
+            }
+
+            if (permission.CanDelete)
+            {
+                flags.Add("D");
+            }
+
+            return flags.Count == 0 ? "No access" : string.Join("/", flags);
+        }
+
+        private static bool HasAnyAccess(Permission permission)
+        {
+            return permission.CanCreate || permission.CanRead || permission.CanUpdate || permission.CanDelete;
+        }
+
+        private string ResolveRoleName(int roleId, string? fallback)
+        {
+            if (roleNameLookup.TryGetValue(roleId, out string? roleName))
+            {
+                return roleName;
+            }
+
+            return string.IsNullOrWhiteSpace(fallback) ? "-" : fallback.Trim();
+        }
+
+        private static Permission ClonePermission(Permission permission)
+        {
+            return new Permission
+            {
+                RoleId = permission.RoleId,
+                PermissionId = permission.PermissionId,
+                PermissionName = permission.PermissionName,
+                Menu = permission.Menu,
+                Description = permission.Description,
+                Category = permission.Category,
+                CanCreate = permission.CanCreate,
+                CanRead = permission.CanRead,
+                CanUpdate = permission.CanUpdate,
+                CanDelete = permission.CanDelete
+            };
+        }
+
+        private static Permission_Users CloneUser(Permission_Users user)
+        {
+            return new Permission_Users
+            {
+                USERID = user.USERID,
+                ROLE_ID = user.ROLE_ID,
+                NAMA = user.NAMA,
+                DEPT = user.DEPT,
+                JABATAN = user.JABATAN,
+                ROLE_NAME = user.ROLE_NAME,
+                AKTIF = user.AKTIF
+            };
+        }
+
+        private sealed record PermissionDiff(string PermissionName, string Before, string After)
+        {
+            public string ChangeSummary => $"{Before} -> {After}";
         }
     }
 }

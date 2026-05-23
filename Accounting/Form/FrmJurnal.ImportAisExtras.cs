@@ -28,6 +28,9 @@ namespace Accounting.Form
             lookUpEditEstate.Properties.DataSource = estate;
             lookUpEditEstate.Properties.ValueMember = "ID";
             lookUpEditEstate.Properties.DisplayMember = "NAMA";
+            lookUpEditEstate.Properties.NullText = "";
+            lookUpEditEstate.Properties.ImmediatePopup = true;
+            lookUpEditEstate.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
 
             Dictionary<int, string> Remises = new()
             {
@@ -35,7 +38,26 @@ namespace Accounting.Form
                 { 2, "2" }
             };
             leremiseAIS.Properties.DataSource = Remises;
+            leremiseAIS.Properties.ValueMember = "Key";
+            leremiseAIS.Properties.DisplayMember = "Value";
+            leremiseAIS.Properties.NullText = "";
+            leremiseAIS.Properties.ImmediatePopup = true;
+            leremiseAIS.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
             leremiseAIS.EditValue = 1;
+
+            if (estate.Count == 0)
+            {
+                XtraMessageBox.Show(
+                    $"Estate tidak ditemukan untuk IDDATA {CompanyInfo.IDDATA}. Cek MASTER_ESTATE.IDDATA.",
+                    "Info",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            else if (lookUpEditEstate.EditValue == null)
+            {
+                lookUpEditEstate.EditValue = estate[0].ID;
+                ScheduleAisReload();
+            }
         }
 
 

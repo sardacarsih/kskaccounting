@@ -2,6 +2,7 @@
 using DevExpress.XtraGrid.Views.Grid;
 using Accounting._1.Interface;
 using Accounting.Models.Login;
+using Accounting.Services;
 using Oracle.ManagedDataAccess.Client;
 using System.Collections.Generic;
 using System.Windows;
@@ -31,6 +32,8 @@ namespace Accounting._2.DataAccess
 
         public void InsertPermissionToDatabase(int roleId, Permission permission, OracleCommand command)
         {
+            AuthorizationService.EnsureCanManageRolePermissions(roleId);
+
             const string InsertCommandText = @"
             INSERT INTO MASTER_ROLE_PERMISSIONS (Role_Id, Permission_Id, Can_Create, Can_Read, Can_Update, Can_Delete)
             VALUES (:RoleId, :PermissionId, :CanCreate, :CanRead, :CanUpdate, :CanDelete)";
@@ -44,10 +47,13 @@ namespace Accounting._2.DataAccess
             command.Parameters.Add(new OracleParameter("CanUpdate", 'Y'));
             command.Parameters.Add(new OracleParameter("CanDelete", 'Y'));
             command.ExecuteNonQuery();
+            AuthorizationService.InvalidateCurrentUserPermissions();
         }
 
         public void DeletePermissionsFromDatabase(int roleId, List<Permission> permissions, OracleCommand command)
         {
+            AuthorizationService.EnsureCanManageRolePermissions(roleId);
+
             const string DeleteCommandText = @"
             DELETE FROM MASTER_ROLE_PERMISSIONS 
             WHERE Role_Id = :RoleId 
@@ -61,6 +67,8 @@ namespace Accounting._2.DataAccess
                 command.Parameters.Add(new OracleParameter("PermissionId", permission.PermissionId));
                 command.ExecuteNonQuery();
             }
+
+            AuthorizationService.InvalidateCurrentUserPermissions();
         }
 
         public void RefreshGridData(GridView gridView)
@@ -85,6 +93,8 @@ namespace Accounting._2.DataAccess
 
         public void UpdatePermissionInDatabase(Permission permission)
         {
+            AuthorizationService.EnsureCanManageRolePermissions(permission.RoleId);
+
             try
             {
                 var CanCreateValue = permission.CanCreate ? "Y" : "N";
@@ -103,6 +113,7 @@ namespace Accounting._2.DataAccess
                 cmd.Parameters.Add(new OracleParameter("ROLE_ID", permission.RoleId));
                 cmd.Parameters.Add(new OracleParameter("PERMISSION_ID", permission.PermissionId));
                 cmd.ExecuteNonQuery();
+                AuthorizationService.InvalidateCurrentUserPermissions();
             }
             catch (Exception ex)
             {
@@ -112,6 +123,8 @@ namespace Accounting._2.DataAccess
 
         public void DeleteUser(string userid, int moduleid)
         {
+            AuthorizationService.EnsureCanManageRoleAssignments(userid);
+
             using var connection = new OracleConnection(LoginInfo.OracleConnString);
             connection.Open();
             var query = "DELETE MASTER_USER_ROLES WHERE USER_ID=:p_userid and MODULE_ID=:p_moduleid";
@@ -119,6 +132,7 @@ namespace Accounting._2.DataAccess
             cmd.Parameters.Add(new OracleParameter("p_userid", userid));
             cmd.Parameters.Add(new OracleParameter("p_moduleid", moduleid));
             cmd.ExecuteNonQuery();
+            AuthorizationService.InvalidateCurrentUserPermissions();
         }
     }
 

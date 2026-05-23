@@ -8,11 +8,17 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Data;
 using System.Windows.Forms;
+using System.Drawing;
+using Accounting.Services;
 
 namespace Accounting.Form
 {
     public partial class FrmPeriode : DevExpress.XtraEditors.XtraForm
     {
+        private const int BaseDpi = 96;
+        private const int LayoutPadding = 12;
+        private const int TopRowHeight = 32;
+        private const int TopSpacing = 10;
         readonly OracleConnection conn = new(ConnectionManager.GetOracleConnection());
         DataSet DSperiode;
         OracleDataAdapter sqlAdapter;
@@ -31,6 +37,13 @@ namespace Accounting.Form
 
         private void FrmPeriode_Load(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageAccountingPeriods))
+            {
+                Close();
+                return;
+            }
+            ApplyInitialSizeByResolution();
+            ApplyResponsiveLayout();
             if (Acct.PeriodeMax != 0)
             {
                 setahun.Properties.MinValue = Acct.TahunMin;
@@ -39,6 +52,76 @@ namespace Accounting.Form
                 LoadList_Periode();
             }
             
+        }
+
+        private void FrmPeriode_Resize(object sender, EventArgs e)
+        {
+            ApplyResponsiveLayout();
+        }
+
+        private void ApplyResponsiveLayout()
+        {
+            if (setahun == null || labelControl1 == null || simpleButton2 == null || gridControl1 == null)
+            {
+                return;
+            }
+
+            int padding = ScaleForDpi(LayoutPadding);
+            int topRowHeight = ScaleForDpi(TopRowHeight);
+            int topSpacing = ScaleForDpi(TopSpacing);
+            int top = padding;
+            labelControl1.Location = new Point(padding, top + ScaleForDpi(7));
+            setahun.Location = new Point(labelControl1.Right + 8, top + 3);
+            setahun.Size = new Size(Math.Max(setahun.Width, ScaleForDpi(92)), topRowHeight - ScaleForDpi(2));
+
+            int buttonWidth = Math.Max(ScaleForDpi(88), simpleButton2.Width);
+            simpleButton2.Size = new Size(buttonWidth, topRowHeight);
+            simpleButton2.Location = new Point(ClientSize.Width - padding - buttonWidth, top);
+
+            int gridTop = top + topRowHeight + topSpacing;
+            int gridWidth = Math.Max(ScaleForDpi(280), ClientSize.Width - (padding * 2));
+            int gridHeight = Math.Max(ScaleForDpi(220), ClientSize.Height - gridTop - padding);
+            gridControl1.Location = new Point(padding, gridTop);
+            gridControl1.Size = new Size(gridWidth, gridHeight);
+        }
+
+        private void ApplyInitialSizeByResolution()
+        {
+            if (WindowState != FormWindowState.Normal)
+            {
+                return;
+            }
+
+            Rectangle area = Screen.FromControl(this).WorkingArea;
+            int targetWidth;
+            int targetHeight;
+
+            if (area.Width <= ScaleForDpi(1366))
+            {
+                targetWidth = ScaleForDpi(620);
+                targetHeight = ScaleForDpi(560);
+            }
+            else if (area.Width <= ScaleForDpi(1920))
+            {
+                targetWidth = ScaleForDpi(720);
+                targetHeight = ScaleForDpi(640);
+            }
+            else
+            {
+                targetWidth = ScaleForDpi(820);
+                targetHeight = ScaleForDpi(700);
+            }
+
+            int finalWidth = Math.Min(targetWidth, (int)(area.Width * 0.82));
+            int finalHeight = Math.Min(targetHeight, (int)(area.Height * 0.86));
+            Size = new Size(finalWidth, finalHeight);
+            StartPosition = FormStartPosition.CenterScreen;
+        }
+
+        private int ScaleForDpi(int value)
+        {
+            int dpi = DeviceDpi > 0 ? DeviceDpi : BaseDpi;
+            return Math.Max(1, (value * dpi) / BaseDpi);
         }
         private void LoadList_Periode()
         {
@@ -85,6 +168,11 @@ namespace Accounting.Form
             GridView view = sender as GridView;
             if (e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.Row)
             {
+                if (!AuthorizationService.CanManageAccountingPeriods())
+                {
+                    return;
+                }
+
                 int rowHandle = e.HitInfo.RowHandle;
                 //hapus menu jika ada
                 e.Menu.Items.Clear();
@@ -107,6 +195,10 @@ namespace Accounting.Form
 
         private void OnHapusClick(object sender, EventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageAccountingPeriods))
+            {
+                return;
+            }
            
             var rowhandle = gridView1.FocusedRowHandle;
             var PERIODE = gridView1.GetRowCellValue(rowhandle, "PERIODE").ToString();
@@ -146,6 +238,10 @@ namespace Accounting.Form
 
         private void gridView1_RowUpdated(object sender, DevExpress.XtraGrid.Views.Base.RowObjectEventArgs e)
         {
+            if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanManageAccountingPeriods))
+            {
+                return;
+            }
             ColumnView view = gridControl1.FocusedView as ColumnView;
             view.CloseEditor();
             if (view.UpdateCurrentRow())

@@ -7,4 +7,15 @@
     <AssemblyName>GLMigrator</AssemblyName>
     <RootNamespace>GLMigrator.Cli</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\migrations.manifest.json">
+      <LogicalName>EmbeddedAssets/migrations.manifest.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\000_bootstrap_gl_migration_history.sql">
+      <LogicalName>EmbeddedAssets/000_bootstrap_gl_migration_history.sql</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\migrations\*.sql">
+      <LogicalName>EmbeddedAssets/migrations/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 
 namespace Accounting.Models.Login
 {
@@ -9,12 +10,15 @@ namespace Accounting.Models.Login
         InvalidPassword = 2,
         InactiveUser = 3,
         NoModuleAccess = 4,
-        NoLocationAccess = 5
+        NoLocationAccess = 5,
+        LockedOut = 6
     }
 
     public sealed class LoginAuthResult
     {
         public LoginAuthStatus Status { get; init; }
         public List<LOGIN_USERS_DTO> Users { get; init; } = new();
+        public bool RequiresPasswordChange { get; init; }
+        public DateTimeOffset? LockoutUntilUtc { get; init; }
     }
 }

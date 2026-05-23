@@ -1,4 +1,5 @@
 ﻿using Accounting._1.Interface;
+using Accounting.BusinessLayer;
 using Accounting.Model;
 using Accounting.Utilities;
 using Dapper;
@@ -55,7 +56,7 @@ namespace Accounting._2.DataAcces
                 var divisions = await dbConnection.QueryAsync<Division>(query, parameters);
                 return divisions.AsList();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -69,13 +70,17 @@ namespace Accounting._2.DataAcces
             try
             {
                 dbConnection.Open();
-                string query = @"SELECT ESTATEID ID,NAMA FROM MASTER_ESTATE WHERE IDDATA=:P_IDDATA";
+                string query = @"
+                    SELECT ESTATEID AS ID, NAMA
+                    FROM MASTER_ESTATE
+                    WHERE TRIM(UPPER(IDDATA)) = TRIM(UPPER(:P_IDDATA))
+                    ORDER BY ESTATEID";
 
                 var parameters = new { P_IDDATA = idData };
                 var divisions = await dbConnection.QueryAsync<Estate>(query, parameters);
                 return divisions.AsList();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -117,10 +122,10 @@ namespace Accounting._2.DataAcces
                 WHEN D.SATUAN = 'HK' THEN D.QTY
                 ELSE 0
             END) AS HK,
-            SUM(D.QTY * D.TARIF) AS JUMLAH,
-            SUM(D.PREMI) AS PREMI,
-            SUM(D.DENDA) AS DENDA,
-            SUM(D.JUMLAH) AS TOTAL
+            ROUND(SUM(D.QTY * D.TARIF), 2) AS JUMLAH,
+            ROUND(SUM(D.PREMI), 2) AS PREMI,
+            ROUND(SUM(D.DENDA), 2) AS DENDA,
+            ROUND(SUM(D.JUMLAH), 2) AS TOTAL
         FROM 
             AIS_BKMMASTER M
         JOIN 
@@ -165,8 +170,8 @@ namespace Accounting._2.DataAcces
         CTE.BLOK,
         CTE.KODE,   
         C.NAMAACC REKENING,
-        CTE.TOTAL DEBET,
-        CTE.TOTAL DEBETPPH,
+        ROUND(CTE.TOTAL, 2) DEBET,
+        ROUND(CTE.TOTAL, 2) DEBETPPH,
         0 KREDIT,
         CTE.BLOK||' '||D.DIVISI||' '||D.ESTATEID||' '||:P_PERIODES||';'|| CTE.PEKERJAAN||'='||TO_CHAR(CTE.QTY, 'FM999990.00')||' '||CTE.SATUAN ||' '||
         CASE 
@@ -205,10 +210,17 @@ namespace Accounting._2.DataAcces
 
 
                 var result = await dbConnection.QueryAsync<AIS_JURNAL>(query, parameters);
-                return result.ToList();
+                return result.Select(row =>
+                {
+                    row.DEBET = JurnalAmountRounding.RoundJournalAmount(row.DEBET);
+                    row.DEBETPPH = JurnalAmountRounding.RoundJournalAmount(row.DEBETPPH);
+                    row.PPH21 = JurnalAmountRounding.RoundJournalAmount(row.PPH21);
+                    row.KREDIT = JurnalAmountRounding.RoundJournalAmount(row.KREDIT);
+                    return row;
+                }).ToList();
             
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                // _logger.LogError(ex, "An error occurred while fetching AIS Jurnal data.");
                 throw;
@@ -289,7 +301,7 @@ namespace Accounting._2.DataAcces
             }
         }
 
-        public async Task<List<SlipGaji_DTO>> viewDaftarGajidanTunjangan_BulananAsync(string idData, string estateId, int periode)
+        public Task<List<SlipGaji_DTO>> viewDaftarGajidanTunjangan_BulananAsync(string idData, string estateId, int periode)
         {
             using IDbConnection dbConnection = new OracleConnection(LoginInfo.OracleConnString);
             dbConnection.Open();
@@ -299,10 +311,10 @@ namespace Accounting._2.DataAcces
                             ORDER BY NO";
 
             var result = dbConnection.Query<SlipGaji_DTO>(query, new { periode, idData,estateId });
-            return result.AsList();
+            return Task.FromResult(result.AsList());
         }
 
-        public async Task<List<FIN_POTONGAN_KANTOR>> viewPotonganKantorAsync(string idData, string estateId, int periode)
+        public Task<List<FIN_POTONGAN_KANTOR>> viewPotonganKantorAsync(string idData, string estateId, int periode)
         {
             using IDbConnection dbConnection = new OracleConnection(LoginInfo.OracleConnString);
             dbConnection.Open();
@@ -316,11 +328,11 @@ namespace Accounting._2.DataAcces
                         JOIN FIN_PAYROLL_STAFF S ON S.NIK=M.NIK AND S.IDDATA=M.IDDATA AND S.ESTATE=M.ESTATE AND S.PERIODE=D.PERIODE
                         WHERE D.PERIODE=:P_PERIODE AND M.IDDATA=:P_IDDATA AND M.ESTATE=:P_ESTATE";
             var result = dbConnection.Query<FIN_POTONGAN_KANTOR>(query, new { P_PERIODE = periode, P_IDDATA = idData, P_ESTATE = estateId });
-            return result.AsList();
+            return Task.FromResult(result.AsList());
         }
                
 
-        public async Task<List<ALOKASI_JURNAL_DTO>> AlokasiJurnalAsync(string idData)
+        public Task<List<ALOKASI_JURNAL_DTO>> AlokasiJurnalAsync(string idData)
         {
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
@@ -335,9 +347,9 @@ namespace Accounting._2.DataAcces
 
             var results = connection.Query<ALOKASI_JURNAL_DTO>(query, parameters).ToList();
 
-            return results;
+            return Task.FromResult(results);
         }
-        public async Task<List<AIS_JURNAL_FINAL>> HitungLampiranKASAsync(
+        public Task<List<AIS_JURNAL_FINAL>> HitungLampiranKASAsync(
             List<SlipGaji_DTO> sLIPGAJIlist,
             List<FIN_POTONGAN_KANTOR> pot_KANTOR,
             List<ALOKASI_JURNAL_DTO> alokasijurnal,
@@ -460,7 +472,7 @@ namespace Accounting._2.DataAcces
                                    PERIODE = p_periode_str
                                }).ToList();
 
-            return jurnalfinal;
+            return Task.FromResult(jurnalfinal);
         }
 
         public async Task<List<AIS_JURNAL_FINAL>> GetPayrollforJurnalAsync(string idData, int periode, int remise, int tahun)
@@ -526,7 +538,7 @@ namespace Accounting._2.DataAcces
             using IDbConnection dbConnection = new OracleConnection(LoginInfo.OracleConnString);
             dbConnection.Open();
 
-            string query = @"SELECT ISBORONGAN, DIVISI, KETERANGAN, JUMLAH,SISI
+            string query = @"SELECT ISBORONGAN, DIVISI, KETERANGAN, ROUND(JUMLAH, 2) AS JUMLAH, SISI
                     FROM FIN_JURNAL_KOMPONEN
                     WHERE PERIODE = :P_PERIODE 
                       AND REMISE = :P_REMISE 
