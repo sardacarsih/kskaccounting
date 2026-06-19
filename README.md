@@ -2,6 +2,16 @@
 
 KSK Accounting adalah aplikasi desktop Accounting / General Ledger berbasis .NET 8 Windows Forms. Aplikasi ini berfokus pada pencatatan jurnal, chart of accounts, import/export data, RBAC user access, migrasi database Oracle, serta modul Fixed Asset.
 
+## Tampilan Aplikasi
+
+### Halaman Login
+
+![Halaman login KSK Accounting](login.png)
+
+### Tampilan Utama (General Ledger)
+
+![Tampilan utama KSK Accounting](mainview.png)
+
 ## Fitur Utama
 
 - General Ledger dan input jurnal
