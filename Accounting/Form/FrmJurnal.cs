@@ -1,6 +1,10 @@
 using Accounting._1.Interface;
 using Accounting._2.DataAcces;
 using Accounting.BusinessLayer;
+using Accounting.JurnalImport.Application;
+using Accounting.JurnalImport.Domain;
+using Accounting.JurnalImport.Infrastructure;
+using Accounting.JurnalImport.Presentation;
 using Accounting.Model;
 using Accounting.Services;
 using Accounting.UC.Jurnal;
@@ -67,6 +71,7 @@ namespace Accounting.Form
         private readonly JurnalDaftarCariService jurnalDaftarCariService;
         private readonly JurnalExcelExportService jurnalExcelExportService;
         private readonly JurnalImportSelectionService jurnalImportSelectionService;
+        private readonly FrmJurnalModuleImportViewModel moduleImportViewModel;
 
         bool editjurnal, filter = false;
         string periodetujuan = string.Empty, p_iddata = string.Empty;
@@ -127,6 +132,7 @@ namespace Accounting.Form
             jurnalDaftarCariService = new JurnalDaftarCariService();
             jurnalExcelExportService = new JurnalExcelExportService();
             jurnalImportSelectionService = new JurnalImportSelectionService();
+            moduleImportViewModel = JurnalImportModuleFactory.CreateModuleViewModel(CompanyInfo.IDDATA, LoginInfo.userID);
 
             InitializeComponent();
             InitializeTabHosts();
@@ -255,110 +261,166 @@ namespace Accounting.Form
 
             using var loadingScope = BeginGlobalLoadingScope();
 
-            Stopwatch watch = new();
-            watch.Start();
-
-            int pexist = jurnalRepository.CekPeriodeExist(CompanyInfo.IDDATA, p_periode);
-            if (pexist == 0)
+            JurnalImportResult result;
+            try
             {
-                jurnalRepository.CreateNextPeriode(CompanyInfo.IDDATA, month - 1, year);
+                var progress = new Progress<JurnalImportProgress>(p =>
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Import Jurnal Modul {moduleLabel}] {p.Percent}% - {p.Stage}");
+                });
+                result = moduleImportViewModel.Import(
+                    sourceData,
+                    month,
+                    year,
+                    yearControlValue,
+                    p_periode,
+                    ToJurnalImportSource(moduleLabel),
+                    progress);
             }
-
-            Hapus_Data_Table_Tmp();
-            jurnalRepository.SaveUsingOracleBulkCopy("ACCT_JURNAL_TMP", sourceData);
-
-            var KODENULL = jurnalRepository.CekJurnal_KODENULL();
-            if (KODENULL.Rows.Count > 0)
+            catch (Exception ex)
             {
-                List<string> list = KODENULL.AsEnumerable()
-                       .Select(r => r.Field<string>("NOJURNAL"))
-                       .Where(x => !string.IsNullOrEmpty(x))
-                       .Select(x => x!)
-                       .ToList();
-                var daftarKODENULL = string.Join(Environment.NewLine, list);
-                XtraMessageBox.Show("Import Jurnal di Batalkan \n" +
-                    "\nKode Jurnal belum diisi sebanyak " + KODENULL.Rows.Count.ToString("##,###") + " Nomor." +
-                    "\n" + daftarKODENULL, "Kode Jurnal Kosong", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                XtraMessageBox.Show(
+                    BuildUnexpectedJurnalImportErrorMessage(ex, moduleLabel, p_periode, sourceRows),
+                    "Import Jurnal Gagal",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
                 return;
             }
 
-            var dup_nojurnal = jurnalRepository.CekNoJurnalExist();
-            if (dup_nojurnal.Rows.Count > 0)
+            if (!result.IsSuccess)
             {
-                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_duplikasi.wav";
-                Player.Play();
-                List<string> list = dup_nojurnal.AsEnumerable()
-                       .Select(r => r.Field<string>("NOJURNAL"))
-                       .Where(x => !string.IsNullOrEmpty(x))
-                       .Select(x => x!)
-                       .ToList();
-                var daftarnojurnalexist = string.Join(Environment.NewLine, list);
-                XtraMessageBox.Show("Import Jurnal di Batalkan \n" +
-                    "\nDuplikasi NoJurnal sebanyak " + dup_nojurnal.Rows.Count.ToString("##,###") + " Nomor." +
-                    "\n" + daftarnojurnalexist, "Nomor Jurnal Telah digunakan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                PlayJurnalImportFailureSound(result);
+                XtraMessageBox.Show(BuildJurnalImportResultMessage(result), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            var duplikasi = jurnalRepository.CekDuplikasiJurnal();
-            if (duplikasi.Rows.Count > 0)
+            if (result.HasRecalculationWarning)
             {
-                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_duplikasi.wav";
-                Player.Play();
-                List<string> list = duplikasi.AsEnumerable()
-                       .Select(r => r.Field<string>("NOJURNAL"))
-                       .Where(x => !string.IsNullOrEmpty(x))
-                       .Select(x => x!)
-                       .ToList();
-                var daftarnojurnal = string.Join(Environment.NewLine, list);
-                XtraMessageBox.Show("Import Jurnal di Batalkan \n" +
-                    "\nDuplikasi NoJurnal pada nomor jurnal yang sama tetapi beda tanggal sebanyak " + duplikasi.Rows.Count.ToString("##,###") + " Nomor." +
-                    "\nBerikut ini NoJurnalnya : \n\n" + daftarnojurnal, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                allperiode();
+                XtraMessageBox.Show(BuildJurnalImportRecalculationWarningMessage(result), "Import Jurnal Selesai Dengan Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
-            var akun = jurnalRepository.CekAkunMaster(yearControlValue);
-            if (akun.Rows.Count > 0)
-            {
-                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_daftarperk.wav";
-                Player.Play();
-                List<string> list = akun.AsEnumerable()
-                       .Select(r => r.Field<string>("ASAL"))
-                       .Where(x => !string.IsNullOrEmpty(x))
-                       .Select(x => x!)
-                       .ToList();
-                var daftarakun = string.Join(Environment.NewLine, list);
-                XtraMessageBox.Show("Import Jurnal di Batalkan \n" +
-                    "\nJumlah Kode tidak terdaftar sebanyak " + akun.Rows.Count.ToString("##,###") + " Akun." +
-                    "\nKode Akun dibawah ini belum ada di Daftar Perkiraan \n" + daftarakun, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            var sukses = jurnalRepository.ImportJurnalParsial(CompanyInfo.IDDATA, month, year, p_periode);
-            if (sukses == 0)
-            {
-                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_bedaperiode.wav";
-                Player.Play();
-                XtraMessageBox.Show("Import Jurnal di Batalkan \nCek Periode Pada Lembar Excel Double ", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (sukses == 1)
-            {
-                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_imbang.wav";
-                Player.Play();
-                XtraMessageBox.Show("Import Jurnal di Batalkan \nJurnal Tidak Seimbang ", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            jurnalRepository.RekalkulasiSaldo(CompanyInfo.IDDATA, month, year, LoginInfo.userID);
-            watch.Stop();
-
-            TimeSpan timeSpan = watch.Elapsed;
-            string waktuproses = string.Format("Waktu Proses : {0}h {1}m {2}s {3}ms", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
 
             Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_selesai.wav";
             Player.Play();
             allperiode();
-            XtraMessageBox.Show($"Import Jurnal {moduleLabel} Selesai \n {waktuproses}", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            XtraMessageBox.Show($"Import Jurnal {moduleLabel} Selesai \n {FormatJurnalImportElapsed(result.Elapsed)}", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private static JurnalImportSource ToJurnalImportSource(string moduleLabel)
+        {
+            if (moduleLabel.Contains("Invent", StringComparison.OrdinalIgnoreCase)
+                || moduleLabel.Contains("Inventory", StringComparison.OrdinalIgnoreCase))
+            {
+                return JurnalImportSource.Inventory;
+            }
+
+            if (moduleLabel.Contains("KAS", StringComparison.OrdinalIgnoreCase)
+                || moduleLabel.Contains("BANK", StringComparison.OrdinalIgnoreCase))
+            {
+                return JurnalImportSource.Kasir;
+            }
+
+            if (moduleLabel.Contains("HRIS", StringComparison.OrdinalIgnoreCase))
+            {
+                return JurnalImportSource.Hris;
+            }
+
+            if (moduleLabel.Contains("Payroll", StringComparison.OrdinalIgnoreCase))
+            {
+                return JurnalImportSource.PayrollUmum;
+            }
+
+            return JurnalImportSource.Ais;
+        }
+
+        private void PlayJurnalImportFailureSound(JurnalImportResult result)
+        {
+            string sound = result.StatusCode switch
+            {
+                0 => "jurnal_bedaperiode.wav",
+                1 => "jurnal_imbang.wav",
+                _ when result.Issues.Any(issue => issue.Code is "PERIOD_LOCKED") => "periode_dikunci.wav",
+                _ when result.Issues.Any(issue => issue.Code is "PERIOD_MISMATCH") => "periode_beda.wav",
+                _ when result.Issues.Any(issue => issue.Code is "NOJURNAL_EXISTS" or "DUPLICATE_JOURNAL_DIFFERENT_DATE") => "jurnal_duplikasi.wav",
+                _ when result.Issues.Any(issue => issue.Code is "ACCOUNT_NOT_FOUND") => "jurnal_daftarperk.wav",
+                _ => string.Empty
+            };
+
+            if (!string.IsNullOrWhiteSpace(sound))
+            {
+                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\" + sound;
+                Player.Play();
+            }
+        }
+
+        private static string BuildJurnalImportResultMessage(JurnalImportResult result)
+        {
+            if (result.BalanceIssues.Count > 0)
+            {
+                return result.Message + Environment.NewLine + string.Join(
+                    Environment.NewLine,
+                    result.BalanceIssues.Select(issue => $"{issue.NoJurnal} | {issue.Tanggal:dd-MMM-yyyy} | Debet {issue.Debet:n2} | Kredit {issue.Kredit:n2} | Selisih {issue.Selisih:n2}"));
+            }
+
+            if (result.Issues.Count == 0)
+            {
+                return result.Message;
+            }
+
+            JurnalImportValidationIssue first = result.Issues[0];
+            string values = string.Join(
+                Environment.NewLine,
+                result.Issues
+                    .Select(issue => issue.Value)
+                    .Where(value => !string.IsNullOrWhiteSpace(value))
+                    .Distinct());
+
+            return string.IsNullOrWhiteSpace(values) ? first.Message : first.Message + Environment.NewLine + values;
+        }
+
+        private static string FormatJurnalImportElapsed(TimeSpan elapsed)
+        {
+            return $"Waktu Proses : {elapsed.Hours}h {elapsed.Minutes}m {elapsed.Seconds}s {elapsed.Milliseconds}ms";
+        }
+
+        private static string BuildJurnalImportRecalculationWarningMessage(JurnalImportResult result)
+        {
+            return "Import Jurnal Selesai" +
+                Environment.NewLine + FormatJurnalImportElapsed(result.Elapsed) +
+                Environment.NewLine + Environment.NewLine +
+                result.RecalculationWarning;
+        }
+
+        private static string BuildUnexpectedJurnalImportErrorMessage(Exception ex, string moduleLabel, string period, int sourceRows)
+        {
+            string technicalMessage = GetFullExceptionMessage(ex);
+            string message = "Import jurnal gagal." +
+                Environment.NewLine + Environment.NewLine +
+                "Data belum berhasil diimport dan perubahan sudah dibatalkan otomatis." +
+                Environment.NewLine + Environment.NewLine +
+                "Detail proses:" +
+                Environment.NewLine + $"Sumber: {moduleLabel}" +
+                Environment.NewLine + $"Periode: {period}" +
+                Environment.NewLine + $"Jumlah data: {sourceRows:##,###}" +
+                Environment.NewLine + Environment.NewLine +
+                "Informasi teknis:" +
+                Environment.NewLine + technicalMessage;
+
+            if (technicalMessage.Contains("ORA-01008", StringComparison.OrdinalIgnoreCase))
+            {
+                message += Environment.NewLine + Environment.NewLine +
+                    "Oracle ORA-01008 berarti ada parameter SQL yang belum terisi saat aplikasi menyimpan jurnal.";
+            }
+
+            return message;
+        }
+
+        private static string GetFullExceptionMessage(Exception ex)
+        {
+            return ex.InnerException == null
+                ? ex.Message
+                : ex.Message + Environment.NewLine + ex.InnerException.Message;
         }
 
     }

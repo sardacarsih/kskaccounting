@@ -1,43 +1,36 @@
-﻿using Accounting.BusinessLayer;
+using Accounting.JurnalImport.Domain;
+using Accounting.JurnalImport.Infrastructure;
+using Accounting.JurnalImport.Presentation;
 using Accounting.Model;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
-using ExcelDataReader;
-using Oracle.ManagedDataAccess.Client;
 using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Media;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Accounting.Form
 {
-    public partial class FrmImportJurnalSheet : DevExpress.XtraEditors.XtraForm
+    public partial class FrmImportJurnalSheet : XtraForm
     {
-       private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
-        private SoundPlayer Player = new SoundPlayer();
+        private readonly SoundPlayer Player = new();
+        private FrmImportJurnalViewModel? viewModel;
+
         public FrmImportJurnalSheet()
         {
             InitializeComponent();
         }
-        DataTable dt;
-        int pbulan, ptahunsumber,ptahuntujuan;
-        string bulan,periodetujuan;
-        DataTableCollection tables;
-        readonly string[] KolomWajib = { "NoJurnal", "Tanggal", "RowNo", "Kode", "Rekening", "Debet", "Kredit", "Keterangan", "Posted", "Periode" };
+
         private void FrmImportJurnalSheet_Load(object sender, EventArgs e)
         {
             try
             {
-                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+                viewModel = JurnalImportModuleFactory.CreateExcelViewModel(CompanyInfo.IDDATA, LoginInfo.userID);
+                viewModel.Mode = JurnalImportMode.ReplacePeriod;
                 cmbbulan.Properties.Items.AddRange(new[] { "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" });
-                int x = int.Parse(Acct.PeriodeMax.ToString().Substring(Acct.PeriodeMax.ToString().Length - 2, 2));
-               
-                cmbbulan.SelectedIndex = x - 1;
+                int month = int.Parse(Acct.PeriodeMax.ToString()[^2..]);
+                cmbbulan.SelectedIndex = month - 1;
                 setahun.Properties.MinValue = Acct.TahunMin;
                 setahun.Properties.MaxValue = Acct.TahunMax;
                 setahun.Value = Acct.TahunMax;
@@ -50,365 +43,301 @@ namespace Accounting.Form
 
         private void sbbrowse_Click(object sender, EventArgs e)
         {
+            if (viewModel == null)
+            {
+                return;
+            }
+
             using var handle = SplashScreenManager.ShowOverlayForm(this);
             handle.QueueFocus(IntPtr.Zero);
             try
             {
                 gridControl1.DataSource = null;
-                cboSheet.Text = "";
-                using (OpenFileDialog ofd = new OpenFileDialog() { Filter = "Excel Workbook|*.xlsx| Excel 97-2003 Workbook|*.xls"})
+                cboSheet.Text = string.Empty;
+                using OpenFileDialog ofd = new() { Filter = "Excel Workbook|*.xlsx| Excel 97-2003 Workbook|*.xls" };
+                if (ofd.ShowDialog() != DialogResult.OK)
                 {
-                    if (ofd.ShowDialog() == DialogResult.OK)
-                    {
-                        txtPath.Text = ofd.FileName;
-                        using (var stream = File.Open(ofd.FileName, FileMode.Open, FileAccess.Read))
-                        {
-                            using (IExcelDataReader reader = ExcelReaderFactory.CreateReader(stream))
-                            {
-                                DataSet result = reader.AsDataSet(new ExcelDataSetConfiguration()
-                                {
-                                    ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
-                                    {
-                                        UseHeaderRow = true
-                                    }
-                                });
-                                tables = result.Tables;
-                                cboSheet.Properties.Items.Clear();
-                                foreach (DataTable table in tables)
-                                    cboSheet.Properties.Items.Add(table.TableName);
-                            }
-                            cboSheet.SelectedIndex = 0;
-                        }
-                    }
+                    return;
+                }
+
+                viewModel.LoadWorkbook(ofd.FileName);
+                txtPath.Text = ofd.FileName;
+                cboSheet.Properties.Items.Clear();
+                cboSheet.Properties.Items.AddRange(viewModel.Sheets.ToList());
+                if (viewModel.Sheets.Count > 0)
+                {
+                    cboSheet.SelectedIndex = 0;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
+                SBImport.Enabled = false;
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void cboSheet_SelectedIndexChanged(object sender, EventArgs e)
         {
-            using var handle = SplashScreenManager.ShowOverlayForm(this);
-            handle.QueueFocus(IntPtr.Zero);
-            try
-            {               
-                dt = tables[cboSheet.SelectedItem.ToString()];
-                if (dt != null)
-                {
-                    bool isValid = JurnalServices.ValidateColumnNames(dt, KolomWajib);
-                    if (isValid)
-                    {
-                        var list = ConvertDataTableToList(dt);
-
-                        var cekbaris = list.Where(x => x.RowNo < 0);
-                        var duplicateEntries = list.GroupBy(j => new { j.NoJurnal, j.RowNo })
-                                    .Where(g => g.Count() > 1)
-                                    .SelectMany(g => g);
-                        var transaksiMinus = list.Where(x => x.Debet < 0 || x.Kredit<0);
-
-
-                        if (transaksiMinus.Any())
-                        {
-                            gridControl1.DataSource = transaksiMinus;
-                            gridView1.Columns[0].Visible = false;
-                            SBImport.Enabled = false;
-                            XtraMessageBox.Show("Nilai Transaksi tidak boleh minust", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
-                        if (cekbaris.Any())
-                        {
-                            gridControl1.DataSource = cekbaris;
-                            gridView1.Columns[0].Visible = false;
-                            SBImport.Enabled = false;
-                            XtraMessageBox.Show("Tentukan Nomor Baris dengan benar pada daftar nomor jurnal berikut", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
-                        if (duplicateEntries.Any())
-                        {
-                            gridControl1.DataSource = duplicateEntries;
-                            gridView1.Columns[0].Visible = false;
-                            SBImport.Enabled = false;
-                            XtraMessageBox.Show("Double Nomor urut pada nomor jurnal", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                        else
-                        {
-                            gridControl1.DataSource = list;
-                            SBImport.Enabled = true;
-                        }
-                        gridView1.Columns[0].Visible = false;
-                        gridView1.Columns[2].OptionsColumn.FixedWidth = true;
-                        gridView1.Columns[2].Width = 100;
-                        gridView1.Columns[2].DisplayFormat.FormatType = DevExpress.Utils.FormatType.DateTime;
-                        gridView1.Columns[2].DisplayFormat.FormatString = "dd-MMM-yyyy";
-                        gridView1.Columns[4].OptionsColumn.FixedWidth = true;
-                        gridView1.Columns[4].Width = 120;
-                        //gridView1.Columns[2].Width = 50;
-                        gridView1.Columns[6].DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-                        gridView1.Columns[6].DisplayFormat.FormatString = "n2";
-                        gridView1.Columns[7].DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-                        gridView1.Columns[7].DisplayFormat.FormatString = "n2";
-
-                        gridView1.BestFitColumns();
-
-                        lblrecord.Text = dt.Rows.Count.ToString("##,###") + " Record";
-
-
-                    }
-                }
-            }
-            catch (SystemException ex)
+            if (viewModel == null || cboSheet.SelectedItem == null)
             {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-        private void SBImport_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                pbulan = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
-                ptahuntujuan = Convert.ToInt32(setahun.Value);
-                bulan = cmbbulan.Text + " - " + setahun.Value.ToString();
-                
-                if (XtraMessageBox.Show("Lanjutkan Proses Import Jurnal ? " +
-                    "\n\nPeriode : " + bulan + " " +
-                    "\nLokasi Data :" +CompanyInfo.IDDATA
-                    , "Confirm Proses", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                    return;
-
-                using var handle = SplashScreenManager.ShowOverlayForm(this);
-                handle.QueueFocus(IntPtr.Zero);
-
-                //jika periode telah dikunci,  batalkan proses import jurnal
-                periodetujuan = pbulan.ToString("0#") + "/" + ptahuntujuan.ToString();
-                Acct.KunciPeriode = JurnalServices.GetLockStatus(CompanyInfo.IDDATA, periodetujuan);
-               
-                if (Acct.KunciPeriode == "Y")
-                {
-                    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\periode_dikunci.wav";
-                    this.Player.Play();
-                    sbbrowse.Enabled = false;
-                    SBImport.Enabled = false;
-                    XtraMessageBox.Show("Tidak dapat melakukan proses import Jurnal pada periode ini...!!!\nPeriode Akuntansi : " + bulan + " Telah Dikunci.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    //Cursor.Current = Cursors.Default;
-                    //SplashScreenManager.CloseForm();
-                    return;
-                }
-                else
-                {
-                    sbbrowse.Enabled = true;
-                }
-                //jika periode belum ada, buat periode
-                string periodedipilih = pbulan.ToString("0#")+"/"+ptahuntujuan.ToString();
-                int pexist = JurnalServices.CekPeriodeExist(CompanyInfo.IDDATA, periodedipilih);
-                if (pexist==0)
-                {                   
-                    AccountServices.CreateNextPeriode(CompanyInfo.IDDATA, pbulan-1, ptahuntujuan);
-                }
-
-                Stopwatch watch = new Stopwatch();
-                watch.Start();
-
-                foreach (DataRow row in dt.Rows)
-                {
-                    object periodValue = row["Periode"];
-
-                    if (periodValue == DBNull.Value)
-                    {
-                        // The period is null
-                        // Perform your desired actions here
-                        XtraMessageBox.Show("Import Jurnal di Batalkan \nKolom Periode WAJIB diisi ", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-                }
-
-                string PeriodeAsal = (string)dt.AsEnumerable().Max(x => x["Periode"].ToString());
-                if(periodetujuan!= PeriodeAsal)
-                {
-                    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\periode_beda.wav";
-                    this.Player.Play();
-                    XtraMessageBox.Show("Import Jurnal di Batalkan \nPilihan Periode tidak sama dengan sumber data ", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    //Cursor.Current = Cursors.Default;
-                    //SplashScreenManager.CloseForm();
-                    return;
-                }
-                //MessageBox.Show(Periode);
-                //Kosongkan Data Table Oracle
-                Hapus_Data_Table_Tmp();
-                //Copy Data dari DataTable ke Oracle
-                JurnalServices.SaveUsingOracleBulkCopy("ACCT_JURNAL_TMP", dt);
-                //Update IDDATA dan UserID
-                Update_IDData_Userid();
-
-            //CEK KODE NULL
-            var KODENULL = JurnalServices.CekJurnal_KODENULL();
-            if (KODENULL.Rows.Count > 0)
-            {
-                List<string> list = KODENULL.AsEnumerable()
-                       .Select(r => r.Field<string>("NOJURNAL"))
-                       .ToList();
-                var daftarKODENULL = string.Join(Environment.NewLine, list);
-                XtraMessageBox.Show("Import Jurnal di Batalkan \n" +
-                    "\nKode Jurnal belum diisi sebanyak " + KODENULL.Rows.Count.ToString("##,###") + " Nomor." +
-                    "\n" + daftarKODENULL, "Kode Jurnal Kosong", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            ////cek duplikasi nomor jurnal, nomor jurnal sama tanggal beda, jika ada proses import batal
+            try
+            {
+                viewModel.PreviewSheet(cboSheet.SelectedItem.ToString() ?? string.Empty);
+                gridControl1.DataSource = viewModel.Rows;
+                SBImport.Enabled = viewModel.CanImport;
+                lblrecord.Text = viewModel.StatusText;
+                ConfigureGrid();
 
-            //var duplikasi = JurnalServices.CekDuplikasiJurnal();
-            //if (duplikasi.Rows.Count > 0)
-            //{
-            //    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_duplikasi.wav";
-            //    this.Player.Play();
-            //    List<string> list = duplikasi.AsEnumerable()
-            //           .Select(r => r.Field<string>("NOJURNAL"))
-            //           .ToList();
-            //    var daftarnojurnal = string.Join(Environment.NewLine, list);
-            //    XtraMessageBox.Show("Import Jurnal di Batalkan \n" +
-            //        "\nDuplikasi NoJurnal sebanyak " + duplikasi.Rows.Count.ToString("##,###") + " Nomor." +
-            //        "\nBerikut ini NoJurnalnya : \n\n" + daftarnojurnal, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            //    //Cursor.Current = Cursors.Default;
-            //    //SplashScreenManager.CloseForm();
-            //    return;
-            //}
-
-
-            //cek aku master sudah ada ?
-            ptahunsumber = Convert.ToInt32(PeriodeAsal.Substring(3, 4));
-                var akun = JurnalServices.CekAkunMaster(ptahunsumber);
-                if (akun.Rows.Count > 0)
+                if (viewModel.LastIssues.Count > 0)
                 {
-                    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_daftarperk.wav";
-                    this.Player.Play();
-                    List<string> list = akun.AsEnumerable()
-                           .Select(r => r.Field<string>("ASAL"))
-                           .ToList();
-                    var daftarakun = string.Join(Environment.NewLine, list);
-                    XtraMessageBox.Show("Import Jurnal di Batalkan \n" +
-                        "\nJumlah Kode tidak terdaftar sebanyak " + akun.Rows.Count.ToString("##,###") + " Akun." +
-                        "\nKode Akun dibawah ini belum ada di Daftar Perkiraan \n" + daftarakun, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error) ;
-                    //Cursor.Current = Cursors.Default;
-                    //SplashScreenManager.CloseForm();
-                    return;
+                    XtraMessageBox.Show(BuildIssueMessage(viewModel.LastIssues), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-               
-                //Copy data dari table tmp ke table Acct_Jurnal_Dtl
-                var sukses = JurnalServices.ImportJurnalGlobal(CompanyInfo.IDDATA, pbulan,ptahuntujuan, PeriodeAsal);
-                if (sukses == 0)
-                {
-                    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_bedaperiode.wav";
-                    this.Player.Play();
-                    XtraMessageBox.Show("Import Jurnal di Batalkan \nCek Periode Pada Lembar Excel Double ", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);                   
-                    return;
-                }
-                if (sukses == 1)
-                {
-                    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_imbang.wav";
-                    this.Player.Play();
-                    Jurnal_NotBalanced f = new();
-                    f.ShowDialog();
-                    return;
-                }
-
-                //analisa kesalahan COA
-                var Errcoa_check = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.IDDATA, ptahuntujuan);
-                if (Errcoa_check.Rows.Count > 0)
-                {
-                    COAError error_coa = new()
-                    {
-                        ibulan = 12,
-                        itahun = ptahuntujuan
-                    };
-                    error_coa.ShowDialog();
-                    return;
-                }
-                AccountServices.RekalkulasiSaldo(CompanyInfo.IDDATA, pbulan, ptahuntujuan, LoginInfo.userID);
-                watch.Stop();
-
-                TimeSpan timeSpan = watch.Elapsed;
-                string waktuproses = string.Format("Waktu Proses : {0}h {1}m {2}s {3}ms", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
+            }
+            catch (SystemException ex)
+            {
                 SBImport.Enabled = false;
-                //Cursor.Current = Cursors.Default;
-                //SplashScreenManager.CloseForm();
-                this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_selesai.wav";
-                this.Player.Play();
-                XtraMessageBox.Show("Import Jurnal Selesai \n " + waktuproses, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void SBImport_Click(object sender, EventArgs e)
+        {
+            if (viewModel == null)
+            {
+                return;
+            }
+
+            try
+            {
+                int month = cmbbulan.SelectedIndex + 1;
+                int year = Convert.ToInt32(setahun.Value);
+                string periodeDisplay = cmbbulan.Text + " - " + setahun.Value;
+
+                if (XtraMessageBox.Show("Lanjutkan Proses Import Jurnal Periode ? " +
+                    "\n\nPeriode : " + periodeDisplay + " " +
+                    "\nLokasi Data :" + CompanyInfo.IDDATA +
+                    "\n\nSemua jurnal existing pada periode ini akan dihapus terlebih dahulu.",
+                    "Confirm Proses", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                {
+                    return;
+                }
+
+                viewModel.Month = month;
+                viewModel.Year = year;
+                viewModel.CoaYear = year;
+                viewModel.Source = JurnalImportSource.Excel;
+
+                SetImportControlsEnabled(false);
+                ShowImportProgress(new JurnalImportProgress(0, "Menyiapkan import jurnal...", 0, viewModel.Rows.Count));
+                Progress<JurnalImportProgress> progress = new(ShowImportProgress);
+                JurnalImportResult result = await Task.Run(() => viewModel.Import(progress));
+
+                if (!result.IsSuccess)
+                {
+                    PlayFailureSound(result);
+                    XtraMessageBox.Show(BuildResultMessage(result), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                SBImport.Enabled = false;
+                if (result.HasRecalculationWarning)
+                {
+                    XtraMessageBox.Show(BuildRecalculationWarningMessage(result), "Import Jurnal Selesai Dengan Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ResetImportProgress();
+                    return;
+                }
+
+                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_selesai.wav";
+                Player.Play();
+                XtraMessageBox.Show("Import Jurnal Selesai \n " + FormatElapsed(result.Elapsed), "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ResetImportProgress();
             }
             catch (Exception ex)
             {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                XtraMessageBox.Show(
+                    BuildUnexpectedImportErrorMessage(ex, cmbbulan.Text, setahun.Value, cboSheet.Text, lblrecord.Text),
+                    "Import Jurnal Periode Gagal",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
-
-        }
-
-        private void Update_IDData_Userid()
-        {
-            try
+            finally
             {
-                string query = "update ACCT_JURNAL_TMP set IDDATA=:piddata,GLYEAR=:PTAHUN,GLMONTH=:PBULAN,userid=:puserid";
-                conn.Open();
-                OracleCommand cmd = new OracleCommand(query, conn);
-                cmd.Parameters.Add(":piddata", OracleDbType.Varchar2, 20).Value =CompanyInfo.IDDATA;
-                cmd.Parameters.Add(":PTAHUN", OracleDbType.Int16).Value = Convert.ToInt32(setahun.Value);
-                cmd.Parameters.Add(":PBULAN", OracleDbType.Int16).Value = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
-                cmd.Parameters.Add(":puserid", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;
-                cmd.ExecuteNonQuery();
-                conn.Close();
-            }
-            catch (SystemException ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SetImportControlsEnabled(true);
+                SBImport.Enabled = viewModel.CanImport;
             }
         }
 
+        private void ShowImportProgress(JurnalImportProgress progress)
+        {
+            progressImport.Visible = true;
+            lblImportProgress.Visible = true;
 
-        private void Hapus_Data_Table_Tmp()
-        {
-            try
+            if (progress.UseRowCount && progress.TotalRows > 0)
             {
-                string query = "TRUNCATE TABLE ACCT_JURNAL_TMP";
-                conn.Open();
-                OracleCommand cmd = new OracleCommand(query, conn);
-                cmd.ExecuteNonQuery();
-                conn.Close();
+                progressImport.Properties.Maximum = progress.TotalRows;
+                progressImport.Position = Math.Clamp(progress.ProcessedRows, 0, progress.TotalRows);
+                lblImportProgress.Text = $"{progress.Stage} {progress.ProcessedRows:N0} / {progress.TotalRows:N0}";
+                return;
             }
-            catch (SystemException ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+
+            progressImport.Properties.Maximum = 100;
+            progressImport.Position = Math.Clamp(progress.Percent, 0, 100);
+            lblImportProgress.Text = progress.Stage;
         }
-        private static List<ImportJurnalList> ConvertDataTableToList(DataTable table)
+
+        private void ResetImportProgress()
         {
-            // Create a new list to hold the objects
-            List<ImportJurnalList> dataRowObjects = new();
-            // Loop through each row in the DataTable
-            foreach (DataRow row in table.Rows)
+            progressImport.Properties.Maximum = 100;
+            progressImport.Position = 0;
+            progressImport.Visible = false;
+            lblImportProgress.Visible = false;
+            lblImportProgress.Text = string.Empty;
+        }
+
+        private void SetImportControlsEnabled(bool enabled)
+        {
+            sbbrowse.Enabled = enabled;
+            cboSheet.Enabled = enabled;
+            cmbbulan.Enabled = enabled;
+            setahun.Enabled = enabled;
+            SBImport.Enabled = enabled && viewModel?.CanImport == true;
+        }
+
+        private void ConfigureGrid()
+        {
+            if (gridView1.Columns.Count == 0)
             {
-                // Create a new object to hold the data from the row
-                ImportJurnalList dataRowObject = new()
+                return;
+            }
+
+            if (gridView1.Columns["Tanggal"] != null)
+            {
+                gridView1.Columns["Tanggal"].DisplayFormat.FormatType = DevExpress.Utils.FormatType.DateTime;
+                gridView1.Columns["Tanggal"].DisplayFormat.FormatString = "dd-MMM-yyyy";
+            }
+
+            foreach (string fieldName in new[] { "Debet", "Kredit" })
+            {
+                if (gridView1.Columns[fieldName] != null)
                 {
-                    // Set the values of the object from the data in the row
-                    NoJurnal = row["NoJurnal"].ToString(),
-                    Tanggal = Convert.ToDateTime(row["Tanggal"].ToString()),
-                    RowNo = Convert.ToInt32(row["RowNo"].ToString()),
-                    Kode = row["Kode"].ToString(),
-                    Rekening = row["Rekening"].ToString(),
-                    Debet = Convert.ToDecimal(row["Debet"].ToString()),
-                    Kredit = Convert.ToDecimal(row["Kredit"].ToString()),
-                    Keterangan = row["Keterangan"].ToString(),
-                    Posted = row["Posted"].ToString(),
-                    Periode = row["Periode"].ToString()
-                };
-
-                // Add the object to the list
-                dataRowObjects.Add(dataRowObject);
+                    gridView1.Columns[fieldName].DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+                    gridView1.Columns[fieldName].DisplayFormat.FormatString = "n2";
+                }
             }
 
-            // Return the list of objects
-            return dataRowObjects;
+            gridView1.BestFitColumns();
+        }
+
+        private void PlayFailureSound(JurnalImportResult result)
+        {
+            string sound = result.StatusCode switch
+            {
+                0 => "jurnal_bedaperiode.wav",
+                1 => "jurnal_imbang.wav",
+                _ when result.Issues.Any(issue => issue.Code is "PERIOD_LOCKED") => "periode_dikunci.wav",
+                _ when result.Issues.Any(issue => issue.Code is "PERIOD_MISMATCH") => "periode_beda.wav",
+                _ when result.Issues.Any(issue => issue.Code is "NOJURNAL_EXISTS" or "DUPLICATE_JOURNAL_DIFFERENT_DATE") => "jurnal_duplikasi.wav",
+                _ when result.Issues.Any(issue => issue.Code is "ACCOUNT_NOT_FOUND") => "jurnal_daftarperk.wav",
+                _ => string.Empty
+            };
+
+            if (!string.IsNullOrWhiteSpace(sound))
+            {
+                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\" + sound;
+                Player.Play();
+            }
+        }
+
+        private static string BuildResultMessage(JurnalImportResult result)
+        {
+            if (result.BalanceIssues.Count > 0)
+            {
+                return result.Message + Environment.NewLine + BuildBalanceIssueMessage(result.BalanceIssues);
+            }
+
+            if (result.Issues.Count == 0)
+            {
+                return result.Message;
+            }
+
+            return BuildIssueMessage(result.Issues);
+        }
+
+        private static string BuildIssueMessage(System.Collections.Generic.IReadOnlyList<JurnalImportValidationIssue> issues)
+        {
+            JurnalImportValidationIssue first = issues[0];
+            string values = string.Join(Environment.NewLine, issues.Select(issue => issue.Value).Where(value => !string.IsNullOrWhiteSpace(value)).Distinct());
+            return string.IsNullOrWhiteSpace(values) ? first.Message : first.Message + Environment.NewLine + values;
+        }
+
+        private static string FormatElapsed(TimeSpan elapsed)
+        {
+            return $"Waktu Proses : {elapsed.Hours}h {elapsed.Minutes}m {elapsed.Seconds}s {elapsed.Milliseconds}ms";
+        }
+
+        private static string BuildBalanceIssueMessage(System.Collections.Generic.IReadOnlyList<JurnalImportBalanceIssue> issues)
+        {
+            return string.Join(
+                Environment.NewLine,
+                issues.Select(issue => $"{issue.NoJurnal} | {issue.Tanggal:dd-MMM-yyyy} | Debet {issue.Debet:n2} | Kredit {issue.Kredit:n2} | Selisih {issue.Selisih:n2}"));
+        }
+
+        private static string BuildRecalculationWarningMessage(JurnalImportResult result)
+        {
+            return "Import Jurnal Selesai" +
+                Environment.NewLine + FormatElapsed(result.Elapsed) +
+                Environment.NewLine + Environment.NewLine +
+                result.RecalculationWarning;
+        }
+
+        private static string BuildUnexpectedImportErrorMessage(Exception ex, string monthName, object year, string sheetName, string recordText)
+        {
+            string technicalMessage = GetFullExceptionMessage(ex);
+            if (technicalMessage.Contains("ORA-01008", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Import jurnal periode gagal saat menyimpan data ke database." +
+                    Environment.NewLine + Environment.NewLine +
+                    "Data belum berhasil diimport dan perubahan sudah dibatalkan otomatis." +
+                    Environment.NewLine +
+                    "Ini bukan kesalahan format Excel. Masalah ada pada parameter simpan database aplikasi." +
+                    Environment.NewLine +
+                    "Tidak perlu import ulang berkali-kali sebelum masalah ini diperbaiki." +
+                    Environment.NewLine + Environment.NewLine +
+                    "Detail proses:" +
+                    Environment.NewLine + $"Mode: Replace periode (hapus jurnal periode lalu import ulang)" +
+                    Environment.NewLine + $"Periode: {monthName} {year}" +
+                    Environment.NewLine + $"Sheet: {sheetName}" +
+                    Environment.NewLine + $"Jumlah data: {recordText}" +
+                    Environment.NewLine + Environment.NewLine +
+                    "Informasi teknis untuk IT:" +
+                    Environment.NewLine +
+                    "Oracle ORA-01008 berarti ada parameter SQL yang belum terisi saat aplikasi menyimpan jurnal. " +
+                    "Mohon screenshot pesan ini dan hubungi IT/support aplikasi." +
+                    Environment.NewLine + technicalMessage;
+            }
+
+            return "Import jurnal periode gagal." +
+                Environment.NewLine + Environment.NewLine +
+                "Data belum berhasil diimport." +
+                Environment.NewLine + Environment.NewLine +
+                "Detail proses:" +
+                Environment.NewLine + $"Mode: Replace periode (hapus jurnal periode lalu import ulang)" +
+                Environment.NewLine + $"Periode: {monthName} {year}" +
+                Environment.NewLine + $"Sheet: {sheetName}" +
+                Environment.NewLine + $"Jumlah data: {recordText}" +
+                Environment.NewLine + Environment.NewLine +
+                "Informasi teknis:" +
+                Environment.NewLine + technicalMessage;
+        }
+
+        private static string GetFullExceptionMessage(Exception ex)
+        {
+            return ex.InnerException == null
+                ? ex.Message
+                : ex.Message + Environment.NewLine + ex.InnerException.Message;
         }
     }
 }

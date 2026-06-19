@@ -1,4 +1,5 @@
 using Accounting.BusinessLayer;
+using Accounting.JurnalImport.Domain;
 using Accounting.Model;
 using Dapper;
 using DevExpress.Data.ODataLinq;
@@ -17,7 +18,6 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace Accounting.DataLayer
@@ -25,11 +25,6 @@ namespace Accounting.DataLayer
     public class JurnalRepository : IJurnalRepository
     {
         private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
-        private static readonly HashSet<string> OracleTextReservedKeywords = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "AND", "OR", "NOT", "NEAR", "WITHIN", "MINUS", "ACCUM", "ABOUT", "BT", "NT", "RT", "SQE"
-        };
-        private static readonly Regex OracleTextTokenRegex = new("[A-Za-z0-9]+", RegexOptions.Compiled);
         private const string KeepBarisTempTableName = "ACCT_JURNAL_KEEP_BARIS_TMP";
         private const string DetailStageTempTableName = "ACCT_JURNAL_DTL_STAGE_TMP";
         private const string JurnalAsyncRecalcClientIdentifier = "JURNAL_ASYNC_RECALC";
@@ -251,6 +246,10 @@ namespace Accounting.DataLayer
                 {
                     bulkCopy.DestinationTableName = destTableName;
                     bulkCopy.BulkCopyTimeout = 600;
+                    foreach (DataColumn column in dt.Columns)
+                    {
+                        bulkCopy.ColumnMappings.Add(column.ColumnName, column.ColumnName);
+                    }
                     bulkCopy.WriteToServer(dt);
                 }
                 conn.Close();
@@ -286,9 +285,23 @@ namespace Accounting.DataLayer
 
         public DataTable CekAkunMasterScoped(int ptahun, string piddata, string periode, string userid)
         {
-            using OracleCommand command = new("ACCT_JURNAL_IMPORT_V2.CekAkunMaster", conn)
+            const string sql = @"
+            SELECT DISTINCT a.kode AS asal, t.kodeacc AS tujuan
+            FROM acct_jurnal_tmp a
+            LEFT JOIN acct_coa t
+                ON a.kode = t.kodeacc
+               AND a.iddata = t.iddata
+               AND t.tahun = :p_tahun
+               AND t.isheader = 'D'
+            WHERE a.iddata = :p_iddata
+              AND a.periode = :p_periode
+              AND a.userid = :p_userid
+              AND t.kodeacc IS NULL
+            ORDER BY a.kode ASC";
+
+            using OracleCommand command = new(sql, conn)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.Text
             };
             if (conn.State != ConnectionState.Open)
             {
@@ -296,7 +309,6 @@ namespace Accounting.DataLayer
             }
 
             command.BindByName = true;
-            command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
             command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = ptahun;
             command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
             command.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
@@ -354,9 +366,23 @@ namespace Accounting.DataLayer
 
         public DataTable CekNoJurnalExistScoped(string piddata, string periode, string userid)
         {
-            using OracleCommand command = new("ACCT_JURNAL_IMPORT_V2.CekNoJurnalExist", conn)
+            const string sql = @"
+            SELECT DISTINCT t.nojurnal, t.tanggal, j.nojurnal AS sudahada
+            FROM acct_jurnal_tmp t
+            LEFT JOIN acct_jurnal_hdr j
+                ON t.iddata = j.iddata
+               AND t.periode = j.periode
+               AND t.nojurnal = j.nojurnal
+               AND t.tanggal = j.tanggal
+            WHERE t.iddata = :p_iddata
+              AND t.periode = :p_periode
+              AND t.userid = :p_userid
+              AND j.nojurnal IS NOT NULL
+            ORDER BY t.nojurnal ASC";
+
+            using OracleCommand command = new(sql, conn)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.Text
             };
             if (conn.State != ConnectionState.Open)
             {
@@ -364,7 +390,6 @@ namespace Accounting.DataLayer
             }
 
             command.BindByName = true;
-            command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
             command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
             command.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
             command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
@@ -702,32 +727,19 @@ namespace Accounting.DataLayer
                 if (contol.State == ConnectionState.Closed)
                     contol.Open();
 
-                bool preferOracleText = true;
-                while (true)
-                {
-                    var dynamicParams = new DynamicParameters();
-                    string sql = BuildSearchJurnalSql(
-                        p_iddata,
-                        p_daritahunbulan,
-                        p_sampaitahunbulan,
-                        p_nojurnal,
-                        p_tanggal,
-                        p_kode,
-                        p_keterangan,
-                        p_jumlah,
-                        preferOracleText,
-                        dynamicParams);
+                var dynamicParams = new DynamicParameters();
+                string sql = BuildSearchJurnalSql(
+                    p_iddata,
+                    p_daritahunbulan,
+                    p_sampaitahunbulan,
+                    p_nojurnal,
+                    p_tanggal,
+                    p_kode,
+                    p_keterangan,
+                    p_jumlah,
+                    dynamicParams);
 
-                    try
-                    {
-                        SearchJurnal = contol.Query<JurnalDetailDTO>(sql, dynamicParams);
-                        break;
-                    }
-                    catch (OracleException ex) when (preferOracleText && IsOracleTextUnavailable(ex))
-                    {
-                        preferOracleText = false;
-                    }
-                }
+                SearchJurnal = contol.Query<JurnalDetailDTO>(sql, dynamicParams);
             }
             return SearchJurnal;
         }
@@ -740,31 +752,18 @@ namespace Accounting.DataLayer
                 if (contol.State == ConnectionState.Closed)
                     contol.Open();
 
-                bool preferOracleText = true;
-                while (true)
-                {
-                    var dynamicParams = new DynamicParameters();
-                    string sql = BuildSearchJurnalBulanSql(
-                        p_iddata,
-                        p_periode,
-                        p_nojurnal,
-                        p_tanggal,
-                        p_kode,
-                        p_keterangan,
-                        p_jumlah,
-                        preferOracleText,
-                        dynamicParams);
+                var dynamicParams = new DynamicParameters();
+                string sql = BuildSearchJurnalBulanSql(
+                    p_iddata,
+                    p_periode,
+                    p_nojurnal,
+                    p_tanggal,
+                    p_kode,
+                    p_keterangan,
+                    p_jumlah,
+                    dynamicParams);
 
-                    try
-                    {
-                        SearchJurnal_Bulan = contol.Query<JurnalDetailDTO>(sql, dynamicParams);
-                        break;
-                    }
-                    catch (OracleException ex) when (preferOracleText && IsOracleTextUnavailable(ex))
-                    {
-                        preferOracleText = false;
-                    }
-                }
+                SearchJurnal_Bulan = contol.Query<JurnalDetailDTO>(sql, dynamicParams);
             }
             return SearchJurnal_Bulan;
         }
@@ -778,7 +777,6 @@ namespace Accounting.DataLayer
             string p_kode,
             string p_keterangan,
             decimal p_jumlah,
-            bool preferOracleText,
             DynamicParameters dynamicParams)
         {
             StringBuilder sql = new("SELECT REFFID,HIDREFF,NOJURNAL,TANGGAL,BARIS,KODE,REKENING,DEBET,KREDIT,KETERANGAN,Posted,Periode FROM ACCT_JURNAL_DTL WHERE 1=1");
@@ -806,7 +804,9 @@ namespace Accounting.DataLayer
                 dynamicParams.Add("p_sampai_month", sampaiMonth, DbType.Int32);
             }
 
-            AppendKeywordFilter("NOJURNAL", "p_nojurnal", p_nojurnal, preferOracleText, sql, dynamicParams);
+            // NOJURNAL kolom kode terstruktur (mis. "001/KK"); substring LIKE menjaga "/"
+            // dan kode tipe pendek seperti "KK" agar tidak hilang.
+            AppendKeywordFilter("NOJURNAL", "p_nojurnal", p_nojurnal, sql, dynamicParams);
 
             if (!string.IsNullOrEmpty(p_tanggal))
             {
@@ -820,7 +820,8 @@ namespace Accounting.DataLayer
                 dynamicParams.Add("p_kode", p_kode, DbType.String);
             }
 
-            AppendKeywordFilter("KETERANGAN", "p_keterangan", p_keterangan, preferOracleText, sql, dynamicParams);
+            // Substring LIKE agar query multi-kata (mis. "Biaya BK") tidak membuang kata pendek.
+            AppendKeywordFilter("KETERANGAN", "p_keterangan", p_keterangan, sql, dynamicParams);
 
             if (p_jumlah > 0)
             {
@@ -840,7 +841,6 @@ namespace Accounting.DataLayer
             string p_kode,
             string p_keterangan,
             decimal p_jumlah,
-            bool preferOracleText,
             DynamicParameters dynamicParams)
         {
             StringBuilder sql = new("SELECT REFFID,HIDREFF,NOJURNAL,TANGGAL,BARIS,KODE,REKENING,DEBET,KREDIT,KETERANGAN,Posted,Periode FROM ACCT_JURNAL_DTL WHERE 1=1");
@@ -857,7 +857,9 @@ namespace Accounting.DataLayer
                 dynamicParams.Add("p_periode", p_periode, DbType.String);
             }
 
-            AppendKeywordFilter("NOJURNAL", "p_nojurnal", p_nojurnal, preferOracleText, sql, dynamicParams);
+            // NOJURNAL kolom kode terstruktur (mis. "001/KK"); substring LIKE menjaga "/"
+            // dan kode tipe pendek seperti "KK" agar tidak hilang.
+            AppendKeywordFilter("NOJURNAL", "p_nojurnal", p_nojurnal, sql, dynamicParams);
 
             if (!string.IsNullOrEmpty(p_tanggal))
             {
@@ -871,7 +873,8 @@ namespace Accounting.DataLayer
                 dynamicParams.Add("p_kode", p_kode, DbType.String);
             }
 
-            AppendKeywordFilter("KETERANGAN", "p_keterangan", p_keterangan, preferOracleText, sql, dynamicParams);
+            // Substring LIKE agar query multi-kata (mis. "Biaya BK") tidak membuang kata pendek.
+            AppendKeywordFilter("KETERANGAN", "p_keterangan", p_keterangan, sql, dynamicParams);
 
             if (p_jumlah > 0)
             {
@@ -887,7 +890,6 @@ namespace Accounting.DataLayer
             string columnName,
             string parameterName,
             string keyword,
-            bool preferOracleText,
             StringBuilder sql,
             DynamicParameters dynamicParams)
         {
@@ -897,57 +899,12 @@ namespace Accounting.DataLayer
             }
 
             string normalizedKeyword = keyword.Trim().ToLowerInvariant();
-            if (preferOracleText && TryBuildOracleTextQuery(normalizedKeyword, out string textQuery))
-            {
-                sql.Append(" AND CONTAINS(")
-                   .Append(columnName)
-                   .Append(", :")
-                   .Append(parameterName)
-                   .Append("_ctx) > 0");
-                dynamicParams.Add(parameterName + "_ctx", textQuery, DbType.String);
-                return;
-            }
-
             sql.Append(" AND LOWER(")
                .Append(columnName)
                .Append(") LIKE '%' || :")
                .Append(parameterName)
                .Append(" || '%'");
             dynamicParams.Add(parameterName, normalizedKeyword, DbType.String);
-        }
-
-        private static bool TryBuildOracleTextQuery(string keyword, out string textQuery)
-        {
-            textQuery = string.Empty;
-            if (string.IsNullOrWhiteSpace(keyword) || keyword.Length < 3)
-            {
-                return false;
-            }
-
-            string[] tokens = OracleTextTokenRegex.Matches(keyword)
-                .Cast<Match>()
-                .Select(match => match.Value)
-                .Where(token => token.Length >= 3 && !OracleTextReservedKeywords.Contains(token))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Take(8)
-                .ToArray();
-
-            if (tokens.Length == 0)
-            {
-                return false;
-            }
-
-            textQuery = string.Join(" AND ", tokens.Select(token => $"%{token}%"));
-            return true;
-        }
-
-        private static bool IsOracleTextUnavailable(OracleException ex)
-        {
-            string message = ex.Message ?? string.Empty;
-            return message.Contains("DRG-", StringComparison.OrdinalIgnoreCase)
-                || message.Contains("ORA-29855", StringComparison.OrdinalIgnoreCase)
-                || message.Contains("ORA-29902", StringComparison.OrdinalIgnoreCase)
-                || message.Contains("ORA-20000", StringComparison.OrdinalIgnoreCase);
         }
 
         public bool InsertJurnalDetail(BindingList<JurnalDetailAdd> inputJurnalDetail)
@@ -1004,9 +961,18 @@ namespace Accounting.DataLayer
 
         public DataTable CekJurnal_KODENULL_Scoped(string piddata, string periode, string userid)
         {
-            using OracleCommand command = new("ACCT_JURNAL_IMPORT_V2.CekJurnalKodeNull", conn)
+            const string sql = @"
+            SELECT nojurnal, tanggal, kode
+            FROM acct_jurnal_tmp
+            WHERE iddata = :p_iddata
+              AND periode = :p_periode
+              AND userid = :p_userid
+              AND kode IS NULL
+            ORDER BY nojurnal, tanggal";
+
+            using OracleCommand command = new(sql, conn)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.Text
             };
             if (conn.State != ConnectionState.Open)
             {
@@ -1014,7 +980,6 @@ namespace Accounting.DataLayer
             }
 
             command.BindByName = true;
-            command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
             command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
             command.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
             command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
@@ -1061,7 +1026,7 @@ namespace Accounting.DataLayer
             bool jurnal = false;
             string result = string.Empty;
 
-            _command.Parameters.Add(":p_nomorbukti", OracleDbType.Double).Value = p_jurnalID;
+            _command.Parameters.Add(":p_jurnalID", OracleDbType.Double).Value = p_jurnalID;
             OracleDataReader dr = _command.ExecuteReader();
 
             while (dr.Read())
@@ -1074,6 +1039,108 @@ namespace Accounting.DataLayer
             }
             conn.Close();
             return jurnal;
+        }
+
+        public int ImportJurnalClientSide(JurnalImportScope scope, IReadOnlyList<JurnalImportRow> rows, IProgress<JurnalImportProgress>? progress = null)
+        {
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            connection.Open();
+            using OracleTransaction transaction = connection.BeginTransaction();
+            string currentStep = "memulai import jurnal";
+
+            try
+            {
+                if (scope.Mode == JurnalImportMode.ReplacePeriod)
+                {
+                    currentStep = $"menghapus detail jurnal periode {scope.Period}";
+                    ExecuteNonQuery(
+                        connection,
+                        transaction,
+                        "DELETE FROM ACCT_JURNAL_DTL WHERE IDDATA=:idData AND PERIODE=:period",
+                        command =>
+                        {
+                            command.Parameters.Add(":idData", OracleDbType.Varchar2, 20).Value = scope.IdData;
+                            command.Parameters.Add(":period", OracleDbType.Varchar2, 7).Value = scope.Period;
+                        });
+                    currentStep = $"menghapus header jurnal periode {scope.Period}";
+                    ExecuteNonQuery(
+                        connection,
+                        transaction,
+                        "DELETE FROM ACCT_JURNAL_HDR WHERE IDDATA=:idData AND PERIODE=:period",
+                        command =>
+                        {
+                            command.Parameters.Add(":idData", OracleDbType.Varchar2, 20).Value = scope.IdData;
+                            command.Parameters.Add(":period", OracleDbType.Varchar2, 7).Value = scope.Period;
+                        });
+                }
+
+                string pc = System.Net.Dns.GetHostName();
+                string ipAddress = ToolsServices.GetLocalIPAddress();
+                var groups = rows
+                    .GroupBy(row => new { row.NoJurnal, Tanggal = row.Tanggal.Date })
+                    .OrderBy(group => group.Key.NoJurnal)
+                    .ThenBy(group => group.Key.Tanggal)
+                    .ToList();
+                int processedGroups = 0;
+                progress?.Report(new JurnalImportProgress(
+                    40,
+                    "Menyimpan jurnal: mulai simpan nomor jurnal...",
+                    processedGroups,
+                    groups.Count,
+                    UseRowCount: true));
+
+                foreach (var group in groups)
+                {
+                    JurnalHeaderAdd header = CreateImportHeader(scope, group.Key.NoJurnal, group.Key.Tanggal, pc, ipAddress);
+                    List<JurnalDetailAdd> details = group
+                        .OrderBy(row => row.Baris)
+                        .Select(row => CreateImportDetail(scope, row))
+                        .ToList();
+
+                    header.CREATED_BY = header.USERID;
+
+                    currentStep = $"menyimpan header jurnal {header.NOJURNAL} tanggal {header.TANGGAL:dd-MMM-yyyy}";
+                    double jurnalId = InsertImportHeader(connection, transaction, header);
+                    PrepareDetailRows(header, jurnalId, details);
+                    currentStep = $"menyimpan detail jurnal {header.NOJURNAL} tanggal {header.TANGGAL:dd-MMM-yyyy}";
+                    InsertImportDetails(connection, transaction, details);
+                    processedGroups++;
+                    ReportImportClientSideProgress(progress, processedGroups, groups.Count, $"Menyimpan jurnal {header.NOJURNAL}...");
+                }
+
+                currentStep = "menyelesaikan transaksi import jurnal";
+                transaction.Commit();
+                return 99;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                throw new InvalidOperationException(
+                    $"Import jurnal gagal pada tahap {currentStep}. Semua perubahan import dibatalkan otomatis.",
+                    ex);
+            }
+        }
+
+        private static void ReportImportClientSideProgress(
+            IProgress<JurnalImportProgress>? progress,
+            int processedGroups,
+            int totalGroups,
+            string stage)
+        {
+            if (progress is null)
+            {
+                return;
+            }
+
+            int percent = totalGroups == 0
+                ? 85
+                : 40 + (int)Math.Round(processedGroups * 45d / totalGroups);
+            progress.Report(new JurnalImportProgress(
+                Math.Clamp(percent, 40, 85),
+                stage,
+                processedGroups,
+                totalGroups,
+                UseRowCount: true));
         }
 
         public JurnalPersistResult InsertJurnalMasterDetail(JurnalHeaderAdd jurnalHeader, List<JurnalDetailAdd> jurnalDetail)
@@ -1089,8 +1156,7 @@ namespace Accounting.DataLayer
                 RETURNING JURNALID INTO :jurnalid";
 
                 jurnalHeader.CREATED_BY = jurnalHeader.USERID;
-                var masterParameters = new DynamicParameters(jurnalHeader);
-                masterParameters.Add("jurnalid", dbType: DbType.Double, direction: ParameterDirection.Output);
+                DynamicParameters masterParameters = BuildHeaderInsertParameters(jurnalHeader);
 
                 connection.Execute(masterInsertQuery, masterParameters, transaction);
                 double newjurnalid = masterParameters.Get<double>("jurnalid");
@@ -1433,11 +1499,166 @@ namespace Accounting.DataLayer
             }
         }
 
+        private static JurnalHeaderAdd CreateImportHeader(JurnalImportScope scope, string noJurnal, DateTime tanggal, string pc, string ipAddress)
+        {
+            string hid = scope.IdData + scope.Period + noJurnal + tanggal.ToString("yyMMdd", CultureInfo.InvariantCulture);
+            return new JurnalHeaderAdd
+            {
+                HID = hid,
+                NOJURNAL = noJurnal,
+                TANGGAL = tanggal,
+                PERIODE = scope.Period,
+                IDDATA = scope.IdData,
+                USERID = scope.UserId,
+                SUMBER = "IMPORT",
+                ISRE = "T",
+                PC = pc,
+                IP_ADD = ipAddress
+            };
+        }
+
+        private static DynamicParameters BuildHeaderInsertParameters(JurnalHeaderAdd header)
+        {
+            DynamicParameters parameters = new();
+            parameters.Add("IDData", header.IDDATA);
+            parameters.Add("NoJurnal", header.NOJURNAL);
+            parameters.Add("Tanggal", header.TANGGAL);
+            parameters.Add("Periode", header.PERIODE);
+            parameters.Add("Sumber", header.SUMBER);
+            parameters.Add("UserID", header.USERID);
+            parameters.Add("HID", header.HID);
+            parameters.Add("PC", header.PC);
+            parameters.Add("IP_Add", header.IP_ADD);
+            parameters.Add("ISRE", header.ISRE);
+            parameters.Add("CREATED_BY", header.CREATED_BY);
+            parameters.Add("jurnalid", dbType: DbType.Double, direction: ParameterDirection.Output);
+            return parameters;
+        }
+
+        private static double InsertImportHeader(OracleConnection connection, OracleTransaction transaction, JurnalHeaderAdd header)
+        {
+            const string sql = @"INSERT INTO ACCT_JURNAL_HDR
+                (IDDATA, NOJURNAL, TANGGAL, PERIODE, SUMBER, USERID, HID, PC, IP_ADD, ISRE, CREATED_DATE, CREATED_BY)
+                VALUES(:IDData, :NoJurnal, :Tanggal, :Periode, :Sumber, :UserID, :HID, :PC, :IP_Add, :ISRE, SYSTIMESTAMP, :CREATED_BY)
+                RETURNING JURNALID INTO :jurnalid";
+
+            using OracleCommand command = new(sql, connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName = true,
+                Transaction = transaction
+            };
+
+            command.Parameters.Add("IDData", OracleDbType.Varchar2, 20).Value = header.IDDATA;
+            command.Parameters.Add("NoJurnal", OracleDbType.Varchar2, 30).Value = header.NOJURNAL;
+            command.Parameters.Add("Tanggal", OracleDbType.Date).Value = header.TANGGAL;
+            command.Parameters.Add("Periode", OracleDbType.Varchar2, 7).Value = header.PERIODE;
+            command.Parameters.Add("Sumber", OracleDbType.Varchar2, 30).Value = header.SUMBER;
+            command.Parameters.Add("UserID", OracleDbType.Varchar2, 20).Value = header.USERID;
+            command.Parameters.Add("HID", OracleDbType.Varchar2, 100).Value = header.HID;
+            command.Parameters.Add("PC", OracleDbType.Varchar2, 100).Value = header.PC;
+            command.Parameters.Add("IP_Add", OracleDbType.Varchar2, 50).Value = header.IP_ADD;
+            command.Parameters.Add("ISRE", OracleDbType.Varchar2, 1).Value = header.ISRE;
+            command.Parameters.Add("CREATED_BY", OracleDbType.Varchar2, 50).Value = header.CREATED_BY;
+            OracleParameter jurnalId = command.Parameters.Add("jurnalid", OracleDbType.Double);
+            jurnalId.Direction = ParameterDirection.Output;
+
+            command.ExecuteNonQuery();
+            return Convert.ToDouble(jurnalId.Value.ToString(), CultureInfo.InvariantCulture);
+        }
+
+        private static void InsertImportDetails(OracleConnection connection, OracleTransaction transaction, List<JurnalDetailAdd> details)
+        {
+            if (details.Count == 0)
+            {
+                return;
+            }
+
+            List<JurnalDetailAdd> ordered = details.OrderBy(detail => detail.BARIS).ToList();
+            const string sql = @"INSERT INTO ACCT_JURNAL_DTL
+                (NOJURNAL, TANGGAL, BARIS, KODE, REKENING, DEBET, KREDIT, KETERANGAN,
+                 POSTED, PERIODE, IDDATA, USERID, SUMBER, DID, GLYEAR, GLMONTH, HIDREFF, REFFID, CREATED_DATE)
+                VALUES
+                (:NOJURNAL, :TANGGAL, :BARIS, :KODE, :REKENING, :DEBET, :KREDIT, :KETERANGAN,
+                 :POSTED, :PERIODE, :IDDATA, :USERID, :SUMBER, :DID, :GLYEAR, :GLMONTH, :HIDREFF, :REFFID, SYSTIMESTAMP)";
+
+            for (int offset = 0; offset < ordered.Count; offset += DetailStageArrayBindBatchSize)
+            {
+                int batchCount = Math.Min(DetailStageArrayBindBatchSize, ordered.Count - offset);
+                JurnalDetailAdd[] batch = ordered.Skip(offset).Take(batchCount).ToArray();
+
+                using OracleCommand command = new(sql, connection)
+                {
+                    CommandType = CommandType.Text,
+                    BindByName = true,
+                    ArrayBindCount = batchCount,
+                    Transaction = transaction
+                };
+
+                command.Parameters.Add("NOJURNAL", OracleDbType.Varchar2, batch.Select(x => x.NoJurnal).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("TANGGAL", OracleDbType.Date, batch.Select(x => x.Tanggal).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("BARIS", OracleDbType.Int32, batch.Select(x => x.BARIS).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("KODE", OracleDbType.Varchar2, batch.Select(x => x.Kode).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("REKENING", OracleDbType.Varchar2, batch.Select(x => x.Rekening).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("DEBET", OracleDbType.Decimal, batch.Select(x => x.Debet ?? 0m).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("KREDIT", OracleDbType.Decimal, batch.Select(x => x.Kredit ?? 0m).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("KETERANGAN", OracleDbType.Varchar2, batch.Select(x => x.Keterangan).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("POSTED", OracleDbType.Varchar2, batch.Select(x => x.Posted).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("PERIODE", OracleDbType.Varchar2, batch.Select(x => x.Periode).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("IDDATA", OracleDbType.Varchar2, batch.Select(x => x.IDDATA).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("USERID", OracleDbType.Varchar2, batch.Select(x => x.USERID).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("SUMBER", OracleDbType.Varchar2, batch.Select(x => x.SUMBER).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("DID", OracleDbType.Varchar2, batch.Select(x => x.DID).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("GLYEAR", OracleDbType.Int32, batch.Select(x => x.GLYEAR).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("GLMONTH", OracleDbType.Int32, batch.Select(x => x.GLMONTH).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("HIDREFF", OracleDbType.Varchar2, batch.Select(x => x.HIDREFF).ToArray(), ParameterDirection.Input);
+                command.Parameters.Add("REFFID", OracleDbType.Decimal, batch.Select(x => Convert.ToDecimal(x.REFFID, CultureInfo.InvariantCulture)).ToArray(), ParameterDirection.Input);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        private static void ExecuteNonQuery(
+            OracleConnection connection,
+            OracleTransaction transaction,
+            string sql,
+            Action<OracleCommand> configureParameters)
+        {
+            using OracleCommand command = new(sql, connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName = true,
+                Transaction = transaction
+            };
+            configureParameters(command);
+            command.ExecuteNonQuery();
+        }
+
+        private static JurnalDetailAdd CreateImportDetail(JurnalImportScope scope, JurnalImportRow row)
+        {
+            return new JurnalDetailAdd
+            {
+                BARIS = row.Baris,
+                Kode = row.Kode,
+                Rekening = row.Rekening,
+                Debet = row.Debet,
+                Kredit = row.Kredit,
+                Keterangan = row.Keterangan,
+                Posted = row.Posted,
+                IDDATA = scope.IdData,
+                SUMBER = "IMPORT",
+                USERID = scope.UserId,
+                NoJurnal = row.NoJurnal,
+                Tanggal = row.Tanggal,
+                Periode = scope.Period,
+                GLYEAR = scope.Year,
+                GLMONTH = scope.Month
+            };
+        }
+
         private static void PrepareDetailRows(JurnalHeaderAdd jurnalHeader, double reffId, List<JurnalDetailAdd> jurnalDetail)
         {
             int glMonth = int.Parse(jurnalHeader.PERIODE[..2]);
             int glYear = int.Parse(jurnalHeader.PERIODE.Substring(3, 4));
-            string reffIdToken = reffId.ToString("0", CultureInfo.InvariantCulture);
 
             foreach (JurnalDetailAdd detailData in jurnalDetail)
             {
@@ -1449,11 +1670,17 @@ namespace Accounting.DataLayer
                 detailData.SUMBER = jurnalHeader.SUMBER;
                 detailData.GLMONTH = glMonth;
                 detailData.GLYEAR = glYear;
-                detailData.DID = reffIdToken + detailData.BARIS.ToString(CultureInfo.InvariantCulture);
+                detailData.DID = BuildJurnalDetailId(reffId, detailData.BARIS);
                 detailData.Posted = "True";
                 detailData.REFFID = reffId;
                 detailData.HIDREFF = jurnalHeader.HID;
             }
+        }
+
+        internal static string BuildJurnalDetailId(double reffId, int baris)
+        {
+            string reffIdToken = reffId.ToString("0", CultureInfo.InvariantCulture);
+            return $"{reffIdToken}:{baris:000000}";
         }
 
         private static JurnalRecalcHint BuildInsertRecalcHint(List<JurnalDetailAdd> jurnalDetail)

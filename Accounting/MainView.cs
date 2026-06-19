@@ -1019,7 +1019,7 @@ namespace Accounting
 
         private void bbcheckupdate_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            ProcessStartInfo psi = new ProcessStartInfo(@"Change Note.txt");
+            ProcessStartInfo psi = new ProcessStartInfo(@"CHANGELOG.md");
             psi.UseShellExecute = true;
             Process.Start(psi);
 

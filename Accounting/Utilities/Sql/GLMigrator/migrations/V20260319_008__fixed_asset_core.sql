@@ -399,27 +399,45 @@ BEGIN
         SELECT COUNT(1) INTO v_perm_table FROM USER_TABLES WHERE TABLE_NAME = 'MASTER_PERMISSIONS';
 
         IF v_module_table > 0 THEN
-            SELECT COUNT(1) INTO v_perm_count FROM MASTER_MODULES WHERE MODULE_NAME = 'FIXED_ASSET';
+            EXECUTE IMMEDIATE
+                'SELECT COUNT(1) FROM MASTER_MODULES WHERE MODULE_NAME = :module_name'
+                INTO v_perm_count
+                USING 'FIXED_ASSET';
             IF v_perm_count = 0 THEN
-                INSERT INTO MASTER_MODULES (MODULE_ID, MODULE_NAME)
-                VALUES ((SELECT NVL(MAX(MODULE_ID), 0) + 1 FROM MASTER_MODULES), 'FIXED_ASSET');
+                EXECUTE IMMEDIATE
+                    'INSERT INTO MASTER_MODULES (MODULE_ID, MODULE_NAME)
+                     VALUES ((SELECT NVL(MAX(MODULE_ID), 0) + 1 FROM MASTER_MODULES), :module_name)'
+                    USING 'FIXED_ASSET';
                 DBMS_OUTPUT.PUT_LINE('REGISTERED MODULE: FIXED_ASSET');
             END IF;
         END IF;
 
         IF v_module_table > 0 AND v_perm_table > 0 THEN
-            SELECT MODULE_ID INTO v_module_id FROM MASTER_MODULES WHERE MODULE_NAME = 'FIXED_ASSET';
+            EXECUTE IMMEDIATE
+                'SELECT MODULE_ID FROM MASTER_MODULES WHERE MODULE_NAME = :module_name'
+                INTO v_module_id
+                USING 'FIXED_ASSET';
 
-            SELECT COUNT(1) INTO v_perm_count
-              FROM MASTER_PERMISSIONS
-             WHERE MODULE_ID = v_module_id
-               AND PERMISSION_NAME = 'FA_TRANSACTION_APPROVE';
+            EXECUTE IMMEDIATE
+                'SELECT COUNT(1)
+                   FROM MASTER_PERMISSIONS
+                  WHERE MODULE_ID = :module_id
+                    AND PERMISSION_NAME = :permission_name'
+                INTO v_perm_count
+                USING v_module_id, 'FA_TRANSACTION_APPROVE';
             IF v_perm_count = 0 THEN
-                INSERT INTO MASTER_PERMISSIONS
-                    (PERMISSION_ID, MODULE_ID, PERMISSION_NAME, MENU, DESCRIPTION, URUT1, URUT2)
-                VALUES
-                    ((SELECT NVL(MAX(PERMISSION_ID), 0) + 1 FROM MASTER_PERMISSIONS), v_module_id,
-                     'FA_TRANSACTION_APPROVE', 'Fixed Asset Approval', 'Approve/Reject revaluation, disposal, and write-off', 90, 1);
+                EXECUTE IMMEDIATE
+                    'INSERT INTO MASTER_PERMISSIONS
+                         (PERMISSION_ID, MODULE_ID, PERMISSION_NAME, MENU, DESCRIPTION, URUT1, URUT2)
+                     VALUES
+                         ((SELECT NVL(MAX(PERMISSION_ID), 0) + 1 FROM MASTER_PERMISSIONS),
+                          :module_id, :permission_name, :menu, :description, :urut1, :urut2)'
+                    USING v_module_id,
+                          'FA_TRANSACTION_APPROVE',
+                          'Fixed Asset Approval',
+                          'Approve/Reject revaluation, disposal, and write-off',
+                          90,
+                          1;
             END IF;
         END IF;
     EXCEPTION

@@ -207,9 +207,9 @@ namespace Accounting._2.DataAcces
             return JurnalFromModuleServices.JurnalKasirDetail_DapperKasir(pDari, pSampai, pIdData, pEstate, pPosted, pPeriode, pUserId, pGlYear, pGlMonth);
         }
 
-        public IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int pPeriodeInt, string pPtLokasi, string pEstate)
+        public IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int pPeriodeInt, string pEstate, string pIdData)
         {
-            return JurnalFromModuleServices.GetJurnalHeader_Kasir(pPeriodeInt, pPtLokasi, pEstate);
+            return JurnalFromModuleServices.GetJurnalHeader_Kasir(pPeriodeInt, pEstate, pIdData);
         }
 
         public DataTable AIS_Jurnal_Detail_ALL_HARIAN(DateTime tanggalJurnal, int pPeriode, string pPeriodeStr, string pPtLokasi, string pEstate, int pRemise, string pIdData)
@@ -245,7 +245,7 @@ namespace Accounting._2.DataAcces
         public DataTable GetKasirKode(string pIdData)
         {
             using OracleConnection connection = new(LoginInfo.OracleConnString);
-            using OracleCommand command = new("select DISTINCT KASIR,PTLOKASI,  KETERANGAN FROM ACCT_CONV_PTLOKASI WHERE IDDATA =:p_iddata and KASIR IS NOT NULL", connection)
+            using OracleCommand command = new("SELECT ESTATEID, NAMA FROM MASTER_ESTATE WHERE IDDATA =:p_iddata", connection)
             {
                 CommandType = CommandType.Text
             };

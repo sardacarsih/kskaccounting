@@ -261,20 +261,20 @@ namespace Accounting.DataLayer
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
-            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.RecalkulasiSaldoDetail", connection)
+            using (OracleCommand cmd = new OracleCommand("BEGIN ACCT_RECALLCULATIONS.RecalkulasiSaldoDetail(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_USERID); END;", connection)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.Text
             })
             {
                 connection.Open();
                 cmd.BindByName = true;
                 cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
-                cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-                cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-                cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-                cmd.Parameters.Add(":p_Userid", OracleDbType.Varchar2, 20).Value = p_Userid;
+                cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+                cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
+                cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
+                cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = p_Userid;
                 
-                cmd.ExecuteScalar();
+                cmd.ExecuteNonQuery();
                 Log.Information("PERF AccountRepository.RekalkulasiSaldo elapsed_ms={ElapsedMs} periode={Periode}", stopwatch.ElapsedMilliseconds, $"{p_bulan:00}/{p_tahun}");
             }
         }
@@ -282,20 +282,20 @@ namespace Accounting.DataLayer
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
-            using (OracleCommand cmd = new OracleCommand("ACCT_RECALLCULATIONS.RecalkulasiSaldoDetailV2", connection)
+            using (OracleCommand cmd = new OracleCommand("BEGIN ACCT_RECALLCULATIONS.RecalkulasiSaldoDetailV2(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_USERID); END;", connection)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.Text
             })
             {
                 connection.Open();
                 cmd.BindByName = true;
                 cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
-                cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-                cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-                cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-                cmd.Parameters.Add(":p_Userid", OracleDbType.Varchar2, 20).Value = p_Userid;
+                cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+                cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
+                cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
+                cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = p_Userid;
 
-                cmd.ExecuteScalar();
+                cmd.ExecuteNonQuery();
                 Log.Information("PERF AccountRepository.RekalkulasiSaldoV2 elapsed_ms={ElapsedMs} periode={Periode}", stopwatch.ElapsedMilliseconds, $"{p_bulan:00}/{p_tahun}");
             }
         }

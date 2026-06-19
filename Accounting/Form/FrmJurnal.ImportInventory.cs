@@ -1,4 +1,5 @@
 using Accounting.Model;
+using Accounting.Utilities;
 using DevExpress.Data;
 using DevExpress.Utils.Menu;
 using DevExpress.XtraEditors;
@@ -21,7 +22,7 @@ namespace Accounting.Form
 {
     public partial class FrmJurnal
     {
-        private bool UseInventoryBaruSource => checkEditInvBaru.Checked;
+        private bool UseInventoryBaruSource => ConnectionManager.UseInventoryBaruImport();
 
         private void lookUpEditINV_EditValueChanged(object sender, EventArgs e)
         {
@@ -212,14 +213,6 @@ namespace Accounting.Form
         {
             RefreshInventoryData();
         }
-
-
-        private void checkEditInvBaru_CheckedChanged(object sender, EventArgs e)
-        {
-            RefreshInventoryData();
-        }
-
-
 
 
         private void gridView_inv_header_PopupMenuShowing(object sender, PopupMenuShowingEventArgs e)

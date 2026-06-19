@@ -224,12 +224,22 @@ namespace Accounting.Form
             }
         }
 
+        private void txtcarinomor_EditValueChanged(object sender, EventArgs e)
+        {
+            ScheduleCariJurnalTahun();
+        }
+
         private void txtcarikode_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
                 CariJurnal_Tahun();
             }
+        }
+
+        private void txtcarikode_EditValueChanged(object sender, EventArgs e)
+        {
+            ScheduleCariJurnalTahun();
         }
 
         private void txtcarijumlah_KeyDown(object sender, KeyEventArgs e)
@@ -240,12 +250,22 @@ namespace Accounting.Form
             }
         }
 
+        private void txtcarijumlah_EditValueChanged(object sender, EventArgs e)
+        {
+            ScheduleCariJurnalTahun();
+        }
+
         private void txcariketerangan_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
                 CariJurnal_Tahun();
             }
+        }
+
+        private void txtcariketerangan_EditValueChanged(object sender, EventArgs e)
+        {
+            ScheduleCariJurnalTahun();
         }
 
         private void sbclear_Click(object sender, EventArgs e)
@@ -279,6 +299,11 @@ namespace Accounting.Form
             }
         }
 
+        private void txtfilternojurnal_EditValueChanged(object sender, EventArgs e)
+        {
+            ScheduleCariJurnalBulan();
+        }
+
         private void defiltertanggal_EditValueChanged(object sender, EventArgs e)
         {
             if (defiltertanggal.EditValue != null)
@@ -293,6 +318,11 @@ namespace Accounting.Form
             {
                 CariJurnal_Bulan();
             }
+        }
+
+        private void txtfilterkode_EditValueChanged(object sender, EventArgs e)
+        {
+            ScheduleCariJurnalBulan();
         }
 
         private void Sbfilterexport_Click(object sender, EventArgs e)
@@ -448,12 +478,22 @@ namespace Accounting.Form
             }
         }
 
+        private void txtfilterjumlah_EditValueChanged(object sender, EventArgs e)
+        {
+            ScheduleCariJurnalBulan();
+        }
+
         private void txtfilterketerangan_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
                 CariJurnal_Bulan();
             }
+        }
+
+        private void txtfilterketerangan_EditValueChanged(object sender, EventArgs e)
+        {
+            ScheduleCariJurnalBulan();
         }
 
         private void sbexport_Click(object sender, EventArgs e)

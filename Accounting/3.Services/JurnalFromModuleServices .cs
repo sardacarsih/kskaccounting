@@ -27,9 +27,9 @@ namespace Accounting.BusinessLayer
             return repository.GetJurnalHeader_InventoryBaru(p_periode_int, p_ptlokasi, p_source_filter);
         }
 
-        public static IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int p_periode_int, string p_ptlokasi,string p_estate)
+        public static IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int p_periode_int, string p_estate, string p_iddata)
         {
-            return repository.GetJurnalHeader_Kasir( p_periode_int,  p_ptlokasi, p_estate);
+            return repository.GetJurnalHeader_Kasir( p_periode_int, p_estate, p_iddata);
         }
         public static IEnumerable<JurnalInventoryDetailDTO> GetJurnalDetails_Inventory(int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth)
         {

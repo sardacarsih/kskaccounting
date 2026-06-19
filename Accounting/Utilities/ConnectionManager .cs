@@ -10,6 +10,9 @@ namespace Accounting.Utilities
 {
     public class ConnectionManager
     {
+        public const string InventoryImportModeLama = "invlama";
+        public const string InventoryImportModeBaru = "invbaru";
+
         private const string ActiveServerKeyEnvironmentVariable = "ACCOUNTING_DB_ACTIVE_SERVER_KEY";
         private const string HostEnvironmentVariable = "ACCOUNTING_DB_HOST";
         private const string PortEnvironmentVariable = "ACCOUNTING_DB_PORT";
@@ -33,6 +36,59 @@ namespace Accounting.Utilities
                 settings.ServiceName);
         }
 
+        public static bool UseInventoryBaruImport()
+        {
+            return string.Equals(GetInventoryImportMode(), InventoryImportModeBaru, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string GetInventoryImportMode()
+        {
+            try
+            {
+                string configFilePath = Path.Combine(AppContext.BaseDirectory, "Utilities", "config.json");
+                if (!File.Exists(configFilePath))
+                {
+                    return InventoryImportModeLama;
+                }
+
+                AppConfig? config = ReadConfig(configFilePath);
+                if (config == null)
+                {
+                    return InventoryImportModeLama;
+                }
+
+                string mode = NormalizeInventoryImportMode(config.InventoryImportMode);
+                if (!string.IsNullOrWhiteSpace(config.InventoryImportMode) &&
+                    !string.Equals(config.InventoryImportMode.Trim(), mode, StringComparison.OrdinalIgnoreCase))
+                {
+                    ShowMessage($"InventoryImportMode '{config.InventoryImportMode}' tidak valid. Menggunakan default '{InventoryImportModeLama}'.", "Info", MessageBoxIcon.Information);
+                }
+
+                return mode;
+            }
+            catch (JsonException ex)
+            {
+                ShowMessage($"Format config.json tidak valid saat membaca InventoryImportMode: {ex.Message}", "Error", MessageBoxIcon.Error);
+                return InventoryImportModeLama;
+            }
+            catch (Exception ex)
+            {
+                ShowMessage($"Error loading InventoryImportMode: {ex.Message}", "Error", MessageBoxIcon.Error);
+                return InventoryImportModeLama;
+            }
+        }
+
+        public static string NormalizeInventoryImportMode(string? value)
+        {
+            string mode = value?.Trim().ToLowerInvariant() ?? string.Empty;
+            return mode switch
+            {
+                InventoryImportModeBaru => InventoryImportModeBaru,
+                InventoryImportModeLama => InventoryImportModeLama,
+                _ => InventoryImportModeLama
+            };
+        }
+
         private static ResolvedConnectionSettings? LoadConfiguration()
         {
             try
@@ -44,17 +100,7 @@ namespace Accounting.Utilities
                     return null;
                 }
 
-                string[] lines = File.ReadAllLines(configFilePath);
-                string json = string.Join(
-                    Environment.NewLine,
-                    lines.Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal)));
-
-                AppConfig? config = JsonSerializer.Deserialize<AppConfig>(
-                    json,
-                    new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
+                AppConfig? config = ReadConfig(configFilePath);
 
                 if (config == null)
                 {
@@ -101,6 +147,21 @@ namespace Accounting.Utilities
                 ShowMessage($"Error loading configuration: {ex.Message}", "Error", MessageBoxIcon.Error);
                 return null;
             }
+        }
+
+        private static AppConfig? ReadConfig(string configFilePath)
+        {
+            string[] lines = File.ReadAllLines(configFilePath);
+            string json = string.Join(
+                Environment.NewLine,
+                lines.Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal)));
+
+            return JsonSerializer.Deserialize<AppConfig>(
+                json,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
         }
 
         private static string ResolveActiveServerKey(AppConfig config)

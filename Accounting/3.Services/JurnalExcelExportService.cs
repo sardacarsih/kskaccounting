@@ -48,6 +48,36 @@ namespace Accounting.BusinessLayer
                 throw new InvalidOperationException("Data tidak ditemukan");
             }
 
+            string filename = Path.Combine(Path.GetTempPath(), $"{fileNamePrefix}_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+            WriteAisWorkbook(data, filename);
+            OpenFile(filename);
+        }
+
+        /// <summary>
+        /// Exports AIS journal rows to a caller-chosen file path, opens the file, and returns the number of rows written.
+        /// </summary>
+        public int ExportAisJurnalToFile(IEnumerable<AIS_JURNAL_FINAL> rows, string destinationPath)
+        {
+            AuthorizationService.EnsureCanExportJurnal();
+
+            if (string.IsNullOrWhiteSpace(destinationPath))
+            {
+                throw new InvalidOperationException("Lokasi penyimpanan tidak valid");
+            }
+
+            List<AIS_JURNAL_FINAL> data = rows.ToList();
+            if (data.Count == 0)
+            {
+                throw new InvalidOperationException("Data tidak ditemukan");
+            }
+
+            WriteAisWorkbook(data, destinationPath);
+            OpenFile(destinationPath);
+            return data.Count;
+        }
+
+        private static void WriteAisWorkbook(List<AIS_JURNAL_FINAL> data, string destinationPath)
+        {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             using ExcelPackage package = new();
             ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Jurnal Entries");
@@ -57,9 +87,7 @@ namespace Accounting.BusinessLayer
             ApplyStandardFormats(worksheet, data.Count);
             worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
-            string filename = Path.Combine(Path.GetTempPath(), $"{fileNamePrefix}_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
-            File.WriteAllBytes(filename, package.GetAsByteArray());
-            OpenFile(filename);
+            File.WriteAllBytes(destinationPath, package.GetAsByteArray());
         }
 
         public void ExportKasirDataTable(DataTable source, string fileNamePrefix)

@@ -1,8 +1,9 @@
-﻿using Accounting.Form;
+using Accounting.Form;
 using Accounting.Services;
 using DevExpress.XtraEditors;
 using Serilog;
 using System;
+using System.Text;
 using System.Windows.Forms;
 
 namespace Accounting
@@ -12,6 +13,8 @@ namespace Accounting
         [STAThread]
         static void Main(string[] args)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
             // Configure Serilog
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
@@ -41,6 +44,7 @@ namespace Accounting
                 Log.Information("Starting the Accounting application");
 
                 // Initialize WinForms settings
+                WindowsFormsSettings.SetPerMonitorDpiAware();
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);

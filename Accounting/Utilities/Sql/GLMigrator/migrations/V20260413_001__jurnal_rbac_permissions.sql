@@ -4,6 +4,127 @@
 SET SERVEROUTPUT ON;
 
 DECLARE
+    v_module_table    NUMBER := 0;
+    v_perm_table      NUMBER := 0;
+    v_role_table      NUMBER := 0;
+    v_role_perm_table NUMBER := 0;
+
+    PROCEDURE ensure_role(p_role_name IN VARCHAR2) IS
+        v_count NUMBER := 0;
+    BEGIN
+        EXECUTE IMMEDIATE
+            'SELECT COUNT(1) FROM MASTER_ROLES WHERE UPPER(ROLE_NAME) = UPPER(:role_name)'
+            INTO v_count
+            USING p_role_name;
+
+        IF v_count = 0 THEN
+            EXECUTE IMMEDIATE
+                'INSERT INTO MASTER_ROLES (ROLE_ID, ROLE_NAME)
+                 VALUES ((SELECT NVL(MAX(ROLE_ID), 0) + 1 FROM MASTER_ROLES), :role_name)'
+                USING p_role_name;
+            DBMS_OUTPUT.PUT_LINE('REGISTERED ROLE: ' || p_role_name);
+        END IF;
+    END;
+BEGIN
+    SELECT COUNT(1)
+      INTO v_module_table
+      FROM USER_TABLES
+     WHERE TABLE_NAME = 'MASTER_MODULES';
+
+    IF v_module_table = 0 THEN
+        EXECUTE IMMEDIATE '
+            CREATE TABLE MASTER_MODULES
+            (
+                MODULE_ID   NUMBER NOT NULL,
+                MODULE_NAME VARCHAR2(30) NOT NULL,
+                CONSTRAINT PK_MASTER_MODULES PRIMARY KEY (MODULE_ID),
+                CONSTRAINT UK_MASTER_MODULES_NAME UNIQUE (MODULE_NAME)
+            )';
+
+        DBMS_OUTPUT.PUT_LINE('CREATED TABLE: MASTER_MODULES');
+    END IF;
+
+    SELECT COUNT(1)
+      INTO v_perm_table
+      FROM USER_TABLES
+     WHERE TABLE_NAME = 'MASTER_PERMISSIONS';
+
+    IF v_perm_table = 0 THEN
+        EXECUTE IMMEDIATE '
+            CREATE TABLE MASTER_PERMISSIONS
+            (
+                PERMISSION_ID   NUMBER NOT NULL,
+                MODULE_ID       NUMBER NOT NULL,
+                PERMISSION_NAME VARCHAR2(60) NOT NULL,
+                MENU            VARCHAR2(100),
+                DESCRIPTION     VARCHAR2(250),
+                URUT1           NUMBER,
+                URUT2           NUMBER,
+                CONSTRAINT PK_MASTER_PERMISSIONS PRIMARY KEY (PERMISSION_ID),
+                CONSTRAINT UK_MASTER_PERMISSIONS_NAME UNIQUE (MODULE_ID, PERMISSION_NAME)
+            )';
+
+        DBMS_OUTPUT.PUT_LINE('CREATED TABLE: MASTER_PERMISSIONS');
+    END IF;
+
+    SELECT COUNT(1)
+      INTO v_role_table
+      FROM USER_TABLES
+     WHERE TABLE_NAME = 'MASTER_ROLES';
+
+    IF v_role_table = 0 THEN
+        EXECUTE IMMEDIATE '
+            CREATE TABLE MASTER_ROLES
+            (
+                ROLE_ID   NUMBER NOT NULL,
+                ROLE_NAME VARCHAR2(30) NOT NULL,
+                CONSTRAINT PK_MASTER_ROLES PRIMARY KEY (ROLE_ID),
+                CONSTRAINT UK_MASTER_ROLES_NAME UNIQUE (ROLE_NAME)
+            )';
+
+        DBMS_OUTPUT.PUT_LINE('CREATED TABLE: MASTER_ROLES');
+    END IF;
+
+    SELECT COUNT(1)
+      INTO v_role_perm_table
+      FROM USER_TABLES
+     WHERE TABLE_NAME = 'MASTER_ROLE_PERMISSIONS';
+
+    IF v_role_perm_table = 0 THEN
+        EXECUTE IMMEDIATE '
+            CREATE TABLE MASTER_ROLE_PERMISSIONS
+            (
+                ROLE_ID       NUMBER NOT NULL,
+                PERMISSION_ID NUMBER NOT NULL,
+                CAN_CREATE    CHAR(1) DEFAULT ''N'' NOT NULL,
+                CAN_READ      CHAR(1) DEFAULT ''N'' NOT NULL,
+                CAN_UPDATE    CHAR(1) DEFAULT ''N'' NOT NULL,
+                CAN_DELETE    CHAR(1) DEFAULT ''N'' NOT NULL,
+                CONSTRAINT PK_MASTER_ROLE_PERMISSIONS PRIMARY KEY (ROLE_ID, PERMISSION_ID),
+                CONSTRAINT CK_MRP_CAN_CREATE CHECK (CAN_CREATE IN (''Y'', ''N'')),
+                CONSTRAINT CK_MRP_CAN_READ CHECK (CAN_READ IN (''Y'', ''N'')),
+                CONSTRAINT CK_MRP_CAN_UPDATE CHECK (CAN_UPDATE IN (''Y'', ''N'')),
+                CONSTRAINT CK_MRP_CAN_DELETE CHECK (CAN_DELETE IN (''Y'', ''N''))
+            )';
+
+        DBMS_OUTPUT.PUT_LINE('CREATED TABLE: MASTER_ROLE_PERMISSIONS');
+    END IF;
+
+    ensure_role('VIEWER');
+    ensure_role('CHECKER');
+    ensure_role('APPROVER');
+    ensure_role('MAKER');
+    ensure_role('USER');
+    ensure_role('OPERATOR');
+    ensure_role('STAFF');
+    ensure_role('SUPERVISOR');
+    ensure_role('ADMIN');
+    ensure_role('ADMINISTRATOR');
+    ensure_role('SUPERADMIN');
+END;
+/
+
+DECLARE
     v_module_table      NUMBER := 0;
     v_perm_table        NUMBER := 0;
     v_role_table        NUMBER := 0;

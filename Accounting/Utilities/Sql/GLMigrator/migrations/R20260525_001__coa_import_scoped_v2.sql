@@ -1,0 +1,31 @@
+-- Purpose: Rollback scoped COA import package.
+-- Date: 2026-05-25
+
+SET SERVEROUTPUT ON;
+
+BEGIN
+    BEGIN
+        EXECUTE IMMEDIATE 'DROP PACKAGE ACCOUNTING_COA_IMPORT_V2';
+        DBMS_OUTPUT.PUT_LINE('DROPPED PACKAGE ACCOUNTING_COA_IMPORT_V2');
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE = -4043 THEN
+                DBMS_OUTPUT.PUT_LINE('SKIPPED (not found): ACCOUNTING_COA_IMPORT_V2');
+            ELSE
+                RAISE;
+            END IF;
+    END;
+
+    BEGIN
+        EXECUTE IMMEDIATE 'ALTER TABLE ACC_COA_TMP DROP COLUMN BATCH_ID';
+        DBMS_OUTPUT.PUT_LINE('DROPPED ACC_COA_TMP.BATCH_ID');
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE = -904 THEN
+                DBMS_OUTPUT.PUT_LINE('SKIPPED (not found): ACC_COA_TMP.BATCH_ID');
+            ELSE
+                RAISE;
+            END IF;
+    END;
+END;
+/

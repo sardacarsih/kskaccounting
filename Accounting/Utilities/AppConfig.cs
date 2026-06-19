@@ -7,6 +7,7 @@ namespace Accounting
     {
         public string ActiveServerKey { get; set; } = string.Empty;
         public bool AllowEnvironmentFallback { get; set; }
+        public string InventoryImportMode { get; set; } = string.Empty;
         public Dictionary<string, OracleServerConfig> Servers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 

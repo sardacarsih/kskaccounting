@@ -123,7 +123,7 @@ namespace Accounting.DataLayer
 
         public DataTable JurnalKasirDetail_DapperKasir(
                  DateTime p_dari,
-                 DateTime p_sampai, 
+                 DateTime p_sampai,
                  string p_iddata,
                  string p_estate,
                  string p_posted,
@@ -147,11 +147,10 @@ namespace Accounting.DataLayer
            :p_userid AS UserId,
            :p_glyear AS Glyear,
            :p_glmonth AS Glmonth 
-       FROM kasir_jurnal_dtl@DATABASE_LINK j
-       JOIN AIS_KONVERSI L ON L.PTLOKASI = j.PTLOKASI 
-       LEFT JOIN ACCT_COA P 
-           ON P.KODEACC = j.ACKODE AND P.IDDATA = L.IDDATA AND P.TAHUN = :p_tahun
-       WHERE j.kastgl BETWEEN :p_dari AND :p_sampai AND j.IDPAY = :p_estate
+       FROM kasir_jurnal_dtl j
+       LEFT JOIN ACCT_COA P
+           ON P.KODEACC = j.ACKODE AND P.IDDATA = j.IDDATA AND P.TAHUN = :p_tahun
+       WHERE j.kastgl BETWEEN :p_dari AND :p_sampai AND j.ESTATEID = :p_estate AND j.IDDATA = :p_iddata
        ORDER BY j.kastgl, j.KASNO, j.baris ASC";
 
             using OracleConnection conn = new(LoginInfo.OracleConnString);
@@ -160,6 +159,7 @@ namespace Accounting.DataLayer
             {
                 conn.Open();
                 command.CommandType = CommandType.Text;
+                command.BindByName = true;
 
                 // Add parameters
                 command.Parameters.Add(":p_posted", OracleDbType.Varchar2, 20).Value = p_posted;
@@ -180,7 +180,7 @@ namespace Accounting.DataLayer
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error in JurnalKasirDetail with parameters {p_dari}, {p_sampai}, {p_ptlokasi}, {p_estate}");
+                Log.Error(ex, "Error in JurnalKasirDetail with parameters {Dari}, {Sampai}, {Estate}, {IdData}", p_dari, p_sampai, p_estate, p_iddata);
                 throw new Exception($"Error fetching data: {ex.Message}", ex);
             }
         } 
@@ -577,21 +577,21 @@ namespace Accounting.DataLayer
             return "%" + p_source_filter.Trim().ToUpperInvariant() + "%";
         }
 
-        public IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int p_periode_int, string p_ptlokasi, string p_estate)
+        public IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int p_periode_int, string p_estate, string p_iddata)
         {
             var parameters = new DynamicParameters();
             parameters.Add("p_periode_int", p_periode_int, DbType.Int32);
-            parameters.Add("p_ptlokasi", p_ptlokasi, DbType.String);
             parameters.Add("p_estate", p_estate, DbType.String);
+            parameters.Add("p_iddata", p_iddata, DbType.String);
 
             using (var connection = new OracleConnection(LoginInfo.OracleConnString))
             {
                 const string sql = @"
-            SELECT DISTINCT KASNO AS NOMOR, KASTGL AS TANGGAL 
-            FROM kasir_jurnal_dtl@DATABASE_LINK  
-            WHERE PERIODE = :p_periode_int 
-              AND PTLOKASI = :p_ptlokasi 
-              AND IDPAY = :p_estate 
+            SELECT DISTINCT KASNO AS NOMOR, KASTGL AS TANGGAL
+            FROM kasir_jurnal_dtl
+            WHERE PERIODE = :p_periode_int
+              AND ESTATEID = :p_estate
+              AND IDDATA = :p_iddata
             ORDER BY NOMOR, TANGGAL";
 
                 return connection.Query<JurnalKasirHeaderDTO>(sql, parameters, commandType: CommandType.Text);

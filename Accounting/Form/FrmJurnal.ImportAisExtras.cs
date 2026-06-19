@@ -108,9 +108,10 @@ namespace Accounting.Form
 
         private void sbExportExcelAIS_Click(object sender, EventArgs e)
         {
-            if (jurnalfinalAIS != null)
+            if (jurnalfinalAIS != null && jurnalfinalAIS.Any())
             {
-                ExportJurnal_FromList(jurnalfinalAIS);
+                string division = gridViewAISheader.GetRowCellValue(gridViewAISheader.FocusedRowHandle, "DIVISI")?.ToString() ?? "Jurnal";
+                ExportAisJurnalWithDialog(jurnalfinalAIS, BuildAisExportFileName(division));
             }
             else
             {

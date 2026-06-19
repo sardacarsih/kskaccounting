@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.04.28.1",
+  "version": "2026.05.28.1",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -153,6 +153,46 @@
       "script": "migrations/V20260413_004__standard_role_catalog_alignment.sql",
       "rollbackScript": "migrations/R20260413_004__standard_role_catalog_alignment.sql",
       "checkScript": "migrations/C20260413_004__standard_role_catalog_alignment_check.sql"
+    },
+    {
+      "id": "20260525_001_coa_import_scoped_v2",
+      "order": 20,
+      "description": "Add ACCOUNTING_COA_IMPORT_V2 package and batch-scoped ACC_COA_TMP support for safe COA imports.",
+      "script": "migrations/V20260525_001__coa_import_scoped_v2.sql",
+      "rollbackScript": "migrations/R20260525_001__coa_import_scoped_v2.sql",
+      "checkScript": "migrations/C20260525_001__coa_import_scoped_v2_check.sql"
+    },
+    {
+      "id": "20260528_001_jurnal_import_schema_compat",
+      "order": 21,
+      "description": "Ensure ACCT_JURNAL_TMP scoped import columns and audit columns required by client-side jurnal import exist.",
+      "script": "migrations/V20260528_001__jurnal_import_schema_compat.sql",
+      "rollbackScript": "migrations/R20260528_001__jurnal_import_schema_compat.sql",
+      "checkScript": "migrations/C20260528_001__jurnal_import_schema_compat_check.sql"
+    },
+    {
+      "id": "20260602_001_master_login_aktif_compat",
+      "order": 22,
+      "description": "Ensure MASTER_LOGIN.AKTIF exists for login active-user checks and user management.",
+      "script": "migrations/V20260602_001__master_login_aktif_compat.sql",
+      "rollbackScript": "migrations/R20260602_001__master_login_aktif_compat.sql",
+      "checkScript": "migrations/C20260602_001__master_login_aktif_compat_check.sql"
+    },
+    {
+      "id": "20260602_002_rbac_user_assignment_compat",
+      "order": 23,
+      "description": "Ensure RBAC user assignment tables exist and seed ACCOUNTING access from legacy GL app detail.",
+      "script": "migrations/V20260602_002__rbac_user_assignment_compat.sql",
+      "rollbackScript": "migrations/R20260602_002__rbac_user_assignment_compat.sql",
+      "checkScript": "migrations/C20260602_002__rbac_user_assignment_compat_check.sql"
+    },
+    {
+      "id": "20260602_003_promote_dharyadi_admin",
+      "order": 24,
+      "description": "Promote dharyadi to ADMIN for GL and ACCOUNTING RBAC modules.",
+      "script": "migrations/V20260602_003__promote_dharyadi_admin.sql",
+      "rollbackScript": "migrations/R20260602_003__promote_dharyadi_admin.sql",
+      "checkScript": "migrations/C20260602_003__promote_dharyadi_admin_check.sql"
     }
   ]
 }
