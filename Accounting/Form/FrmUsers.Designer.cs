@@ -45,6 +45,7 @@ namespace Accounting.Form
             layoutControlItem7 = new DevExpress.XtraLayout.LayoutControlItem();
             layoutControlItem10 = new DevExpress.XtraLayout.LayoutControlItem();
             layoutControlItem11 = new DevExpress.XtraLayout.LayoutControlItem();
+            layoutControlItem13 = new DevExpress.XtraLayout.LayoutControlItem();
             btnaddestate = new DevExpress.XtraEditors.SimpleButton();
             dEPTTextEdit = new DevExpress.XtraEditors.TextEdit();
             layoutControl1 = new DevExpress.XtraLayout.LayoutControl();
@@ -86,6 +87,7 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)layoutControlItem7).BeginInit();
             ((System.ComponentModel.ISupportInitialize)layoutControlItem10).BeginInit();
             ((System.ComponentModel.ISupportInitialize)layoutControlItem11).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem13).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dEPTTextEdit.Properties).BeginInit();
             ((System.ComponentModel.ISupportInitialize)layoutControl1).BeginInit();
             layoutControl1.SuspendLayout();
@@ -122,13 +124,13 @@ namespace Accounting.Form
             // 
             // gridControl2
             // 
-            gridControl2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            gridControl2.Dock = DockStyle.Fill;
             gridControl2.EmbeddedNavigator.Margin = new Padding(2);
-            gridControl2.Location = new Point(10, 168);
+            gridControl2.Location = new Point(8, 120);
             gridControl2.MainView = gridView2;
             gridControl2.Margin = new Padding(2);
             gridControl2.Name = "gridControl2";
-            gridControl2.Size = new Size(780, 350);
+            gridControl2.Size = new Size(808, 464);
             gridControl2.TabIndex = 19;
             gridControl2.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView2 });
             // 
@@ -154,15 +156,16 @@ namespace Accounting.Form
             // 
             // layoutControl2
             // 
+            layoutControl2.Controls.Add(btnaddestate);
             layoutControl2.Controls.Add(lookUpEdit1);
             layoutControl2.Controls.Add(lbluser);
             layoutControl2.Controls.Add(lblmodule);
-            layoutControl2.Location = new Point(10, 10);
+            layoutControl2.Dock = DockStyle.Top;
+            layoutControl2.Location = new Point(8, 8);
             layoutControl2.Name = "layoutControl2";
             layoutControl2.OptionsCustomizationForm.DesignTimeCustomizationFormPositionAndSize = new Rectangle(435, 301, 650, 400);
             layoutControl2.Root = layoutControlGroup1;
-            layoutControl2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            layoutControl2.Size = new Size(780, 112);
+            layoutControl2.Size = new Size(808, 112);
             layoutControl2.TabIndex = 29;
             layoutControl2.Text = "layoutControl2";
             // 
@@ -194,9 +197,9 @@ namespace Accounting.Form
             // 
             layoutControlGroup1.EnableIndentsWithoutBorders = DevExpress.Utils.DefaultBoolean.True;
             layoutControlGroup1.GroupBordersVisible = false;
-            layoutControlGroup1.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] { layoutControlItem7, layoutControlItem10, layoutControlItem11 });
+            layoutControlGroup1.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] { layoutControlItem7, layoutControlItem10, layoutControlItem11, layoutControlItem13 });
             layoutControlGroup1.Name = "Root";
-            layoutControlGroup1.Size = new Size(411, 112);
+            layoutControlGroup1.Size = new Size(808, 112);
             layoutControlGroup1.TextVisible = false;
             // 
             // layoutControlItem7
@@ -204,7 +207,7 @@ namespace Accounting.Form
             layoutControlItem7.Control = lbluser;
             layoutControlItem7.Location = new Point(0, 0);
             layoutControlItem7.Name = "layoutControlItem7";
-            layoutControlItem7.Size = new Size(391, 29);
+            layoutControlItem7.Size = new Size(788, 29);
             layoutControlItem7.Text = "User ID";
             layoutControlItem7.TextSize = new Size(36, 13);
             // 
@@ -213,7 +216,7 @@ namespace Accounting.Form
             layoutControlItem10.Control = lblmodule;
             layoutControlItem10.Location = new Point(0, 29);
             layoutControlItem10.Name = "layoutControlItem10";
-            layoutControlItem10.Size = new Size(391, 29);
+            layoutControlItem10.Size = new Size(788, 29);
             layoutControlItem10.Text = "Module";
             layoutControlItem10.TextSize = new Size(36, 13);
             // 
@@ -222,17 +225,29 @@ namespace Accounting.Form
             layoutControlItem11.Control = lookUpEdit1;
             layoutControlItem11.Location = new Point(0, 58);
             layoutControlItem11.Name = "layoutControlItem11";
-            layoutControlItem11.Size = new Size(391, 34);
+            layoutControlItem11.Size = new Size(684, 34);
             layoutControlItem11.Text = "Lokasi";
             layoutControlItem11.TextSize = new Size(36, 13);
             // 
+            // layoutControlItem13
+            // 
+            layoutControlItem13.Control = btnaddestate;
+            layoutControlItem13.Location = new Point(684, 58);
+            layoutControlItem13.MaxSize = new Size(104, 34);
+            layoutControlItem13.MinSize = new Size(104, 34);
+            layoutControlItem13.Name = "layoutControlItem13";
+            layoutControlItem13.Size = new Size(104, 34);
+            layoutControlItem13.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            layoutControlItem13.TextSize = new Size(0, 0);
+            layoutControlItem13.TextVisible = false;
+            // 
             // btnaddestate
             // 
-            btnaddestate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnaddestate.Location = new Point(720, 128);
+            btnaddestate.Location = new Point(698, 70);
             btnaddestate.Margin = new Padding(2);
             btnaddestate.Name = "btnaddestate";
-            btnaddestate.Size = new Size(70, 36);
+            btnaddestate.Size = new Size(100, 22);
+            btnaddestate.StyleController = layoutControl2;
             btnaddestate.TabIndex = 3;
             btnaddestate.Text = "Add";
             btnaddestate.Click += btnaddestate_Click;
@@ -508,16 +523,14 @@ namespace Accounting.Form
             // tabPageProfile
             //
             tabPageProfile.Controls.Add(layoutControl1);
-            tabPageProfile.Controls.Add(windowsUIButtonPanel1);
             tabPageProfile.Name = "tabPageProfile";
             tabPageProfile.Text = "  \uD83D\uDC64  Profile  ";
             tabPageProfile.Padding = new Padding(0);
             //
             // tabPageAccess
             //
-            tabPageAccess.Controls.Add(layoutControl2);
-            tabPageAccess.Controls.Add(btnaddestate);
             tabPageAccess.Controls.Add(gridControl2);
+            tabPageAccess.Controls.Add(layoutControl2);
             tabPageAccess.Name = "tabPageAccess";
             tabPageAccess.Text = "  \uD83D\uDD12  Akses Lokasi  ";
             tabPageAccess.Padding = new Padding(8);
@@ -530,24 +543,26 @@ namespace Accounting.Form
             // splitContainerControl1.Panel1 (Master - User List)
             //
             splitContainerControl1.Panel1.Controls.Add(gridControl1);
-            splitContainerControl1.Panel1.MinSize = 280;
+            splitContainerControl1.Panel1.MinSize = 360;
             splitContainerControl1.Panel1.Text = "Daftar User";
             //
             // splitContainerControl1.Panel2 (Detail - Tabbed View)
             //
             splitContainerControl1.Panel2.Controls.Add(xtraTabControl1);
-            splitContainerControl1.Panel2.MinSize = 400;
+            splitContainerControl1.Panel2.Controls.Add(windowsUIButtonPanel1);
+            splitContainerControl1.Panel2.MinSize = 760;
             splitContainerControl1.Panel2.Text = "Detail User";
-            splitContainerControl1.SplitterPosition = 350;
+            splitContainerControl1.SplitterPosition = 420;
             splitContainerControl1.TabIndex = 31;
             //
             // FrmUsers
             // 
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
-            ClientSize = new Size(1202, 600);
+            ClientSize = new Size(1280, 720);
             Controls.Add(splitContainerControl1);
             Margin = new Padding(2);
+            MinimumSize = new Size(1280, 720);
             Name = "FrmUsers";
             Text = "Daftar User";
             Load += FrmUsers_Load;
@@ -560,6 +575,7 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)layoutControlItem7).EndInit();
             ((System.ComponentModel.ISupportInitialize)layoutControlItem10).EndInit();
             ((System.ComponentModel.ISupportInitialize)layoutControlItem11).EndInit();
+            ((System.ComponentModel.ISupportInitialize)layoutControlItem13).EndInit();
             ((System.ComponentModel.ISupportInitialize)dEPTTextEdit.Properties).EndInit();
             ((System.ComponentModel.ISupportInitialize)layoutControl1).EndInit();
             layoutControl1.ResumeLayout(false);
@@ -627,6 +643,7 @@ namespace Accounting.Form
         private DevExpress.XtraLayout.LayoutControlItem layoutControlItem7;
         private DevExpress.XtraLayout.LayoutControlItem layoutControlItem10;
         private DevExpress.XtraLayout.LayoutControlItem layoutControlItem11;
+        private DevExpress.XtraLayout.LayoutControlItem layoutControlItem13;
         private DevExpress.Utils.ImageCollection imageCollection1;
         private DevExpress.XtraEditors.ToggleSwitch checkEditaktif;
         private DevExpress.XtraLayout.LayoutControlItem layoutControlItem15;

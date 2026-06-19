@@ -40,11 +40,14 @@ namespace Accounting.Form
             this.cboSheet = new DevExpress.XtraEditors.ComboBoxEdit();
             this.labelControl1 = new DevExpress.XtraEditors.LabelControl();
             this.xeparsial = new DevExpress.XtraEditors.CheckEdit();
+            this.progressImport = new DevExpress.XtraEditors.ProgressBarControl();
+            this.lblImportProgress = new DevExpress.XtraEditors.LabelControl();
             ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridView1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.setahun.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.cboSheet.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.xeparsial.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.progressImport.Properties)).BeginInit();
             this.SuspendLayout();
             // 
             // sbbrowse
@@ -73,11 +76,11 @@ namespace Accounting.Form
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.gridControl1.EmbeddedNavigator.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.gridControl1.Location = new System.Drawing.Point(8, 34);
+            this.gridControl1.Location = new System.Drawing.Point(8, 74);
             this.gridControl1.MainView = this.gridView1;
             this.gridControl1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.gridControl1.Name = "gridControl1";
-            this.gridControl1.Size = new System.Drawing.Size(830, 353);
+            this.gridControl1.Size = new System.Drawing.Size(830, 313);
             this.gridControl1.TabIndex = 2;
             this.gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.gridView1});
@@ -176,11 +179,35 @@ namespace Accounting.Form
             this.xeparsial.TabIndex = 12;
             this.xeparsial.ToolTip = "Hanya mengimport Kode yang belum ada, yang sudah ada otomatis di abaikan";
             // 
+            // progressImport
+            // 
+            this.progressImport.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressImport.Location = new System.Drawing.Point(8, 52);
+            this.progressImport.Name = "progressImport";
+            this.progressImport.Properties.Maximum = 100;
+            this.progressImport.Properties.Minimum = 0;
+            this.progressImport.Properties.PercentView = false;
+            this.progressImport.Properties.ShowTitle = true;
+            this.progressImport.Size = new System.Drawing.Size(830, 16);
+            this.progressImport.TabIndex = 13;
+            this.progressImport.Visible = false;
+            // 
+            // lblImportProgress
+            // 
+            this.lblImportProgress.Location = new System.Drawing.Point(8, 35);
+            this.lblImportProgress.Name = "lblImportProgress";
+            this.lblImportProgress.Size = new System.Drawing.Size(0, 13);
+            this.lblImportProgress.TabIndex = 14;
+            this.lblImportProgress.Visible = false;
+            // 
             // FrmImportCOA
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(846, 394);
+            this.Controls.Add(this.lblImportProgress);
+            this.Controls.Add(this.progressImport);
             this.Controls.Add(this.xeparsial);
             this.Controls.Add(this.cboSheet);
             this.Controls.Add(this.labelControl1);
@@ -200,6 +227,7 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)(this.setahun.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.cboSheet.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.xeparsial.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.progressImport.Properties)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -218,5 +246,7 @@ namespace Accounting.Form
         private DevExpress.XtraEditors.ComboBoxEdit cboSheet;
         private DevExpress.XtraEditors.LabelControl labelControl1;
         private DevExpress.XtraEditors.CheckEdit xeparsial;
+        private DevExpress.XtraEditors.ProgressBarControl progressImport;
+        private DevExpress.XtraEditors.LabelControl lblImportProgress;
     }
 }

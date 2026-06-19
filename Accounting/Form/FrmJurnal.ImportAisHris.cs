@@ -68,10 +68,13 @@ namespace Accounting.Form
 			{
 				int rowHandle = e.HitInfo.RowHandle;
 				e.Menu.Items.Clear();
+				DXMenuItem dXMenuItemSelected = CreateMenuItemExpExcelSelectedRow(view, rowHandle);
 				DXMenuItem dXMenuItem = CreateMenuItemExpExcelALL_BORONGAN(view, rowHandle);
 				DXMenuItem dXMenuItem2 = CreateMenuItemExpExcelALL_HARIAN(view, rowHandle);
+				dXMenuItemSelected.BeginGroup = true;
 				dXMenuItem.BeginGroup = true;
 				dXMenuItem2.BeginGroup = true;
+				e.Menu.Items.Add(dXMenuItemSelected);
 				e.Menu.Items.Add(dXMenuItem);
 				e.Menu.Items.Add(dXMenuItem2);
 			}
@@ -80,6 +83,52 @@ namespace Accounting.Form
 		{
 			XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 		}
+	}
+
+	private DXMenuItem CreateMenuItemExpExcelSelectedRow(GridView view, int rowHandle)
+	{
+		DXMenuItem dXMenuItem = new DXMenuItem("Export ke Excel, baris terpilih", (s, e) => ExportSelectedAisRows(view, rowHandle));
+		dXMenuItem.ImageOptions.Image = imageCollection1.Images[1];
+		return dXMenuItem;
+	}
+
+	private void ExportSelectedAisRows(GridView view, int clickedRowHandle)
+	{
+		if (!TryCreateAisJournalBuildContext(out AisJournalBuildContext context))
+		{
+			XtraMessageBox.Show("Pilih estate, bulan, tahun, dan remise AIS terlebih dahulu.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			return;
+		}
+
+		List<Division> selectedDivisions = (view.GetSelectedRows() ?? [])
+			.Where(rowHandle => rowHandle >= 0)
+			.Select(view.GetRow)
+			.OfType<Division>()
+			.ToList();
+
+		if (selectedDivisions.Count == 0 && clickedRowHandle >= 0 && view.GetRow(clickedRowHandle) is Division clickedDivision)
+		{
+			selectedDivisions.Add(clickedDivision);
+		}
+
+		if (selectedDivisions.Count == 0)
+		{
+			XtraMessageBox.Show("Tidak ada baris yang dipilih.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			return;
+		}
+
+		List<AIS_JURNAL_FINAL> rows = selectedDivisions
+			.SelectMany(division => AisJournalBuilder.BuildForDivision(aisJurnal ?? [], komponenjurnal ?? [], division, context))
+			.ToList();
+
+		if (rows.Count == 0)
+		{
+			XtraMessageBox.Show("Data AIS tidak ditemukan untuk baris terpilih.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			return;
+		}
+
+		string label = selectedDivisions.Count == 1 ? selectedDivisions[0].DIVISI ?? "Divisi" : "Terpilih";
+		ExportAisJurnalWithDialog(rows, BuildAisExportFileName(label));
 	}
 
 	private DXMenuItem CreateMenuItemExpExcelALL_HARIAN(GridView? view, int rowHandle)
@@ -91,31 +140,7 @@ namespace Accounting.Form
 
 	private void OnexpexcelALLHARIANClick(object? sender, EventArgs e)
 	{
-		using var loadingScope = BeginGlobalLoadingScope();
-		if (lookUpEditEstate.EditValue == null || leremiseAIS.EditValue == null)
-		{
-			return;
-		}
-
-		int year = Convert.ToInt32(setahunAIS.Value);
-		int month = cmbbulanAIS.SelectedIndex + 1;
-		int pPeriode = Convert.ToInt32(year + month.ToString("00"));
-		string pPeriodeStr = FormatPeriod(month, year);
-		string iDDATA = CompanyInfo.IDDATA;
-		string pEstate = lookUpEditEstate.EditValue.ToString() ?? string.Empty;
-		int num = Convert.ToInt32(leremiseAIS.EditValue.ToString());
-		DateTime tanggalJurnal;
-		if (num == 1)
-		{
-			tanggalJurnal = new DateTime(year, month, 15);
-		}
-		else
-		{
-			DateTime dateTime = new DateTime(year, month, 1).AddMonths(1).AddDays(-1.0);
-			tanggalJurnal = dateTime;
-		}
-		DataTable dataTable = jurnalRepository.AIS_Jurnal_Detail_ALL_HARIAN(tanggalJurnal, pPeriode, pPeriodeStr, string.Empty, pEstate, num, iDDATA);
-		ExportJurnal_FromList(jurnalfinalAIS);
+		ExportAllAisJurnal(borongan: false);
 	}
 
 	private DXMenuItem CreateMenuItemExpExcelALL_BORONGAN(GridView? view, int rowHandle)
@@ -127,6 +152,17 @@ namespace Accounting.Form
 
 	private void OnexpexcelALLBORONGANClick(object? sender, EventArgs e)
 	{
+		ExportAllAisJurnal(borongan: true);
+	}
+
+	private void sbExportBoronganAIS_Click(object sender, EventArgs e)
+	{
+		ExportAllAisJurnal(borongan: true);
+	}
+
+	private void sbExportHarianAIS_Click(object sender, EventArgs e)
+	{
+		ExportAllAisJurnal(borongan: false);
 	}
 
 	private void OnaddjurnalClick(object? sender, EventArgs e)
@@ -138,8 +174,8 @@ namespace Accounting.Form
 	{
 		if (jurnalfinalAIS != null && jurnalfinalAIS.Any())
 		{
-			string text = gridViewAISheader.GetRowCellValue(gridViewAISheader.FocusedRowHandle, "NOJURNAL")?.ToString() ?? string.Empty;
-			noAIS_Bukti = gridViewAISheader.GetRowCellValue(gridViewAISheader.FocusedRowHandle, "NOMOR")?.ToString() ?? string.Empty;
+			string text = (gridViewAISheader.GetFocusedRow() as Division)?.NOMOR ?? string.Empty;
+			noAIS_Bukti = text;
 			importModule = ImportModule.AIS;
 			string text2 = lookUpEditEstate.EditValue?.ToString() ?? string.Empty;
 			short num = Convert.ToInt16(leremiseAIS.EditValue?.ToString());

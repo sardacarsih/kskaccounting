@@ -222,7 +222,7 @@ namespace Accounting.Form
             cardPanel.Controls.Add(lblTitle);
             cardPanel.Location = new Point(42, 78);
             cardPanel.Name = "cardPanel";
-            cardPanel.Padding = new Padding(34, 30, 34, 24);
+            cardPanel.Padding = new Padding(28, 24, 28, 20);
             cardPanel.Size = new Size(506, 468);
             cardPanel.TabIndex = 0;
             // 

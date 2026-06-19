@@ -348,6 +348,16 @@ internal static class AuthorizationService
         }
     }
 
+    public static void EnsureCanManageUserLocationAccess(string? targetUserId)
+    {
+        Ensure(CanManageUsers(), "Anda tidak memiliki izin mengelola akses lokasi user.");
+
+        if (IsProtectedUser(targetUserId))
+        {
+            throw new InvalidOperationException("Akses lokasi akun sistem inti tidak dapat diubah.");
+        }
+    }
+
     public static void EnsureCanResetPassword(string targetUserId)
     {
         Ensure(CanResetPasswords(), "Anda tidak memiliki izin mereset password user.");
@@ -487,10 +497,6 @@ internal static class AuthorizationService
             throw new InvalidOperationException("Assignment role untuk akun sistem inti tidak dapat diubah.");
         }
 
-        if (targetRoleId.HasValue && IsProtectedRoleId(targetRoleId.Value))
-        {
-            throw new InvalidOperationException("Role sistem inti tidak dapat ditetapkan dari layar ini.");
-        }
     }
 
     public static void EnsureCanManageRolePermissions(int? roleId = null)

@@ -1,4 +1,5 @@
 ﻿using Accounting.Model;
+using Accounting.JurnalImport.Domain;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
 using System;
@@ -35,6 +36,7 @@ namespace Accounting.DataLayer
         int ImportJurnalGlobal(string piddata, int p_bulan, int p_tahun, string periode);
         int ImportJurnalParsial(string piddata, int p_bulan, int p_tahun, string periode);
         int ImportJurnalParsialScoped(string piddata, int p_bulan, int p_tahun, string periode, string userid);
+        int ImportJurnalClientSide(JurnalImportScope scope, IReadOnlyList<JurnalImportRow> rows, IProgress<JurnalImportProgress>? progress = null);
         DataTable EditJurnalDT(string p_nomorHID);
         int CekRecordJurnalExist(string piddata, string periode);
         int CekPeriodeExist(string piddata, string p_periode);

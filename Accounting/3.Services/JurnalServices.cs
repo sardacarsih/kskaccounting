@@ -1,4 +1,5 @@
 ﻿using Accounting.DataLayer;
+using Accounting.JurnalImport.Domain;
 using Accounting.Model;
 using DevExpress.Office.Utils;
 using DevExpress.XtraGrid.Views.Grid;
@@ -105,6 +106,10 @@ namespace Accounting.BusinessLayer
         public static int ImportJurnalParsialScoped(string piddata, int p_bulan, int p_tahun, string periode, string userid)
         {
             return repository.ImportJurnalParsialScoped(piddata, p_bulan, p_tahun, periode, userid);
+        }
+        public static int ImportJurnalClientSide(JurnalImportScope scope, IReadOnlyList<JurnalImportRow> rows, IProgress<JurnalImportProgress>? progress = null)
+        {
+            return repository.ImportJurnalClientSide(scope, rows, progress);
         }
         public static DataTable PeriodeList(string iddata, string ptahun)
         {

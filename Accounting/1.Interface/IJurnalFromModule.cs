@@ -9,7 +9,7 @@ namespace Accounting.DataLayer
 {
     public interface IJurnalFromModule
     {
-        IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int p_periode_int, string p_ptlokasi, string p_estate);
+        IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int p_periode_int, string p_estate, string p_iddata);
         IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_Inventory(int p_periode_int, string p_ptlokasi);
         IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int p_periode_int, string p_ptlokasi, string? p_source_filter = null);
         DataTable JurnalKasirDetail_DapperKasir(

@@ -168,6 +168,8 @@ namespace Accounting.Form
             lookUpEditEstate = new DevExpress.XtraEditors.LookUpEdit();
             leremiseAIS = new DevExpress.XtraEditors.LookUpEdit();
             sbExportExcelAIS = new DevExpress.XtraEditors.SimpleButton();
+            sbExportBoronganAIS = new DevExpress.XtraEditors.SimpleButton();
+            sbExportHarianAIS = new DevExpress.XtraEditors.SimpleButton();
             cmbbulanAIS = new DevExpress.XtraEditors.ComboBoxEdit();
             sbbuatjurnalAIS = new DevExpress.XtraEditors.SimpleButton();
             setahunAIS = new DevExpress.XtraEditors.SpinEdit();
@@ -176,7 +178,6 @@ namespace Accounting.Form
             gridView_inv_header = new DevExpress.XtraGrid.Views.Grid.GridView();
             LBLTOTALTRANSAKSI = new DevExpress.XtraEditors.LabelControl();
             groupControl3 = new DevExpress.XtraEditors.GroupControl();
-            checkEditInvBaru = new DevExpress.XtraEditors.CheckEdit();
             checkEditlk = new DevExpress.XtraEditors.CheckEdit();
             checkEditlt = new DevExpress.XtraEditors.CheckEdit();
             sbexportinv = new DevExpress.XtraEditors.SimpleButton();
@@ -297,7 +298,6 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)gridView_inv_header).BeginInit();
             ((System.ComponentModel.ISupportInitialize)groupControl3).BeginInit();
             groupControl3.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)checkEditInvBaru.Properties).BeginInit();
             ((System.ComponentModel.ISupportInitialize)checkEditlk.Properties).BeginInit();
             ((System.ComponentModel.ISupportInitialize)checkEditlt.Properties).BeginInit();
             ((System.ComponentModel.ISupportInitialize)GC_INV).BeginInit();
@@ -882,6 +882,7 @@ namespace Accounting.Form
             txtfilterketerangan.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
             txtfilterketerangan.Size = new System.Drawing.Size(235, 34);
             txtfilterketerangan.TabIndex = 3;
+            txtfilterketerangan.EditValueChanged += txtfilterketerangan_EditValueChanged;
             txtfilterketerangan.KeyDown += txtfilterketerangan_KeyDown;
             // 
             // txtfilterjumlah
@@ -898,6 +899,7 @@ namespace Accounting.Form
             txtfilterjumlah.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
             txtfilterjumlah.Size = new System.Drawing.Size(134, 34);
             txtfilterjumlah.TabIndex = 2;
+            txtfilterjumlah.EditValueChanged += txtfilterjumlah_EditValueChanged;
             txtfilterjumlah.KeyDown += txtfilterjumlah_KeyDown;
             // 
             // txtfilterkode
@@ -910,6 +912,7 @@ namespace Accounting.Form
             txtfilterkode.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
             txtfilterkode.Size = new System.Drawing.Size(115, 34);
             txtfilterkode.TabIndex = 1;
+            txtfilterkode.EditValueChanged += txtfilterkode_EditValueChanged;
             txtfilterkode.KeyDown += txtfilterkode_KeyDown;
             // 
             // txtfilternojurnal
@@ -922,6 +925,7 @@ namespace Accounting.Form
             txtfilternojurnal.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
             txtfilternojurnal.Size = new System.Drawing.Size(125, 34);
             txtfilternojurnal.TabIndex = 0;
+            txtfilternojurnal.EditValueChanged += txtfilternojurnal_EditValueChanged;
             txtfilternojurnal.KeyDown += txtfilternojurnal_KeyDown;
             // 
             // sbfilterexport
@@ -1262,6 +1266,7 @@ namespace Accounting.Form
             txtcariketerangan.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
             txtcariketerangan.Size = new System.Drawing.Size(371, 34);
             txtcariketerangan.TabIndex = 3;
+            txtcariketerangan.EditValueChanged += txtcariketerangan_EditValueChanged;
             txtcariketerangan.KeyDown += txcariketerangan_KeyDown;
             // 
             // txtcarijumlah
@@ -1278,6 +1283,7 @@ namespace Accounting.Form
             txtcarijumlah.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
             txtcarijumlah.Size = new System.Drawing.Size(134, 34);
             txtcarijumlah.TabIndex = 2;
+            txtcarijumlah.EditValueChanged += txtcarijumlah_EditValueChanged;
             txtcarijumlah.KeyDown += txtcarijumlah_KeyDown;
             // 
             // txtcarikode
@@ -1290,6 +1296,7 @@ namespace Accounting.Form
             txtcarikode.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
             txtcarikode.Size = new System.Drawing.Size(115, 34);
             txtcarikode.TabIndex = 1;
+            txtcarikode.EditValueChanged += txtcarikode_EditValueChanged;
             txtcarikode.KeyDown += txtcarikode_KeyDown;
             // 
             // txtcarinomor
@@ -1302,6 +1309,7 @@ namespace Accounting.Form
             txtcarinomor.Properties.UseAdvancedMode = DevExpress.Utils.DefaultBoolean.True;
             txtcarinomor.Size = new System.Drawing.Size(125, 34);
             txtcarinomor.TabIndex = 0;
+            txtcarinomor.EditValueChanged += txtcarinomor_EditValueChanged;
             txtcarinomor.KeyDown += txtcarinomor_KeyDown;
             // 
             // sbexport
@@ -1819,6 +1827,8 @@ namespace Accounting.Form
             sidePanel1.Controls.Add(lookUpEditEstate);
             sidePanel1.Controls.Add(leremiseAIS);
             sidePanel1.Controls.Add(sbExportExcelAIS);
+            sidePanel1.Controls.Add(sbExportBoronganAIS);
+            sidePanel1.Controls.Add(sbExportHarianAIS);
             sidePanel1.Controls.Add(cmbbulanAIS);
             sidePanel1.Controls.Add(sbbuatjurnalAIS);
             sidePanel1.Controls.Add(setahunAIS);
@@ -1860,7 +1870,27 @@ namespace Accounting.Form
             sbExportExcelAIS.TabIndex = 35;
             sbExportExcelAIS.Text = "Export";
             sbExportExcelAIS.Click += sbExportExcelAIS_Click;
-            // 
+            //
+            // sbExportBoronganAIS
+            //
+            sbExportBoronganAIS.ImageOptions.Image = Properties.Resources.exporttoxls_32x32;
+            sbExportBoronganAIS.Location = new System.Drawing.Point(671, 4);
+            sbExportBoronganAIS.Name = "sbExportBoronganAIS";
+            sbExportBoronganAIS.Size = new System.Drawing.Size(107, 34);
+            sbExportBoronganAIS.TabIndex = 39;
+            sbExportBoronganAIS.Text = "Borongan";
+            sbExportBoronganAIS.Click += sbExportBoronganAIS_Click;
+            //
+            // sbExportHarianAIS
+            //
+            sbExportHarianAIS.ImageOptions.Image = Properties.Resources.exporttoxls_32x32;
+            sbExportHarianAIS.Location = new System.Drawing.Point(782, 4);
+            sbExportHarianAIS.Name = "sbExportHarianAIS";
+            sbExportHarianAIS.Size = new System.Drawing.Size(107, 34);
+            sbExportHarianAIS.TabIndex = 40;
+            sbExportHarianAIS.Text = "Harian";
+            sbExportHarianAIS.Click += sbExportHarianAIS_Click;
+            //
             // cmbbulanAIS
             // 
             cmbbulanAIS.Location = new System.Drawing.Point(173, 4);
@@ -1951,7 +1981,6 @@ namespace Accounting.Form
             // 
             // groupControl3
             // 
-            groupControl3.Controls.Add(checkEditInvBaru);
             groupControl3.Controls.Add(checkEditlk);
             groupControl3.Controls.Add(checkEditlt);
             groupControl3.Location = new System.Drawing.Point(532, 0);
@@ -1959,16 +1988,6 @@ namespace Accounting.Form
             groupControl3.Size = new System.Drawing.Size(200, 55);
             groupControl3.TabIndex = 37;
             groupControl3.Text = "Filter by";
-            // 
-            // checkEditInvBaru
-            // 
-            checkEditInvBaru.Location = new System.Drawing.Point(102, 28);
-            checkEditInvBaru.Name = "checkEditInvBaru";
-            checkEditInvBaru.Properties.Caption = "Inv Baru";
-            checkEditInvBaru.Size = new System.Drawing.Size(84, 21);
-            checkEditInvBaru.TabIndex = 1;
-            checkEditInvBaru.CheckedChanged += checkEditInvBaru_CheckedChanged;
-            // 
             // checkEditlk
             // 
             checkEditlk.Location = new System.Drawing.Point(56, 28);
@@ -2214,7 +2233,6 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)gridView_inv_header).EndInit();
             ((System.ComponentModel.ISupportInitialize)groupControl3).EndInit();
             groupControl3.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)checkEditInvBaru.Properties).EndInit();
             ((System.ComponentModel.ISupportInitialize)checkEditlk.Properties).EndInit();
             ((System.ComponentModel.ISupportInitialize)checkEditlt.Properties).EndInit();
             ((System.ComponentModel.ISupportInitialize)GC_INV).EndInit();
@@ -2321,6 +2339,8 @@ namespace Accounting.Form
         private DevExpress.XtraEditors.SimpleButton sbbuatjurnalkasir;
         private DevExpress.XtraEditors.SimpleButton sbexportexcel;
         private DevExpress.XtraEditors.SimpleButton sbExportExcelAIS;
+        private DevExpress.XtraEditors.SimpleButton sbExportBoronganAIS;
+        private DevExpress.XtraEditors.SimpleButton sbExportHarianAIS;
         private DevExpress.XtraEditors.SimpleButton sbbuatjurnalAIS;
         private DevExpress.XtraGrid.GridControl gcAISdetail;
         private DevExpress.XtraGrid.Views.Grid.GridView gridViewAISdetail;
@@ -2340,7 +2360,6 @@ namespace Accounting.Form
         private DevExpress.XtraEditors.CheckEdit checkEditBANK;
         private DevExpress.XtraEditors.CheckEdit checkEditKAS;
         private DevExpress.XtraEditors.GroupControl groupControl3;
-        private DevExpress.XtraEditors.CheckEdit checkEditInvBaru;
         private DevExpress.XtraEditors.CheckEdit checkEditlk;
         private DevExpress.XtraEditors.CheckEdit checkEditlt;
         private DevExpress.XtraEditors.LabelControl LBLTOTALTRANSAKSI;

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -187,12 +187,7 @@
   <data name="chartsshowlegend_32x32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\chartsshowlegend_32x32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="cloud-storage-6621829_1920" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\cloud-storage-6621829_1920.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="cloud-storage-6621829_19201" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\cloud-storage-6621829_19201.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
+
   <data name="copy_16x16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\copy_16x16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -232,9 +227,7 @@
   <data name="general_32x32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\general_32x32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="gl" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\gl.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
+
   <data name="gl2021" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\gl2021.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -319,9 +312,7 @@
   <data name="protectworkbook_32x32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\protectworkbook_32x32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="puzzle-6609449_1920" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\puzzle-6609449_1920.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
+
   <data name="removepivotfield_16x16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\removepivotfield_16x16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -352,15 +343,11 @@
   <data name="saveto_32x32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\saveto_32x32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="signpost-6609445_1920" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\signpost-6609445_1920.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
+
   <data name="small-fastviewer-splash" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\small-fastviewer-splash.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="teamwork-2198961_1280" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\teamwork-2198961_1280.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
+
   <data name="technology_16x16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\technology_16x16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>

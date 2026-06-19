@@ -17,11 +17,9 @@ namespace Accounting.Form
     {
         private const int ShellMinWidth = 980;
         private const int ShellMaxWidth = 1760;
-        private const int ShellMinHeight = 560;
-        private const int CardMinWidth = 460;
-        private const int CardMaxWidth = 560;
-        private const int CardMinHeight = 500;
-        private const int CardMaxHeight = 500;
+        private const int ShellMinHeight = 480;
+        private const int TargetCardWidth = 440;
+        private const int TargetCardHeight = 480;
 
         private readonly SoundPlayer Player = new();
         private bool isAuthenticating;
@@ -64,9 +62,9 @@ namespace Accounting.Form
         {
             InitializeComponent();
             ConfigureLoginBackground();
-            MinimumSize = new Size(1080, 680);
+            MinimumSize = new Size(1024, 600);
             formHostPanel.AutoScroll = true;
-            cardPanel.MinimumSize = new Size(CardMinWidth, CardMinHeight);
+            cardPanel.MinimumSize = new Size(400, 420);
 
             txtuserid.EditValueChanged += Input_EditValueChanged;
             txtpwd.EditValueChanged += Input_EditValueChanged;
@@ -86,8 +84,12 @@ namespace Accounting.Form
 
         private void Frmlogin_Load(object sender, EventArgs e)
         {
-            WindowState = FormWindowState.Maximized;
-            Bounds = Screen.FromControl(this).WorkingArea;
+            // For 1280x720 screens, WorkingArea may be ~1280x680 (taskbar).
+            // Ensure the form fills the working area without overflow.
+            Rectangle workArea = Screen.FromControl(this).WorkingArea;
+            WindowState = FormWindowState.Normal;
+            StartPosition = FormStartPosition.Manual;
+            Bounds = workArea;
 
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
@@ -104,7 +106,7 @@ namespace Accounting.Form
 
         private void ConfigureLoginBackground()
         {
-            backgroundPanel.BackColor = Color.FromArgb(228, 235, 243);
+            backgroundPanel.BackColor = Color.FromArgb(16, 29, 48);
 
             string customBackgroundPath = Path.Combine(Application.StartupPath, "Resources", "login-wireguard-bg.png");
             if (File.Exists(customBackgroundPath))
@@ -113,10 +115,17 @@ namespace Accounting.Form
             }
             else
             {
-                backgroundPanel.BackgroundImage = Resources.cloud_storage_6621829_1920;
+                backgroundPanel.BackgroundImage = null;
             }
 
             backgroundPanel.BackgroundImageLayout = ImageLayout.Stretch;
+
+            // Overlay mode: make intermediary panels transparent
+            // so the background image is fully visible behind the login card
+            shellPanel.BackColor = Color.Transparent;
+            shellPanel.Dock = DockStyle.Fill;
+            mainLayout.BackColor = Color.Transparent;
+            formHostPanel.BackColor = Color.Transparent;
         }
 
         private void ApplyResponsiveLayout()
@@ -126,101 +135,96 @@ namespace Accounting.Form
                 return;
             }
 
+            // Guard: during InitializeComponent → ResumeLayout, the form may not
+            // have its final dimensions yet, producing invalid layout calculations.
+            if (backgroundPanel.ClientSize.Width < 100 || backgroundPanel.ClientSize.Height < 100)
+            {
+                return;
+            }
+
+            // Overlay mode: no padding on background, shell fills via Dock
+            backgroundPanel.Padding = Padding.Empty;
+
             LayoutPreset preset = GetLayoutPreset(backgroundPanel.ClientSize.Width, backgroundPanel.ClientSize.Height);
-            int safeX = Math.Clamp(backgroundPanel.ClientSize.Width / 20, preset.SafeXMin, preset.SafeXMax);
-            int safeY = Math.Clamp(backgroundPanel.ClientSize.Height / 18, preset.SafeYMin, preset.SafeYMax);
-            backgroundPanel.Padding = new Padding(safeX, safeY, safeX, safeY);
 
-            int availableWidth = Math.Max(360, backgroundPanel.ClientSize.Width - (safeX * 2));
-            int availableHeight = Math.Max(320, backgroundPanel.ClientSize.Height - (safeY * 2));
-
-            int shellWidth = availableWidth < ShellMinWidth
-                ? availableWidth
-                : Math.Clamp(availableWidth, ShellMinWidth, ShellMaxWidth);
-
-            int shellHeight = availableHeight < ShellMinHeight
-                ? availableHeight
-                : Math.Clamp(availableHeight, ShellMinHeight, backgroundPanel.ClientSize.Height);
-
-            shellPanel.Size = new Size(shellWidth, shellHeight);
-            shellPanel.Location = new Point(
-                (backgroundPanel.ClientSize.Width - shellPanel.Width) / 2,
-                (backgroundPanel.ClientSize.Height - shellPanel.Height) / 2);
-
-            bool singleColumnMode = shellWidth < preset.SingleColumnThreshold;
-            ConfigureLayoutMode(singleColumnMode, preset.BrandPercent);
+            // Always single column with brand hidden (branding is in the background image)
+            ConfigureLayoutMode(true, 0F);
             ApplyAdaptiveTypography(preset);
-            ResizeCard(singleColumnMode, safeX, preset);
+
+            int safeX = Math.Clamp(backgroundPanel.ClientSize.Width / 20, preset.SafeXMin, preset.SafeXMax);
+            ResizeCard(true, safeX, preset);
             LayoutCardContent();
             ApplyRoundedCorners(cardPanel, 18);
-            ApplyRoundedCorners(brandPanel, 24);
-            ApplyRoundedCorners(logoPanel, 14);
         }
 
         private void ConfigureLayoutMode(bool singleColumnMode, float brandPercent)
         {
-            if (singleColumnMode)
-            {
-                if (mainLayout.ColumnCount != 1)
-                {
-                    mainLayout.SuspendLayout();
-                    mainLayout.ColumnStyles.Clear();
-                    mainLayout.ColumnCount = 1;
-                    mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-                    mainLayout.SetColumn(formHostPanel, 0);
-                    mainLayout.ResumeLayout();
-                }
-
-                brandPanel.Visible = false;
-                formHostPanel.Margin = Padding.Empty;
-                return;
-            }
-
-            if (mainLayout.ColumnCount != 2)
+            // Overlay mode: always single column, brand panel permanently hidden
+            if (mainLayout.ColumnCount != 1)
             {
                 mainLayout.SuspendLayout();
                 mainLayout.ColumnStyles.Clear();
-                mainLayout.ColumnCount = 2;
-                mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, brandPercent));
-                mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F - brandPercent));
-                mainLayout.SetColumn(brandPanel, 0);
-                mainLayout.SetColumn(formHostPanel, 1);
+                mainLayout.ColumnCount = 1;
+                mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+                mainLayout.SetColumn(formHostPanel, 0);
                 mainLayout.ResumeLayout();
             }
-            else
-            {
-                mainLayout.ColumnStyles[0].SizeType = SizeType.Percent;
-                mainLayout.ColumnStyles[0].Width = brandPercent;
-                mainLayout.ColumnStyles[1].SizeType = SizeType.Percent;
-                mainLayout.ColumnStyles[1].Width = 100F - brandPercent;
-            }
 
-            brandPanel.Visible = true;
-            formHostPanel.Margin = new Padding(14, 0, 0, 0);
+            brandPanel.Visible = false;
+            formHostPanel.Margin = Padding.Empty;
         }
 
         private void ResizeCard(bool singleColumnMode, int safeX, LayoutPreset preset)
         {
-            int maxCardWidth = singleColumnMode ? Math.Max(600, preset.CardMaxW) : preset.CardMaxW;
             int formWidth = Math.Max(360, formHostPanel.ClientSize.Width);
             int formHeight = Math.Max(320, formHostPanel.ClientSize.Height);
-            int effectiveMinWidth = Math.Max(CardMinWidth, preset.CardMinW);
-            int effectiveMaxWidth = Math.Max(effectiveMinWidth, maxCardWidth);
-            int cardWidth = Math.Clamp(formWidth - Math.Max(32, safeX / 2), effectiveMinWidth, effectiveMaxWidth);
 
-            int effectiveMinHeight = Math.Max(CardMinHeight, preset.CardMinH);
-            int preferredMaxHeight = Math.Max(effectiveMinHeight, Math.Max(CardMaxHeight, preset.CardMaxH));
-            int preferredHeight = Math.Clamp((int)(formHeight * 0.74), effectiveMinHeight, preferredMaxHeight);
-            int requiredHeight = Math.Max(effectiveMinHeight, CreateCardLayoutSnapshot(cardWidth).RequiredHeight);
-            int cardHeight = Math.Max(preferredHeight, requiredHeight);
+            // 1. Scale ideal dimensions based on system DPI
+            int cardWidth = ScaleByDpi(TargetCardWidth);
+
+            // 1a. Use compact padding when vertical space is tight (e.g. 1280x720)
+            bool compactMode = formHeight < ScaleByDpi(660);
+            if (compactMode)
+            {
+                cardPanel.Padding = new Padding(28, 20, 28, 18);
+            }
+            else
+            {
+                cardPanel.Padding = new Padding(34, 30, 34, 24);
+            }
+
+            int requiredHeight = CreateCardLayoutSnapshot(cardWidth).RequiredHeight;
+            int cardHeight = Math.Max(ScaleByDpi(TargetCardHeight), requiredHeight);
+
+            // 2. Adjust gracefully if form size is smaller than target card dimensions
+            if (cardWidth > formWidth - ScaleByDpi(32))
+            {
+                cardWidth = formWidth - ScaleByDpi(32);
+            }
+            if (cardHeight > formHeight - ScaleByDpi(16))
+            {
+                cardHeight = formHeight - ScaleByDpi(16);
+            }
 
             cardPanel.Size = new Size(cardWidth, cardHeight);
-            int yOffset = singleColumnMode ? -6 : preset.CardYOffset;
             int topInset = ScaleByDpi(8);
-            int cardY = cardHeight <= formHeight
-                ? Math.Max(topInset, ((formHeight - cardPanel.Height) / 2) + yOffset)
-                : topInset;
-            cardPanel.Location = new Point((formWidth - cardPanel.Width) / 2, cardY);
+            
+            // Lower the card vertically to avoid overlapping background elements (logo/icons)
+            int yOffset = ScaleByDpi(70);
+            int cardY = topInset;
+            if (cardHeight <= formHeight)
+            {
+                int calculatedY = (formHeight - cardPanel.Height) / 2 + yOffset;
+                int maxVal = formHeight - cardPanel.Height - ScaleByDpi(20);
+                cardY = topInset <= maxVal ? Math.Clamp(calculatedY, topInset, maxVal) : topInset;
+            }
+
+            // 3. Position card on the right side with a comfortable margin.
+            //    Use a smaller margin on compact (1280x720-class) screens.
+            int rightMargin = formWidth <= 1300 ? ScaleByDpi(40) : ScaleByDpi(64);
+            int cardX = Math.Max(ScaleByDpi(16), formWidth - cardPanel.Width - rightMargin);
+
+            cardPanel.Location = new Point(cardX - 100, cardY + 50);
             formHostPanel.AutoScrollMinSize = new Size(
                 cardPanel.Right + ScaleByDpi(8),
                 cardPanel.Bottom + ScaleByDpi(8));
@@ -245,10 +249,10 @@ namespace Accounting.Form
 
             if (width >= 1366 || (width >= 1280 && height >= 720))
             {
-                return new LayoutPreset(24, 84, 20, 72, 1120, 46F, 420, 548, 430, 492, -8, 17.5F, 10F);
+                return new LayoutPreset(24, 84, 16, 56, 1120, 46F, 410, 540, 400, 470, -6, 17F, 9.75F);
             }
 
-            return new LayoutPreset(20, 64, 16, 60, 1080, 47F, 400, 536, 420, 486, -6, 17F, 9.75F);
+            return new LayoutPreset(20, 64, 12, 48, 1080, 47F, 380, 520, 380, 460, -4, 16.5F, 9.5F);
         }
 
         private void ApplyAdaptiveTypography(LayoutPreset preset)
@@ -478,7 +482,16 @@ namespace Accounting.Form
             {
                 ClearValidationState();
                 SetBusyState(true);
-                handle = SplashScreenManager.ShowOverlayForm(this);
+                
+                // Force immediate layout resolution to ensure correct coordinates for the overlay window
+                this.PerformLayout();
+                this.Update();
+
+                OverlayWindowOptions options = new OverlayWindowOptions
+                {
+                    CustomPainter = new CustomOverlayPainter()
+                };
+                handle = SplashScreenManager.ShowOverlayForm(cardPanel, options);
 
                 string password = txtpwd.Text;
                 LoginAuthResult result = UserManager_Services.AuthenticateForModule(userId, password, LoginInfo.MODULE);
@@ -750,6 +763,27 @@ namespace Accounting.Form
         private void SetUserInformation(LOGIN_USERS_DTO user)
         {
             AppSession.ApplyLocationContext(user);
+        }
+
+        private class CustomOverlayPainter : OverlayWindowPainterBase
+        {
+            protected override void Draw(OverlayWindowCustomDrawContext context)
+            {
+                // Disable default rendering so we don't paint the whole form
+                context.Handled = true;
+
+                var cache = context.DrawArgs.Cache;
+                var bounds = context.DrawArgs.Bounds;
+
+                // Fill only the cardPanel bounds with a premium semi-transparent dark shade
+                using (var brush = new SolidBrush(Color.FromArgb(100, 16, 29, 48)))
+                {
+                    cache.FillRectangle(brush, bounds);
+                }
+
+                // Draw the default animation spinner inside the cardPanel bounds
+                context.DrawImage();
+            }
         }
     }
 }

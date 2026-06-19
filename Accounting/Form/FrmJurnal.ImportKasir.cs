@@ -21,12 +21,13 @@ namespace Accounting.Form
 {
     public partial class FrmJurnal
     {
+        private const int MinKasirYear = 2022;
 
         private void Load_Kode_Kasir()
         {
             lookUpEditkasir.Properties.DataSource = GetKasirKode(CompanyInfo.IDDATA);
-            lookUpEditkasir.Properties.ValueMember = "KASIR";
-            lookUpEditkasir.Properties.DisplayMember = "KASIR";
+            lookUpEditkasir.Properties.ValueMember = "ESTATEID";
+            lookUpEditkasir.Properties.DisplayMember = "NAMA";
         }
 
 
@@ -51,46 +52,29 @@ namespace Accounting.Form
             {
                 if (lookUpEditkasir.EditValue != null)
                 {
-                    if (setahunkasir.Value >= 2022)
+                    if (setahunkasir.Value >= MinKasirYear)
                     {
                         int p_glyear = Convert.ToInt32(setahunkasir.Value);
                         int p_glmonth = cmbbulankasir.SelectedIndex + 1;
 
-                        var lastDayOfMonth = DateTime.DaysInMonth(p_glyear, p_glmonth);
-                        DateTime tglakhir = new(p_glyear, p_glmonth, lastDayOfMonth);
-                        var akhirbulan = Convert.ToDateTime(tglakhir.ToString("dd-MM-yyyy")).Date;
-
                         DateTime p_dari = new(p_glyear, p_glmonth, 1);
-                        DateTime p_sampai = new(p_glyear, p_glmonth, akhirbulan.Day);
-                        var p_estate = lookUpEditkasir.EditValue.ToString();
+                        DateTime p_sampai = new(p_glyear, p_glmonth, DateTime.DaysInMonth(p_glyear, p_glmonth));
+                        var p_estate = lookUpEditkasir.EditValue.ToString() ?? string.Empty;
                         var p_iddata = CompanyInfo.IDDATA;
 
-                        string p_ptlokasi = string.Empty;
-                        var row = lookUpEditkasir.GetSelectedDataRow() as DataRowView;
-                        if (row != null)
-                        {
-                            p_ptlokasi = row["PTLOKASI"]?.ToString() ?? string.Empty;
-                        }
-
-
-
-                        //jika periode telah dikunci,  batalkan proses import jurnal
                         var p_periode = FormatPeriod(p_glmonth, p_glyear);
                         var p_userid = LoginInfo.userID;
- 
 
-                        //JurnalFromKasir= jurnalRepository.GetJurnalDetails_DapperKasir(dari, sampai, aliasptlokasi, aliaskodekasir);
                         dtJurnalKasir = jurnalRepository.JurnalKasirDetail_DapperKasir(
                             p_dari,
                             p_sampai,
                             p_iddata,
-                            p_estate ?? string.Empty,
+                            p_estate,
                             "True",
                             p_periode,
                             p_userid,
                             p_glyear,
                             p_glmonth);
-
                     }
 
                 }
@@ -116,12 +100,7 @@ namespace Accounting.Form
                 if (dtJurnalKasir == null || dtJurnalKasir.Rows.Count == 0)
                     return;
 
-                if (checkEditKAS.Checked || checkEditBANK.Checked)
-                {
-                    checkEditKAS.Checked = false;
-                    checkEditBANK.Checked = false;
-                }
-
+                // Filter KAS/BANK hanya untuk tampilan grid; import selalu memproses seluruh KAS dan BANK.
                 pbulan = cmbbulankasir.SelectedIndex + 1;
                 ptahun = Convert.ToInt32(setahunkasir.Value);
 
@@ -171,21 +150,14 @@ namespace Accounting.Form
         {
             if (lookUpEditkasir.EditValue != null)
             {
-                if (setahunkasir.Value >= 2022)
+                if (setahunkasir.Value >= MinKasirYear)
                 {
                     int ptahun = Convert.ToInt32(setahunkasir.Value);
                     int pbulan = cmbbulankasir.SelectedIndex + 1;
                     var p_estate = lookUpEditkasir.EditValue.ToString();
-                    string p_ptlokasi = string.Empty;
-                    var row = lookUpEditkasir.GetSelectedDataRow() as DataRowView;
-                    if (row != null)
-                    {
-                        p_ptlokasi = row["PTLOKASI"]?.ToString() ?? string.Empty;
-                    }
-
 
                     var p_periode_int = Convert.ToInt32(ptahun.ToString() + pbulan.ToString("0#"));
-                    KasirJurnalHeader = jurnalRepository.GetJurnalHeader_Kasir(p_periode_int, p_ptlokasi, p_estate ?? string.Empty);
+                    KasirJurnalHeader = jurnalRepository.GetJurnalHeader_Kasir(p_periode_int, p_estate ?? string.Empty, CompanyInfo.IDDATA);
                     GC_KasirHeader.DataSource = KasirJurnalHeader;
                 }
             }
@@ -194,62 +166,38 @@ namespace Accounting.Form
 
         private void checkEditKAS_CheckedChanged(object sender, EventArgs e)
         {
-            try
-            {
-                if (dtJurnalKasir.Rows.Count > 0)
-                {
-                    if (checkEditKAS.Checked == true)
-                    {
-
-                        checkEditBANK.Checked = false;
-                        ColumnView view = gridView_KasirHeader;
-                        GridColumn colCategory = view.Columns["NOMOR"];
-                        ColumnFilterInfo filter = new("Contains([NOMOR], '/KK') OR Contains([NOMOR], '/KT') ", string.Empty);
-                        view.ActiveFilter.Add(colCategory, filter);
-                    }
-                    else
-                    {
-
-                        gridView_KasirHeader.Columns["NOMOR"].ClearFilter();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-            }
+            ApplyKasirNomorFilter(checkEditBANK, checkEditKAS.Checked, "Contains([NOMOR], '/KK') OR Contains([NOMOR], '/KT')");
         }
 
 
         private void checkEditBANK_CheckedChanged(object sender, EventArgs e)
         {
+            ApplyKasirNomorFilter(checkEditKAS, checkEditBANK.Checked, "Contains([NOMOR], '/BK') OR Contains([NOMOR], '/BT')");
+        }
+
+
+        private void ApplyKasirNomorFilter(CheckEdit other, bool isChecked, string filterExpression)
+        {
             try
             {
-                if (dtJurnalKasir.Rows.Count > 0)
+                if (dtJurnalKasir == null || dtJurnalKasir.Rows.Count == 0)
+                    return;
+
+                GridColumn nomorColumn = gridView_KasirHeader.Columns["NOMOR"];
+                if (isChecked)
                 {
-                    if (checkEditBANK.Checked == true)
-                    {
-
-                        checkEditKAS.Checked = false;
-                        ColumnView view = gridView_KasirHeader;
-                        GridColumn colCategory = view.Columns["NOMOR"];
-                        ColumnFilterInfo filter = new("Contains([NOMOR], '/BK') OR Contains([NOMOR], '/BT')", string.Empty);
-                        view.ActiveFilter.Add(colCategory, filter);
-                    }
-                    else
-                    {
-
-                        gridView_KasirHeader.Columns["NOMOR"].ClearFilter();
-                    }
+                    other.Checked = false;
+                    gridView_KasirHeader.ActiveFilter.Add(nomorColumn, new ColumnFilterInfo(filterExpression, string.Empty));
+                }
+                else
+                {
+                    nomorColumn.ClearFilter();
                 }
             }
             catch (Exception ex)
             {
                 XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
             }
-
         }
 
 
@@ -392,24 +340,21 @@ namespace Accounting.Form
                 var filter = gridView_KasirHeader.GetRowCellValue(gridView_KasirHeader.FocusedRowHandle, "NOMOR").ToString();
                 var filtered = dtJurnalKasir.AsEnumerable().Where(row => row.Field<string>("NOJURNAL") == filter).CopyToDataTable();
                 gckasir_Detail.DataSource = filtered;
-                gridView_kasir.Columns[0].Visible = false;
-                gridView_kasir.Columns[1].Visible = false;
-                gridView_kasir.Columns[2].Visible = false;
-                gridView_kasir.Columns[8].Visible = false;
-                gridView_kasir.Columns[9].Visible = false;
-                gridView_kasir.Columns[10].Visible = false;
-                gridView_kasir.Columns[11].Visible = false;
-                gridView_kasir.Columns[12].Visible = false;
-                gridView_kasir.Columns[13].Visible = false;
-                ApplyNumericFormat(gridView_kasir.Columns[5]);
-                ApplyNumericFormat(gridView_kasir.Columns[6]);
-                ApplyNumericSummary(gridView_kasir.Columns[5], "DEBET");
-                ApplyNumericSummary(gridView_kasir.Columns[6], "KREDIT");
+                foreach (var hiddenColumn in new[] { "NOJURNAL", "TANGGAL", "BARIS", "POSTED", "PERIODE", "IDDATA", "USERID", "GLYEAR", "GLMONTH" })
+                {
+                    GridColumn column = gridView_kasir.Columns[hiddenColumn];
+                    if (column != null)
+                        column.Visible = false;
+                }
+                ApplyNumericFormat(gridView_kasir.Columns["DEBET"]);
+                ApplyNumericFormat(gridView_kasir.Columns["KREDIT"]);
+                ApplyNumericSummary(gridView_kasir.Columns["DEBET"], "DEBET");
+                ApplyNumericSummary(gridView_kasir.Columns["KREDIT"], "KREDIT");
                 gridView_kasir.BestFitColumns();
             }
             catch (Exception ex)
             {
-                XtraMessageBox.Show(ex.Message, "Error on filter Inventory", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                XtraMessageBox.Show(ex.Message, "Error on filter Jurnal Kasir", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

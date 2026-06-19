@@ -58,7 +58,7 @@ namespace Accounting._1.Interface
         void RekalkulasiByJurnalID(string pIdData, int pBulan, int pTahun, double pJurnalId, string pPeriode, string pUserId);
         void RekalkulasiSaldo(string pIdData, int pBulan, int pTahun, string pUserId);
         DataTable JurnalKasirDetail_DapperKasir(DateTime pDari, DateTime pSampai, string pIdData, string pEstate, string pPosted, string pPeriode, string pUserId, int pGlYear, int pGlMonth);
-        IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int pPeriodeInt, string pPtLokasi, string pEstate);
+        IEnumerable<JurnalKasirHeaderDTO> GetJurnalHeader_Kasir(int pPeriodeInt, string pEstate, string pIdData);
         DataTable AIS_Jurnal_Detail_ALL_HARIAN(DateTime tanggalJurnal, int pPeriode, string pPeriodeStr, string pPtLokasi, string pEstate, int pRemise, string pIdData);
         IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_Inventory(int pPeriodeInt, string pPtLokasi);
         IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int pPeriodeInt, string pPtLokasi, string? pSourceFilter = null);

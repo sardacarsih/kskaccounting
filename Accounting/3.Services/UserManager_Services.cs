@@ -29,25 +29,25 @@ namespace Accounting.Services
 
         public static void AddUserRole_Estate(string userid, int estateid)
         {
-            AuthorizationService.EnsureCanManageUsers(userid);
+            AuthorizationService.EnsureCanManageUserLocationAccess(userid);
             repository.AddUserRole_Estate(userid, estateid);
         }
 
         public static void AddUserRole_IDDATA(string userid, string iddata)
         {
-            AuthorizationService.EnsureCanManageUsers(userid);
+            AuthorizationService.EnsureCanManageUserLocationAccess(userid);
             repository.AddUserRole_IDDATA(userid, iddata);
         }
 
         public static void DeleteAksesEstate(string userid, int estateid)
         {
-            AuthorizationService.EnsureCanManageUsers(userid);
+            AuthorizationService.EnsureCanManageUserLocationAccess(userid);
             repository.DeleteAksesEstate(userid, estateid);
         }
 
         public static void DeleteIDData(string userid, string iddata)
         {
-            AuthorizationService.EnsureCanManageUsers(userid);
+            AuthorizationService.EnsureCanManageUserLocationAccess(userid);
             repository.DeleteIDData(userid, iddata);
         }
 
