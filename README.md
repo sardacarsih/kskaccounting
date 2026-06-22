@@ -20,7 +20,7 @@ KSK Accounting adalah aplikasi desktop Accounting / General Ledger berbasis .NET
 - Export jurnal dan laporan ke format spreadsheet
 - Master data akun, lokasi, blok, divisi, periode, company profile, dan user
 - Role Based Access Control untuk menu dan aksi aplikasi
-- Login security hardening dengan hashing password PBKDF2
+- Login security hardening dengan PBKDF2-HMAC-SHA256, 600.000 iterasi, salt acak 16 byte, dan migrasi hash lama saat login
 - Audit trail untuk aktivitas penting
 - Fixed Asset:
   - master asset

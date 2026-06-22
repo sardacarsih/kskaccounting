@@ -369,6 +369,14 @@ namespace Accounting.DataLayer
         WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
           AND IL.""Name"" = :p_iddata
         GROUP BY IR.""ReceptionNumber""
+        UNION ALL
+        SELECT IUS.""Number"" AS NOMOR,
+               MIN(IUS.""Date"") AS TANGGAL
+        FROM ""InvUsages"" IUS
+        JOIN ""InvLocations"" IL ON IL.""Id"" = IUS.""LocationId""
+        WHERE IUS.""Date"" >= :p_dari AND IUS.""Date"" < :p_next_month
+          AND IL.""Name"" = :p_iddata
+        GROUP BY IUS.""Number""
         ORDER BY NOMOR, TANGGAL";
 
             using var connection = new OracleConnection(LoginInfo.OracleConnString);
@@ -387,10 +395,59 @@ namespace Accounting.DataLayer
             }
         }
 
-        // Live LT (penerimaan barang) detail journal, sourced from the inventory app schema (Inv* tables).
-        // Debit: each reception item to its item-type account; Credit: one aggregated line per reception
-        // to the BARANG_DALAM_PERJALANAN default account (ACCT_DEFAULT) for the current IDDATA.
+        // Live LT/LK detail journal, sourced from the inventory app schema (Inv* tables).
+        // LT: debit each reception item to its item-type account and credit the reception account.
+        // LK: debit each usage item to its usage account and credit inventory by item-type account.
         private const string InventoryBaruDetailSql = @"
+        WITH LT_BASE AS (
+            SELECT IR.""ReceptionNumber"" AS NOJURNAL,
+                   IR.""ReceptionDate"" AS TANGGAL,
+                   IR.""DeliveryNumber"" AS REFERENCE_NUMBER,
+                   IR.""CreditAccountNumber"" AS CREDIT_ACCOUNT,
+                   (SELECT MAX(COA.NAMAACC)
+                    FROM ACCT_COA COA
+                    WHERE COA.KODEACC = IR.""CreditAccountNumber""
+                      AND COA.IDDATA = :p_iddata
+                      AND COA.TAHUN = :p_glyear) AS CREDIT_ACCOUNT_NAME,
+                   IIT.""CreditAccountNumber"" AS DEBIT_ACCOUNT,
+                   IIT.""Name"" AS DEBIT_ACCOUNT_NAME,
+                   II.""Name"" AS ITEM_NAME,
+                   IU.""Name"" AS UNIT_NAME,
+                   IRI.""Quantity"" AS QUANTITY,
+                   ROUND(NVL(IRI.""Quantity"", 0) * NVL(IRI.""UnitPrice"", 0), 2) AS AMOUNT
+            FROM ""InvReceptions"" IR
+            JOIN ""InvReceptionItems"" IRI ON IRI.""ReceptionId"" = IR.""Id""
+            LEFT JOIN ""InvItems"" II ON II.""Id"" = IRI.""ItemId""
+            LEFT JOIN ""InvUnits"" IU ON IU.""Id"" = II.""UnitId""
+            LEFT JOIN ""InvItemTypes"" IIT ON IIT.""Id"" = II.""ItemTypeId""
+            JOIN ""InvLocations"" IL ON IL.""Id"" = IR.""LocationId""
+            WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
+              AND IL.""Name"" = :p_iddata
+        ),
+        LK_BASE AS (
+            SELECT IUS.""Number"" AS NOJURNAL,
+                   IUS.""Date"" AS TANGGAL,
+                   IUSI.""UsageDebitAccountNumber"" AS DEBIT_ACCOUNT,
+                   (SELECT MAX(COA.NAMAACC)
+                    FROM ACCT_COA COA
+                    WHERE COA.KODEACC = IUSI.""UsageDebitAccountNumber""
+                      AND COA.IDDATA = :p_iddata
+                      AND COA.TAHUN = :p_glyear) AS DEBIT_ACCOUNT_NAME,
+                   IIT.""CreditAccountNumber"" AS CREDIT_ACCOUNT,
+                   IIT.""Name"" AS CREDIT_ACCOUNT_NAME,
+                   II.""Name"" AS ITEM_NAME,
+                   IU.""Name"" AS UNIT_NAME,
+                   IUSI.""Quantity"" AS QUANTITY,
+                   ROUND(NVL(IUSI.""Quantity"", 0) * NVL(IUSI.""UnitValue"", 0), 2) AS AMOUNT
+            FROM ""InvUsages"" IUS
+            JOIN ""InvUsageItems"" IUSI ON IUSI.""UsageId"" = IUS.""Id""
+            LEFT JOIN ""InvItems"" II ON II.""Id"" = IUSI.""ItemId""
+            LEFT JOIN ""InvUnits"" IU ON IU.""Id"" = IUSI.""UnitId""
+            LEFT JOIN ""InvItemTypes"" IIT ON IIT.""Id"" = II.""ItemTypeId""
+            JOIN ""InvLocations"" IL ON IL.""Id"" = IUS.""LocationId""
+            WHERE IUS.""Date"" >= :p_dari AND IUS.""Date"" < :p_next_month
+              AND IL.""Name"" = :p_iddata
+        )
         SELECT X.NOJURNAL,
                X.TANGGAL,
                ROW_NUMBER() OVER (PARTITION BY X.NOJURNAL ORDER BY X.SORT_ORDER, X.KODE) AS BARIS,
@@ -406,39 +463,49 @@ namespace Accounting.DataLayer
                :p_glyear AS GLYEAR,
                :p_glmonth AS GLMONTH
         FROM (
-            SELECT IR.""ReceptionNumber"" AS NOJURNAL,
-                   IR.""ReceptionDate"" AS TANGGAL,
-                   CAST(IIT.""CreditAccountNumber"" AS VARCHAR2(50)) AS KODE,
-                   CAST(IIT.""Name"" AS NVARCHAR2(200)) AS REKENING,
-                   ROUND(IRI.""Quantity"" * IRI.""UnitPrice"", 2) AS DEBET,
+            SELECT LT.NOJURNAL,
+                   LT.TANGGAL,
+                   CAST(LT.DEBIT_ACCOUNT AS VARCHAR2(50)) AS KODE,
+                   CAST(LT.DEBIT_ACCOUNT_NAME AS NVARCHAR2(200)) AS REKENING,
+                   LT.AMOUNT AS DEBET,
                    ROUND(0, 2) AS KREDIT,
-                   TO_NCHAR(IR.""DeliveryNumber"") || N', ' || TO_NCHAR(II.""Name"") || N' = '
-                       || TO_NCHAR(IRI.""Quantity"") || N' ' || TO_NCHAR(IU.""Name"") AS KETERANGAN,
+                   TO_NCHAR(LT.REFERENCE_NUMBER) || N', ' || TO_NCHAR(LT.ITEM_NAME) || N' = '
+                       || TO_NCHAR(LT.QUANTITY) || N' ' || TO_NCHAR(LT.UNIT_NAME) AS KETERANGAN,
                    1 AS SORT_ORDER
-            FROM ""InvReceptions"" IR
-            JOIN ""InvReceptionItems"" IRI ON IRI.""ReceptionId"" = IR.""Id""
-            JOIN ""InvItems"" II ON II.""Id"" = IRI.""ItemId""
-            JOIN ""InvUnits"" IU ON IU.""Id"" = II.""UnitId""
-            JOIN ""InvItemTypes"" IIT ON IIT.""Id"" = II.""ItemTypeId""
-            JOIN ""InvLocations"" IL ON IL.""Id"" = IR.""LocationId""
-            WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
-              AND IL.""Name"" = :p_iddata
+            FROM LT_BASE LT
             UNION ALL
-            SELECT IR.""ReceptionNumber"",
-                   IR.""ReceptionDate"",
-                   CAST((SELECT MAX(kodeacc) FROM ACCT_DEFAULT WHERE iddata = :p_iddata AND nama = 'BARANG_DALAM_PERJALANAN') AS VARCHAR2(50)) AS KODE,
-                   CAST((SELECT MAX(keterangan) FROM ACCT_DEFAULT WHERE iddata = :p_iddata AND nama = 'BARANG_DALAM_PERJALANAN') AS NVARCHAR2(200)) AS REKENING,
+            SELECT LT.NOJURNAL,
+                   LT.TANGGAL,
+                   CAST(LT.CREDIT_ACCOUNT AS VARCHAR2(50)) AS KODE,
+                   CAST(LT.CREDIT_ACCOUNT_NAME AS NVARCHAR2(200)) AS REKENING,
                    ROUND(0, 2) AS DEBET,
-                   ROUND(SUM(IRI.""Quantity"" * IRI.""UnitPrice""), 2) AS KREDIT,
-                   TO_NCHAR((SELECT MAX(keterangan) FROM ACCT_DEFAULT WHERE iddata = :p_iddata AND nama = 'BARANG_DALAM_PERJALANAN'))
-                       || N', ' || TO_NCHAR(IR.""ReceptionNumber"") AS KETERANGAN,
+                   SUM(LT.AMOUNT) AS KREDIT,
+                   TO_NCHAR(LT.CREDIT_ACCOUNT_NAME) || N', ' || TO_NCHAR(LT.REFERENCE_NUMBER) AS KETERANGAN,
                    2 AS SORT_ORDER
-            FROM ""InvReceptions"" IR
-            JOIN ""InvReceptionItems"" IRI ON IRI.""ReceptionId"" = IR.""Id""
-            JOIN ""InvLocations"" IL ON IL.""Id"" = IR.""LocationId""
-            WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
-              AND IL.""Name"" = :p_iddata
-            GROUP BY IR.""ReceptionNumber"", IR.""ReceptionDate""
+            FROM LT_BASE LT
+            GROUP BY LT.NOJURNAL, LT.TANGGAL, LT.CREDIT_ACCOUNT, LT.CREDIT_ACCOUNT_NAME, LT.REFERENCE_NUMBER
+            UNION ALL
+            SELECT LK.NOJURNAL,
+                   LK.TANGGAL,
+                   CAST(LK.DEBIT_ACCOUNT AS VARCHAR2(50)) AS KODE,
+                   CAST(LK.DEBIT_ACCOUNT_NAME AS NVARCHAR2(200)) AS REKENING,
+                   LK.AMOUNT AS DEBET,
+                   ROUND(0, 2) AS KREDIT,
+                   TO_NCHAR(LK.NOJURNAL) || N', ' || TO_NCHAR(LK.ITEM_NAME) || N' = '
+                       || TO_NCHAR(LK.QUANTITY) || N' ' || TO_NCHAR(LK.UNIT_NAME) AS KETERANGAN,
+                   3 AS SORT_ORDER
+            FROM LK_BASE LK
+            UNION ALL
+            SELECT LK.NOJURNAL,
+                   LK.TANGGAL,
+                   CAST(LK.CREDIT_ACCOUNT AS VARCHAR2(50)) AS KODE,
+                   CAST(LK.CREDIT_ACCOUNT_NAME AS NVARCHAR2(200)) AS REKENING,
+                   ROUND(0, 2) AS DEBET,
+                   SUM(LK.AMOUNT) AS KREDIT,
+                   TO_NCHAR(LK.CREDIT_ACCOUNT_NAME) || N', ' || TO_NCHAR(LK.NOJURNAL) AS KETERANGAN,
+                   4 AS SORT_ORDER
+            FROM LK_BASE LK
+            GROUP BY LK.NOJURNAL, LK.TANGGAL, LK.CREDIT_ACCOUNT, LK.CREDIT_ACCOUNT_NAME
         ) X
         ORDER BY X.TANGGAL, X.NOJURNAL, X.SORT_ORDER, X.KODE";
 

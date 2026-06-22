@@ -66,6 +66,17 @@ namespace Accounting.Form
             formHostPanel.AutoScroll = true;
             cardPanel.MinimumSize = new Size(400, 420);
 
+            // Double-buffer the container panels so the responsive relayout repaints
+            // smoothly instead of flickering panel-by-panel on startup and resize.
+            EnableDoubleBuffering(backgroundPanel);
+            EnableDoubleBuffering(shellPanel);
+            EnableDoubleBuffering(mainLayout);
+            EnableDoubleBuffering(formHostPanel);
+            EnableDoubleBuffering(cardPanel);
+            EnableDoubleBuffering(passwordLayout);
+            EnableDoubleBuffering(optionsLayout);
+            EnableDoubleBuffering(footerLayout);
+
             txtuserid.EditValueChanged += Input_EditValueChanged;
             txtpwd.EditValueChanged += Input_EditValueChanged;
             linkForgotPassword.AutoEllipsis = true;
@@ -82,6 +93,17 @@ namespace Accounting.Form
             lblSupport.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
         }
 
+        // The form's DoubleBuffered flag does not propagate to child controls, so the
+        // startup relayout repaints each container panel independently, producing the
+        // visible flicker/pop-in. Enable double buffering on each panel directly via
+        // its protected DoubleBuffered property.
+        private static void EnableDoubleBuffering(Control control)
+        {
+            typeof(Control)
+                .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(control, true);
+        }
+
         private void Frmlogin_Load(object sender, EventArgs e)
         {
             // For 1280x720 screens, WorkingArea may be ~1280x680 (taskbar).
@@ -89,7 +111,13 @@ namespace Accounting.Form
             Rectangle workArea = Screen.FromControl(this).WorkingArea;
             WindowState = FormWindowState.Normal;
             StartPosition = FormStartPosition.Manual;
+
+            // Apply the final bounds without letting the resize trigger its own layout
+            // pass; we run ApplyResponsiveLayout exactly once below so the form lays out
+            // and paints in a single pass before it first becomes visible.
+            Resize -= Frmlogin_Resize;
             Bounds = workArea;
+            Resize += Frmlogin_Resize;
 
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
@@ -147,14 +175,23 @@ namespace Accounting.Form
 
             LayoutPreset preset = GetLayoutPreset(backgroundPanel.ClientSize.Width, backgroundPanel.ClientSize.Height);
 
-            // Always single column with brand hidden (branding is in the background image)
-            ConfigureLayoutMode(true, 0F);
-            ApplyAdaptiveTypography(preset);
+            // Coalesce all child repositioning in this pass into a single layout cycle.
+            SuspendLayout();
+            try
+            {
+                // Always single column with brand hidden (branding is in the background image)
+                ConfigureLayoutMode(true, 0F);
+                ApplyAdaptiveTypography(preset);
 
-            int safeX = Math.Clamp(backgroundPanel.ClientSize.Width / 20, preset.SafeXMin, preset.SafeXMax);
-            ResizeCard(true, safeX, preset);
-            LayoutCardContent();
-            ApplyRoundedCorners(cardPanel, 18);
+                int safeX = Math.Clamp(backgroundPanel.ClientSize.Width / 20, preset.SafeXMin, preset.SafeXMax);
+                ResizeCard(true, safeX, preset);
+                LayoutCardContent();
+                ApplyRoundedCorners(cardPanel, 18);
+            }
+            finally
+            {
+                ResumeLayout(false);
+            }
         }
 
         private void ConfigureLayoutMode(bool singleColumnMode, float brandPercent)
