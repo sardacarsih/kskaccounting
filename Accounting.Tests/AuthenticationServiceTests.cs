@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Accounting.Interface;
 using Accounting.Models.Login;
 using Accounting.Services;
@@ -28,6 +29,28 @@ public sealed class AuthenticationServiceTests
         Assert.True(repository.ResetPasswordCalled);
         Assert.True(repository.UpdateSuccessfulLoginCalled);
         Assert.Contains(repository.AuditRecords, record => record.EVENT_TYPE == "LOGIN_AUTHENTICATED" && record.SUCCESS_FLAG == "Y");
+    }
+
+    [Fact]
+    public void AuthenticateForModule_WhenPbkdf2WorkFactorIsOutdated_RehashesWithCurrentWorkFactor()
+    {
+        const string password = "ValidPassword1!";
+        FakeUsersManager repository = new()
+        {
+            Credential = CreateCredential(CreateVersionedPbkdf2Hash(password, 210000)),
+            HasRbacAccess = true,
+            RbacUsers = [CreateLoginUser()]
+        };
+
+        LoginAuthResult result = AuthenticationService.AuthenticateForModule(
+            repository,
+            "legacy.user",
+            password,
+            "GL");
+
+        Assert.Equal(LoginAuthStatus.Success, result.Status);
+        Assert.True(repository.ResetPasswordCalled);
+        Assert.StartsWith("PBKDF2$SHA256$600000$", repository.Credential.PASSWORD, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -79,6 +102,24 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public void TryValidatePasswordPolicy_WhenPasswordHasFewerThanSixCharacters_ReturnsFalse()
+    {
+        bool valid = AuthenticationService.TryValidatePasswordPolicy("12345", out string validationMessage);
+
+        Assert.False(valid);
+        Assert.Equal("Password minimal 6 karakter.", validationMessage);
+    }
+
+    [Fact]
+    public void TryValidatePasswordPolicy_WhenPasswordHasSixCharacters_ReturnsTrue()
+    {
+        bool valid = AuthenticationService.TryValidatePasswordPolicy("123456", out string validationMessage);
+
+        Assert.True(valid);
+        Assert.Empty(validationMessage);
+    }
+
+    [Fact]
     public void AuthenticateForModule_WhenNoRbacOrLegacyAccess_ReturnsNoModuleAccess()
     {
         FakeUsersManager repository = new()
@@ -125,6 +166,21 @@ public sealed class AuthenticationServiceTests
             JENIS_AKUNTANSI = "GL",
             IsLegacyAccessPath = isLegacy
         };
+    }
+
+    private static string CreateVersionedPbkdf2Hash(string password, int iterations)
+    {
+        byte[] salt = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+        using Rfc2898DeriveBytes pbkdf2 = new(password, salt, iterations, HashAlgorithmName.SHA256);
+        byte[] hash = pbkdf2.GetBytes(32);
+
+        return string.Join(
+            "$",
+            "PBKDF2",
+            "SHA256",
+            iterations,
+            Convert.ToBase64String(salt),
+            Convert.ToBase64String(hash));
     }
 
     private sealed class FakeUsersManager : IUsersManager
