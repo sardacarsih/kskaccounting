@@ -354,19 +354,21 @@ namespace Accounting.DataLayer
 
         public IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int p_periode_int, string p_ptlokasi, string? p_source_filter = null)
         {
+            (DateTime dari, DateTime nextMonth) = MonthRange(p_periode_int / 100, p_periode_int % 100);
+
             var parameters = new DynamicParameters();
-            parameters.Add("p_periode_int", p_periode_int, DbType.Int32);
-            parameters.Add("p_ptlokasi", p_ptlokasi, DbType.String);
-            parameters.Add("p_source_filter", NormalizeInventorySourceFilter(p_source_filter), DbType.String);
+            parameters.Add("p_dari", dari, DbType.Date);
+            parameters.Add("p_next_month", nextMonth, DbType.Date);
+            parameters.Add("p_iddata", CompanyInfo.IDDATA, DbType.String);
 
             const string sql = @"
-        SELECT NOJURNAL AS NOMOR,
-               MIN(TANGGAL) AS TANGGAL
-        FROM INV_BARU
-        WHERE PERIODE = :p_periode_int
-          AND PTLOKASI = :p_ptlokasi
-          AND (:p_source_filter IS NULL OR UPPER(NOJURNAL) LIKE :p_source_filter)
-        GROUP BY NOJURNAL
+        SELECT IR.""ReceptionNumber"" AS NOMOR,
+               MIN(IR.""ReceptionDate"") AS TANGGAL
+        FROM ""InvReceptions"" IR
+        JOIN ""InvLocations"" IL ON IL.""Id"" = IR.""LocationId""
+        WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
+          AND IL.""Name"" = :p_iddata
+        GROUP BY IR.""ReceptionNumber""
         ORDER BY NOMOR, TANGGAL";
 
             using var connection = new OracleConnection(LoginInfo.OracleConnString);
@@ -383,6 +385,79 @@ namespace Accounting.DataLayer
             {
                 throw new Exception("Gagal mengambil data jurnal inventory baru", ex);
             }
+        }
+
+        // Live LT (penerimaan barang) detail journal, sourced from the inventory app schema (Inv* tables).
+        // Debit: each reception item to its item-type account; Credit: one aggregated line per reception
+        // to the BARANG_DALAM_PERJALANAN default account (ACCT_DEFAULT) for the current IDDATA.
+        private const string InventoryBaruDetailSql = @"
+        SELECT X.NOJURNAL,
+               X.TANGGAL,
+               ROW_NUMBER() OVER (PARTITION BY X.NOJURNAL ORDER BY X.SORT_ORDER, X.KODE) AS BARIS,
+               X.KODE,
+               X.REKENING,
+               X.DEBET,
+               X.KREDIT,
+               X.KETERANGAN,
+               :p_posted AS POSTED,
+               :p_periode_str AS PERIODE,
+               :p_iddata AS IDDATA,
+               :p_userid AS USERID,
+               :p_glyear AS GLYEAR,
+               :p_glmonth AS GLMONTH
+        FROM (
+            SELECT IR.""ReceptionNumber"" AS NOJURNAL,
+                   IR.""ReceptionDate"" AS TANGGAL,
+                   CAST(IIT.""CreditAccountNumber"" AS VARCHAR2(50)) AS KODE,
+                   CAST(IIT.""Name"" AS NVARCHAR2(200)) AS REKENING,
+                   ROUND(IRI.""Quantity"" * IRI.""UnitPrice"", 2) AS DEBET,
+                   ROUND(0, 2) AS KREDIT,
+                   TO_NCHAR(IR.""DeliveryNumber"") || N', ' || TO_NCHAR(II.""Name"") || N' = '
+                       || TO_NCHAR(IRI.""Quantity"") || N' ' || TO_NCHAR(IU.""Name"") AS KETERANGAN,
+                   1 AS SORT_ORDER
+            FROM ""InvReceptions"" IR
+            JOIN ""InvReceptionItems"" IRI ON IRI.""ReceptionId"" = IR.""Id""
+            JOIN ""InvItems"" II ON II.""Id"" = IRI.""ItemId""
+            JOIN ""InvUnits"" IU ON IU.""Id"" = II.""UnitId""
+            JOIN ""InvItemTypes"" IIT ON IIT.""Id"" = II.""ItemTypeId""
+            JOIN ""InvLocations"" IL ON IL.""Id"" = IR.""LocationId""
+            WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
+              AND IL.""Name"" = :p_iddata
+            UNION ALL
+            SELECT IR.""ReceptionNumber"",
+                   IR.""ReceptionDate"",
+                   CAST((SELECT MAX(kodeacc) FROM ACCT_DEFAULT WHERE iddata = :p_iddata AND nama = 'BARANG_DALAM_PERJALANAN') AS VARCHAR2(50)) AS KODE,
+                   CAST((SELECT MAX(keterangan) FROM ACCT_DEFAULT WHERE iddata = :p_iddata AND nama = 'BARANG_DALAM_PERJALANAN') AS NVARCHAR2(200)) AS REKENING,
+                   ROUND(0, 2) AS DEBET,
+                   ROUND(SUM(IRI.""Quantity"" * IRI.""UnitPrice""), 2) AS KREDIT,
+                   TO_NCHAR(N'Kredit penerimaan barang ') || TO_NCHAR(IR.""ReceptionNumber"") AS KETERANGAN,
+                   2 AS SORT_ORDER
+            FROM ""InvReceptions"" IR
+            JOIN ""InvReceptionItems"" IRI ON IRI.""ReceptionId"" = IR.""Id""
+            JOIN ""InvLocations"" IL ON IL.""Id"" = IR.""LocationId""
+            WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
+              AND IL.""Name"" = :p_iddata
+            GROUP BY IR.""ReceptionNumber"", IR.""ReceptionDate""
+        ) X
+        ORDER BY X.TANGGAL, X.NOJURNAL, X.SORT_ORDER, X.KODE";
+
+        private static (DateTime dari, DateTime nextMonth) MonthRange(int year, int month)
+        {
+            DateTime dari = new(year, month, 1);
+            return (dari, dari.AddMonths(1));
+        }
+
+        private static void AddInventoryBaruDetailParameters(OracleCommand command, DateTime dari, DateTime nextMonth,
+            string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth)
+        {
+            command.Parameters.Add(":p_posted", OracleDbType.Varchar2, 20).Value = p_posted;
+            command.Parameters.Add(":p_periode_str", OracleDbType.Varchar2, 20).Value = p_periode_str;
+            command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
+            command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_userid;
+            command.Parameters.Add(":p_glyear", OracleDbType.Int16).Value = p_glyear;
+            command.Parameters.Add(":p_glmonth", OracleDbType.Int16).Value = p_glmonth;
+            command.Parameters.Add(":p_dari", OracleDbType.Date).Value = dari;
+            command.Parameters.Add(":p_next_month", OracleDbType.Date).Value = nextMonth;
         }
 
         public IEnumerable<JurnalInventoryDetailDTO> GetJurnalDetails_Inventory(
@@ -448,29 +523,10 @@ namespace Accounting.DataLayer
         {
             var result = new List<JurnalInventoryDetailDTO>();
 
-            const string sql = @"
-        SELECT NOJURNAL,
-               TANGGAL,
-               BARIS,
-               KODE,
-               REKENING,
-               DEBET,
-               KREDIT,
-               KETERANGAN,
-               :p_posted AS POSTED,
-               :p_periode_str AS PERIODE,
-               :p_iddata AS IDDATA,
-               :p_userid AS USERID,
-               :p_glyear AS GLYEAR,
-               :p_glmonth AS GLMONTH
-        FROM INV_BARU
-        WHERE PERIODE = :p_periode_int
-          AND PTLOKASI = :p_ptlokasi
-          AND (:p_source_filter IS NULL OR UPPER(NOJURNAL) LIKE :p_source_filter)
-        ORDER BY NOJURNAL, BARIS";
+            (DateTime dari, DateTime nextMonth) = MonthRange(p_glyear, p_glmonth);
 
             using OracleConnection connection = new(LoginInfo.OracleConnString);
-            using OracleCommand command = new(sql, connection)
+            using OracleCommand command = new(InventoryBaruDetailSql, connection)
             {
                 CommandType = CommandType.Text,
                 BindByName = true
@@ -479,15 +535,7 @@ namespace Accounting.DataLayer
             try
             {
                 connection.Open();
-                command.Parameters.Add(":p_posted", OracleDbType.Varchar2, 20).Value = p_posted;
-                command.Parameters.Add(":p_periode_str", OracleDbType.Varchar2, 20).Value = p_periode_str;
-                command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
-                command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_userid;
-                command.Parameters.Add(":p_glyear", OracleDbType.Int16).Value = p_glyear;
-                command.Parameters.Add(":p_glmonth", OracleDbType.Int16).Value = p_glmonth;
-                command.Parameters.Add(":p_periode_int", OracleDbType.Int16).Value = p_periode_int;
-                command.Parameters.Add(":p_ptlokasi", OracleDbType.Varchar2, 20).Value = p_ptlokasi;
-                command.Parameters.Add(":p_source_filter", OracleDbType.Varchar2, 100).Value = (object?)NormalizeInventorySourceFilter(p_source_filter) ?? DBNull.Value;
+                AddInventoryBaruDetailParameters(command, dari, nextMonth, p_iddata, p_posted, p_periode_str, p_userid, p_glyear, p_glmonth);
 
                 using OracleDataReader reader = command.ExecuteReader();
                 while (reader.Read())
@@ -522,44 +570,17 @@ namespace Accounting.DataLayer
 
         public DataTable Jurnal_InventoriBaru(int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth, string? p_source_filter = null)
         {
-            const string sql = @"
-        SELECT NOJURNAL,
-               TANGGAL,
-               BARIS,
-               KODE,
-               REKENING,
-               DEBET,
-               KREDIT,
-               KETERANGAN,
-               :p_posted AS POSTED,
-               :p_periode_str AS PERIODE,
-               :p_iddata AS IDDATA,
-               :p_userid AS USERID,
-               :p_glyear AS GLYEAR,
-               :p_glmonth AS GLMONTH
-        FROM INV_BARU
-        WHERE PERIODE = :p_periode_int
-          AND PTLOKASI = :p_ptlokasi
-          AND (:p_source_filter IS NULL OR UPPER(NOJURNAL) LIKE :p_source_filter)
-        ORDER BY NOJURNAL, BARIS";
+            (DateTime dari, DateTime nextMonth) = MonthRange(p_glyear, p_glmonth);
 
             using OracleConnection connection = new(LoginInfo.OracleConnString);
-            using OracleCommand command = new(sql, connection)
+            using OracleCommand command = new(InventoryBaruDetailSql, connection)
             {
                 CommandType = CommandType.Text,
                 BindByName = true
             };
 
             connection.Open();
-            command.Parameters.Add(":p_posted", OracleDbType.Varchar2, 20).Value = p_posted;
-            command.Parameters.Add(":p_periode_str", OracleDbType.Varchar2, 20).Value = p_periode_str;
-            command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
-            command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_userid;
-            command.Parameters.Add(":p_glyear", OracleDbType.Int16).Value = p_glyear;
-            command.Parameters.Add(":p_glmonth", OracleDbType.Int16).Value = p_glmonth;
-            command.Parameters.Add(":p_periode_int", OracleDbType.Int16).Value = p_periode_int;
-            command.Parameters.Add(":p_ptlokasi", OracleDbType.Varchar2, 20).Value = p_ptlokasi;
-            command.Parameters.Add(":p_source_filter", OracleDbType.Varchar2, 100).Value = (object?)NormalizeInventorySourceFilter(p_source_filter) ?? DBNull.Value;
+            AddInventoryBaruDetailParameters(command, dari, nextMonth, p_iddata, p_posted, p_periode_str, p_userid, p_glyear, p_glmonth);
 
             using OracleDataReader reader = command.ExecuteReader();
             DataTable dataTable = new();

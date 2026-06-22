@@ -206,6 +206,13 @@ namespace Accounting.Form
 
         private void SaveDefaultAccount(string nama, LookUpEdit edit, LabelControl lbl)
         {
+            // A cleared lookup reports its placeholder text ("[EditValue is null]") via edit.Text;
+            // never persist that as a kodeacc.
+            if (edit.EditValue == null)
+            {
+                return;
+            }
+
             string keterangan = (edit.Properties.GetDataSourceRowByKeyValue(edit.EditValue)
                                     as DataRowView)?["PERKIRAAN"].ToString() ?? string.Empty;
 
