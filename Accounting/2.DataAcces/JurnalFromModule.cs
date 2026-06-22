@@ -430,7 +430,8 @@ namespace Accounting.DataLayer
                    CAST((SELECT MAX(keterangan) FROM ACCT_DEFAULT WHERE iddata = :p_iddata AND nama = 'BARANG_DALAM_PERJALANAN') AS NVARCHAR2(200)) AS REKENING,
                    ROUND(0, 2) AS DEBET,
                    ROUND(SUM(IRI.""Quantity"" * IRI.""UnitPrice""), 2) AS KREDIT,
-                   TO_NCHAR(N'Kredit penerimaan barang ') || TO_NCHAR(IR.""ReceptionNumber"") AS KETERANGAN,
+                   TO_NCHAR((SELECT MAX(keterangan) FROM ACCT_DEFAULT WHERE iddata = :p_iddata AND nama = 'BARANG_DALAM_PERJALANAN'))
+                       || N', ' || TO_NCHAR(IR.""ReceptionNumber"") AS KETERANGAN,
                    2 AS SORT_ORDER
             FROM ""InvReceptions"" IR
             JOIN ""InvReceptionItems"" IRI ON IRI.""ReceptionId"" = IR.""Id""
