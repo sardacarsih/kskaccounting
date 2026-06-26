@@ -1,6 +1,9 @@
 using Accounting._1.Interface;
+using Dapper;
+using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 
 namespace Accounting.BusinessLayer
@@ -17,6 +20,35 @@ namespace Accounting.BusinessLayer
 
     public static class AisJournalBuilder
     {
+        private static Dictionary<string, (string Kode, string Nama)> LoadDefaultAccounts(int year)
+        {
+            var defaults = new Dictionary<string, (string Kode, string Nama)>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                using var dbConnection = new OracleConnection(LoginInfo.OracleConnString);
+                dbConnection.Open();
+                string query = @"
+                    SELECT d.NAMA, d.KODEACC, c.NAMAACC 
+                    FROM ACCT_DEFAULT d
+                    LEFT JOIN ACCT_COA c ON c.KODEACC = d.KODEACC AND c.IDDATA = d.IDDATA AND c.TAHUN = :tahun
+                    WHERE d.IDDATA = :idData";
+                var list = dbConnection.Query(query, new { idData = Accounting.CompanyInfo.IDDATA, tahun = year });
+                foreach (var item in list)
+                {
+                    string name = item.NAMA;
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        defaults[name] = ((string)item.KODEACC, (string)(item.NAMAACC ?? item.KODEACC));
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback to empty dictionary on database error
+            }
+            return defaults;
+        }
+
         public static List<AIS_JURNAL_FINAL> BuildForDivision(
             IEnumerable<AIS_JURNAL> aisRows,
             IEnumerable<JurnalKomponen> componentRows,
@@ -33,9 +65,19 @@ namespace Accounting.BusinessLayer
             string noJurnal = division.NOMOR ?? string.Empty;
             string keteranganSuffix = $"{divisiName} {context.Estate} R{context.Remise} {context.MonthName} {context.Year}";
 
+            var defaults = LoadDefaultAccounts(context.Year);
+            (string Kode, string Nama) GetAccount(string key, string defaultKode, string defaultNama)
+            {
+                if (defaults.TryGetValue(key, out var val) && !string.IsNullOrWhiteSpace(val.Kode))
+                {
+                    return val;
+                }
+                return (defaultKode, defaultNama);
+            }
+
             List<AIS_JURNAL> journalRows = division.ISBORONGAN == 1
-                ? BuildBoronganRows(aisRows, componentRows, divisiId, keteranganSuffix, context.PeriodString)
-                : BuildHarianRows(aisRows, componentRows, divisiId, keteranganSuffix, context.PeriodString);
+                ? BuildBoronganRows(aisRows, componentRows, divisiId, keteranganSuffix, context.PeriodString, GetAccount)
+                : BuildHarianRows(aisRows, componentRows, divisiId, keteranganSuffix, context.PeriodString, GetAccount);
 
             int rowNumber = 1;
             foreach (AIS_JURNAL item in journalRows)
@@ -76,7 +118,8 @@ namespace Accounting.BusinessLayer
             IEnumerable<JurnalKomponen> componentRows,
             string divisiId,
             string keteranganSuffix,
-            string periodString)
+            string periodString,
+            Func<string, string, string, (string Kode, string Nama)> getAccount)
         {
             List<AIS_JURNAL> journalRows = aisRows
                 .Where(f => f.DIVISI == divisiId && f.ISBORONGAN == 1 && f.JENIS == "PANEN")
@@ -122,10 +165,13 @@ namespace Accounting.BusinessLayer
             decimal totalKredit = JurnalAmountRounding.RoundJournalAmount(journalRows.Sum(f => f.KREDIT));
             decimal operasional = JurnalAmountRounding.RoundJournalAmount(totalDebet - (totalPph21 + totalKredit));
 
+            var pph21Acc = getAccount("HUTANG_PPH21", "31.00001.001", "Hutang PPh Pasal 21");
+            var gajiYmhdAcc = getAccount("GAJI_DAN_UPAH_YMH_DIBAYAR", "33.00001.001", "Gaji dan Upah YMH dibayar");
+
             journalRows.AddRange(
             [
-                new() { KODE = "31.00001.001", REKENING = "Hutang PPh Pasal 21", KREDIT = totalPph21, KETERANGAN = "TOTAL PPH PASAL 21 " + keteranganSuffix, POSTED = true, PERIODE = periodString },
-                new() { KODE = "33.00001.001", REKENING = "Gaji dan Upah YMH dibayar", KREDIT = operasional, KETERANGAN = "TOTAL BORONGAN PANEN " + keteranganSuffix, POSTED = true, PERIODE = periodString }
+                new() { KODE = pph21Acc.Kode, REKENING = pph21Acc.Nama, KREDIT = totalPph21, KETERANGAN = "TOTAL PPH PASAL 21 " + keteranganSuffix, POSTED = true, PERIODE = periodString },
+                new() { KODE = gajiYmhdAcc.Kode, REKENING = gajiYmhdAcc.Nama, KREDIT = operasional, KETERANGAN = "TOTAL BORONGAN PANEN " + keteranganSuffix, POSTED = true, PERIODE = periodString }
             ]);
 
             return journalRows;
@@ -136,7 +182,8 @@ namespace Accounting.BusinessLayer
             IEnumerable<JurnalKomponen> componentRows,
             string divisiId,
             string keteranganSuffix,
-            string periodString)
+            string periodString,
+            Func<string, string, string, (string Kode, string Nama)> getAccount)
         {
             List<AIS_JURNAL> journalRows = aisRows
                 .Where(f => f.DIVISI == divisiId && !(f.ISBORONGAN == 1 && f.JENIS == "PANEN"))
@@ -173,10 +220,12 @@ namespace Accounting.BusinessLayer
             decimal biayaOperasionalBruto = JurnalAmountRounding.RoundJournalAmount(journalRows.Sum(f => f.DEBET));
             decimal biayaOperasionalNetto = JurnalAmountRounding.RoundJournalAmount(biayaOperasionalBruto - journalRows.Sum(f => f.KREDIT));
 
+            var gajiYmhdAcc = getAccount("GAJI_DAN_UPAH_YMH_DIBAYAR", "33.00001.001", "Gaji dan Upah YMH dibayar");
+
             journalRows.Add(new AIS_JURNAL
             {
-                KODE = "33.00001.001",
-                REKENING = "Gaji dan Upah YMH dibayar",
+                KODE = gajiYmhdAcc.Kode,
+                REKENING = gajiYmhdAcc.Nama,
                 KREDIT = biayaOperasionalNetto,
                 KETERANGAN = "TOTAL BIAYA OPERASIONAL " + keteranganSuffix,
                 POSTED = true,

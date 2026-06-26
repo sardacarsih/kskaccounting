@@ -1,4 +1,4 @@
-﻿using Accounting._1.Interface;
+using Accounting._1.Interface;
 using Accounting.BusinessLayer;
 using Accounting.Model;
 using Accounting.Utilities;
@@ -359,6 +359,25 @@ namespace Accounting._2.DataAcces
             string p_estate,
             DateTime TanggalJurnal)
          { 
+            var defaults = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            using (IDbConnection dbConnection = new OracleConnection(LoginInfo.OracleConnString))
+            {
+                dbConnection.Open();
+                var list = dbConnection.Query<(string NAMA, string KODEACC)>(
+                    "SELECT NAMA, KODEACC FROM ACCT_DEFAULT WHERE IDDATA = :idData",
+                    new { idData = Accounting.CompanyInfo.IDDATA });
+                foreach (var item in list)
+                {
+                    if (!string.IsNullOrWhiteSpace(item.NAMA))
+                    {
+                        defaults[item.NAMA] = item.KODEACC;
+                    }
+                }
+            }
+
+            string GetAccount(string key, string defaultVal) =>
+                defaults.TryGetValue(key, out var val) && !string.IsNullOrWhiteSpace(val) ? val : defaultVal;
+
             string ket = $"Alokasi Payroll {p_periodeket}, ";
             // STEP1: Calculate BIAYA_UMUM and its components
             var BIAYA_UMUM = from sg in sLIPGAJIlist
@@ -366,7 +385,8 @@ namespace Accounting._2.DataAcces
                              where j.BIAYA_UMUM == "Y"
                              select sg;
 
-            var jumlahgpumakan = BIAYA_UMUM.Sum(gp => gp.GAJI_POKOK + gp.UMAKAN);
+            var jumlahgajipokok = BIAYA_UMUM.Sum(gp => gp.GAJI_POKOK);
+            var jumlahuangmakan = BIAYA_UMUM.Sum(gp => gp.UMAKAN);
             var insentif = BIAYA_UMUM.Sum(gp => gp.INSENTIF + gp.LEMBUR_PREMI);
             var jabatan = BIAYA_UMUM.Sum(gp => gp.TJG_JABATAN);
             var perumahan = BIAYA_UMUM.Sum(gp => gp.TJG_KEBERSIHAN + gp.TJG_PERABOT);
@@ -377,14 +397,15 @@ namespace Accounting._2.DataAcces
 
             List<FIN_LAMPIRANKAS_DTO> LAMPIRAN = new()
             {
-                new FIN_LAMPIRANKAS_DTO { NO = 1, ACCOUNT="70.10001.001", KETERANGAN = ket+"Gaji Pokok dan Uang Makan", DEBET = jumlahgpumakan, KREDIT = 0 },
-                new FIN_LAMPIRANKAS_DTO { NO = 2, ACCOUNT="70.10001.003", KETERANGAN = ket+"Premi Lembur dan Insentif", DEBET = insentif, KREDIT = 0 },
-                new FIN_LAMPIRANKAS_DTO { NO = 3, ACCOUNT="70.10001.004", KETERANGAN = ket+"Tunjangan Jabatan", DEBET = jabatan, KREDIT = 0 },
-                new FIN_LAMPIRANKAS_DTO { NO = 4, ACCOUNT="70.10001.999", KETERANGAN = ket+"Tunjangan Perumahan", DEBET = perumahan, KREDIT = 0 },
-                new FIN_LAMPIRANKAS_DTO { NO = 5, ACCOUNT="70.10001.013", KETERANGAN = ket+"Tunjangan Operasional", DEBET = operasional, KREDIT = 0 },
-                new FIN_LAMPIRANKAS_DTO { NO = 6, ACCOUNT="70.10001.999", KETERANGAN = ket+"Tunjangan Telpon", DEBET = telp, KREDIT = 0 },
-                new FIN_LAMPIRANKAS_DTO { NO = 7, ACCOUNT="70.10001.999", KETERANGAN = ket+"Tunjangan Luasan", DEBET = luasan, KREDIT = 0 },
-                new FIN_LAMPIRANKAS_DTO { NO = 8, ACCOUNT="72.03001.004", KETERANGAN = ket+"Sewa Kendaraan", DEBET = sewa, KREDIT = 0 }
+                new FIN_LAMPIRANKAS_DTO { NO = 1, ACCOUNT=GetAccount("HRIS_GAJI_POKOK", "70.10001.001"), KETERANGAN = ket+"Gaji Pokok", DEBET = jumlahgajipokok, KREDIT = 0 },
+                new FIN_LAMPIRANKAS_DTO { NO = 2, ACCOUNT=GetAccount("HRIS_PREMI_LEMBUR", "70.10001.003"), KETERANGAN = ket+"Premi Lembur dan Insentif", DEBET = insentif, KREDIT = 0 },
+                new FIN_LAMPIRANKAS_DTO { NO = 3, ACCOUNT=GetAccount("HRIS_TUNJ_JABATAN", "70.10001.004"), KETERANGAN = ket+"Tunjangan Jabatan", DEBET = jabatan, KREDIT = 0 },
+                new FIN_LAMPIRANKAS_DTO { NO = 4, ACCOUNT=GetAccount("HRIS_TUNJ_PERUMAHAN", "70.10001.999"), KETERANGAN = ket+"Tunjangan Perumahan", DEBET = perumahan, KREDIT = 0 },
+                new FIN_LAMPIRANKAS_DTO { NO = 5, ACCOUNT=GetAccount("HRIS_TUNJ_OPERASIONAL", "70.10001.013"), KETERANGAN = ket+"Tunjangan Operasional", DEBET = operasional, KREDIT = 0 },
+                new FIN_LAMPIRANKAS_DTO { NO = 6, ACCOUNT=GetAccount("HRIS_TUNJ_TELPON", "70.10001.999"), KETERANGAN = ket+"Tunjangan Telpon", DEBET = telp, KREDIT = 0 },
+                new FIN_LAMPIRANKAS_DTO { NO = 7, ACCOUNT=GetAccount("HRIS_TUNJ_LUASAN", "70.10001.999"), KETERANGAN = ket+"Tunjangan Luasan", DEBET = luasan, KREDIT = 0 },
+                new FIN_LAMPIRANKAS_DTO { NO = 8, ACCOUNT=GetAccount("HRIS_SEWA_KENDARAAN", "72.03001.004"), KETERANGAN = ket+"Sewa Kendaraan", DEBET = sewa, KREDIT = 0 },
+                new FIN_LAMPIRANKAS_DTO { NO = 14, ACCOUNT=GetAccount("HRIS_UANG_MAKAN", "70.10001.002"), KETERANGAN = ket+"Uang Makan", DEBET = jumlahuangmakan, KREDIT = 0 }
             };
 
 
@@ -436,15 +457,21 @@ namespace Accounting._2.DataAcces
             var pot_tunj = sLIPGAJIlist.Sum(pot => pot.POT_TUNJANGAN);
             var alokasi = BIAYA_ALOKASI.Sum(total => total.DEBET);
 
-            var gajiymhd = jumlahgpumakan + insentif + jabatan + perumahan + operasional + telp + luasan + sewa + alokasi - (kesehatan + jht + jp + pot_tunj + kantor);
+            var gajiymhd = jumlahgajipokok + jumlahuangmakan + insentif + jabatan + perumahan + operasional + telp + luasan + sewa + alokasi - (kesehatan + jht + jp + pot_tunj + kantor);
+
+            string potBpjsAcc = GetAccount("HRIS_POT_BPJS", GetAccount("TUNJANGAN_ASTEK", "70.10001.005"));
+            string potJhtAcc = GetAccount("HRIS_POT_JHT", GetAccount("TUNJANGAN_ASTEK", "70.10001.005"));
+            string potPensiunAcc = GetAccount("HRIS_POT_PENSIUN", GetAccount("TUNJANGAN_ASTEK", "70.10001.005"));
+            string potTunjanganAcc = GetAccount("HRIS_POT_TUNJANGAN", GetAccount("TUNJANGAN_ASTEK", "70.10001.005"));
+            string gajiYmhdAcc = GetAccount("GAJI_DAN_UPAH_YMH_DIBAYAR", "33.00001.001");
 
             List<FIN_LAMPIRANKAS_DTO> LAMPIRANnext = new()
             {
-                new FIN_LAMPIRANKAS_DTO { NO = 9, ACCOUNT="70.10001.005",KETERANGAN = $"{p_periodeket}, Potongan BPJS", DEBET = 0, KREDIT = kesehatan },
-                new FIN_LAMPIRANKAS_DTO { NO = 10, ACCOUNT="70.10001.005",KETERANGAN = $"{p_periodeket}, Potongan JHT", DEBET = 0, KREDIT = jht },
-                new FIN_LAMPIRANKAS_DTO { NO = 11, ACCOUNT="70.10001.005",KETERANGAN = $"{p_periodeket}, Potongan PENSIUN", DEBET = 0, KREDIT = jp },
-                new FIN_LAMPIRANKAS_DTO { NO = 12, ACCOUNT="70.10001.005",KETERANGAN = $"{p_periodeket}, Potongan Tunjangan", DEBET = 0, KREDIT = pot_tunj },
-                new FIN_LAMPIRANKAS_DTO { NO = 13, ACCOUNT="33.00001.001",KETERANGAN = "Alokasi Payroll "+p_periodeket, DEBET = 0, KREDIT = gajiymhd }
+                new FIN_LAMPIRANKAS_DTO { NO = 9, ACCOUNT=potBpjsAcc,KETERANGAN = $"{p_periodeket}, Potongan BPJS", DEBET = 0, KREDIT = kesehatan },
+                new FIN_LAMPIRANKAS_DTO { NO = 10, ACCOUNT=potJhtAcc,KETERANGAN = $"{p_periodeket}, Potongan JHT", DEBET = 0, KREDIT = jht },
+                new FIN_LAMPIRANKAS_DTO { NO = 11, ACCOUNT=potPensiunAcc,KETERANGAN = $"{p_periodeket}, Potongan PENSIUN", DEBET = 0, KREDIT = jp },
+                new FIN_LAMPIRANKAS_DTO { NO = 12, ACCOUNT=potTunjanganAcc,KETERANGAN = $"{p_periodeket}, Potongan Tunjangan", DEBET = 0, KREDIT = pot_tunj },
+                new FIN_LAMPIRANKAS_DTO { NO = 13, ACCOUNT=gajiYmhdAcc,KETERANGAN = "Alokasi Payroll "+p_periodeket, DEBET = 0, KREDIT = gajiymhd }
             };
 
             int currentMaxNo2 = LAMPIRAN.Max(l => l.NO);
@@ -506,7 +533,7 @@ namespace Accounting._2.DataAcces
                         ORDER BY 
                             U.KERJA";
 
-                var result = await dbConnection.QueryAsync<AIS_JURNAL_FINAL>(query, new { tahun,idData, periode, remise  });
+                var result = await dbConnection.QueryAsync<AIS_JURNAL_FINAL>(query, new { tahun, idData, periode, remise });
 
                 return result.AsList();
             }
@@ -518,7 +545,6 @@ namespace Accounting._2.DataAcces
             }
         }
 
-
         public async Task<List<BPJS_INFO_DTO>> GetBPJSUmumAsync(string idData, int periode, int remise)
         {
             using IDbConnection dbConnection = new OracleConnection(LoginInfo.OracleConnString);
@@ -528,7 +554,7 @@ namespace Accounting._2.DataAcces
                         FROM HRD_PAYROLL_NONSTAFF B                       
                         WHERE B.PERIODE = :periode AND B.IDDATA = :idData AND B.REMISE = :remise";
 
-            var result = await dbConnection.QueryAsync<BPJS_INFO_DTO>(query, new { periode,idData, remise });
+            var result = await dbConnection.QueryAsync<BPJS_INFO_DTO>(query, new { periode, idData, remise });
 
             return result.AsList();
         }

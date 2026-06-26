@@ -1,5 +1,7 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Windows.Forms;
 using Accounting.BusinessLayer; 
 using Accounting.DataLayer;
@@ -34,7 +36,7 @@ namespace Accounting.Form
 
             L0ad_COA();
             Akun_Default();
-
+            InitializeHrisTab();
         }
 
         private void L0ad_COA()
@@ -588,6 +590,172 @@ namespace Accounting.Form
             {
                 // Display an error message
                 MessageBox.Show("An error occurred: " + ex.Message);
+            }
+        }
+
+        private DataTable dtHrisSettings;
+        private void InitializeHrisTab()
+        {
+            // 1. Create the Tab Page
+            var tabHris = new DevExpress.XtraTab.XtraTabPage { Text = "HRIS & Payroll", Name = "tabHris" };
+            xtraTabControl1.TabPages.Add(tabHris);
+
+            // 2. Create the GridControl and GridView
+            var gridControl = new DevExpress.XtraGrid.GridControl { Dock = DockStyle.Fill, Parent = tabHris };
+            var gridView = new DevExpress.XtraGrid.Views.Grid.GridView(gridControl);
+            gridControl.MainView = gridView;
+            gridControl.ViewCollection.Add(gridView);
+
+            // Configure GridView options
+            gridView.OptionsView.ShowGroupPanel = false;
+            gridView.OptionsView.ShowIndicator = false;
+            gridView.OptionsBehavior.AllowAddRows = DevExpress.Utils.DefaultBoolean.False;
+            gridView.OptionsBehavior.AllowDeleteRows = DevExpress.Utils.DefaultBoolean.False;
+
+            // 3. Define the Schema of our DataTable
+            dtHrisSettings = new DataTable();
+            dtHrisSettings.Columns.Add("Key", typeof(string));
+            dtHrisSettings.Columns.Add("Label", typeof(string));
+            dtHrisSettings.Columns.Add("AccountCode", typeof(string));
+            dtHrisSettings.Columns.Add("AccountName", typeof(string));
+
+            // Populate the DataTable with our default keys and display labels
+            var hrisKeys = new Dictionary<string, string>
+            {
+                { "HRIS_GAJI_POKOK", "Gaji Pokok HRIS" },
+                { "HRIS_UANG_MAKAN", "Uang Makan HRIS" },
+                { "HRIS_PREMI_LEMBUR", "Premi Lembur & Insentif HRIS" },
+                { "HRIS_TUNJ_JABATAN", "Tunjangan Jabatan HRIS" },
+                { "HRIS_TUNJ_PERUMAHAN", "Tunjangan Perumahan HRIS" },
+                { "HRIS_TUNJ_OPERASIONAL", "Tunjangan Operasional HRIS" },
+                { "HRIS_TUNJ_TELPON", "Tunjangan Telepon HRIS" },
+                { "HRIS_TUNJ_LUASAN", "Tunjangan Luasan HRIS" },
+                { "HRIS_SEWA_KENDARAAN", "Sewa Kendaraan HRIS" },
+                { "HRIS_POT_BPJS", "Potongan BPJS Kesehatan" },
+                { "HRIS_POT_JHT", "Potongan JHT Karyawan" },
+                { "HRIS_POT_PENSIUN", "Potongan Pensiun Karyawan" },
+                { "HRIS_POT_TUNJANGAN", "Potongan Tunjangan Karyawan" },
+                { "HRIS_POT_BPJS_TK", "General BPJS Ketenagakerjaan (Umum)" },
+                { "HRIS_POT_BPJS_KES", "General BPJS Kesehatan (Umum)" },
+                { "HRIS_POT_BPJS_PENSIUN", "General BPJS Pensiun (Umum)" }
+            };
+
+            // 4. Fetch the existing saved values from ACCT_DEFAULT
+            string query = "SELECT nama, kodeacc, keterangan FROM acct_default WHERE iddata = :p_iddata";
+            using var cmd = new OracleCommand(query, con);
+            cmd.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = CompanyInfo.IDDATA;
+            using var dr = cmd.ExecuteReader();
+            var existingDefaults = new DataTable();
+            existingDefaults.Load(dr);
+
+            foreach (var kvp in hrisKeys)
+            {
+                var row = dtHrisSettings.NewRow();
+                row["Key"] = kvp.Key;
+                row["Label"] = kvp.Value;
+
+                var existing = existingDefaults.AsEnumerable()
+                    .FirstOrDefault(r => string.Equals(r.Field<string>("NAMA"), kvp.Key, StringComparison.OrdinalIgnoreCase));
+
+                if (existing != null)
+                {
+                    row["AccountCode"] = existing["KODEACC"];
+                    row["AccountName"] = existing["KETERANGAN"];
+                }
+                else
+                {
+                    row["AccountCode"] = DBNull.Value;
+                    row["AccountName"] = "";
+                }
+                dtHrisSettings.Rows.Add(row);
+            }
+
+            gridControl.DataSource = dtHrisSettings;
+
+            // 5. Configure Columns in GridView
+            gridView.Columns["Key"].Visible = false; // Hide the internal key
+
+            var colLabel = gridView.Columns["Label"];
+            colLabel.Caption = "Parameter Gaji / Potongan";
+            colLabel.OptionsColumn.AllowEdit = false;
+            colLabel.Width = 250;
+
+            var colCode = gridView.Columns["AccountCode"];
+            colCode.Caption = "Akun COA";
+            colCode.Width = 150;
+
+            var colName = gridView.Columns["AccountName"];
+            colName.Caption = "Nama Perkiraan";
+            colName.OptionsColumn.AllowEdit = false;
+            colName.Width = 350;
+
+            // 6. Bind the LookUpEdit Repository Item to the AccountCode column
+            var repositoryLookUp = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
+            var dtCoa = JurnalServices.KodeUntukJurnal(CompanyInfo.IDDATA, Acct.TahunMax);
+            repositoryLookUp.DataSource = dtCoa;
+            repositoryLookUp.DisplayMember = "KODE";
+            repositoryLookUp.ValueMember = "KODE";
+            
+            // Add columns to the repository Lookup for better UX
+            repositoryLookUp.Columns.Add(new DevExpress.XtraEditors.Controls.LookUpColumnInfo("KODE", "Kode Akun", 100));
+            repositoryLookUp.Columns.Add(new DevExpress.XtraEditors.Controls.LookUpColumnInfo("PERKIRAAN", "Nama Perkiraan", 250));
+            repositoryLookUp.NullText = "[Pilih Akun COA]";
+
+            gridControl.RepositoryItems.Add(repositoryLookUp);
+            colCode.ColumnEdit = repositoryLookUp;
+
+            // 7. Subscribe to CellValueChanged event to save settings dynamically
+            gridView.CellValueChanged += GridView_CellValueChanged;
+            
+            gridView.BestFitColumns();
+        }
+
+        private void GridView_CellValueChanged(object sender, DevExpress.XtraGrid.Views.Base.CellValueChangedEventArgs e)
+        {
+            var view = sender as DevExpress.XtraGrid.Views.Grid.GridView;
+            if (view == null || e.Column.FieldName != "AccountCode") return;
+
+            string key = view.GetRowCellValue(e.RowHandle, "Key")?.ToString() ?? string.Empty;
+            string code = e.Value?.ToString() ?? string.Empty;
+
+            if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(code)) return;
+
+            // Retrieve account description from COA datasource
+            string description = string.Empty;
+            var dtCoa = JurnalServices.KodeUntukJurnal(CompanyInfo.IDDATA, Acct.TahunMax);
+            var coaRow = dtCoa.FirstOrDefault(r => string.Equals(r.KODE, code, StringComparison.OrdinalIgnoreCase));
+            if (coaRow != null)
+            {
+                description = coaRow.PERKIRAAN ?? string.Empty;
+            }
+
+            // Update local DataTable Row
+            view.SetRowCellValue(e.RowHandle, "AccountName", description);
+
+            // Save to Database using MERGE
+            using OracleCommand cmd = new()
+            {
+                Connection = con,
+                CommandType = CommandType.Text,
+                CommandText = "MERGE INTO ACCT_DEFAULT t " +
+                              "USING (SELECT :id AS id, :iddata AS iddata, :kode AS kode, :keterangan AS keterangan FROM dual) s " +
+                              "ON (t.NAMA = s.id and t.iddata = s.iddata  ) " +
+                              "WHEN MATCHED THEN UPDATE SET t.kodeacc = s.kode,t.keterangan=s.keterangan " +
+                              "WHEN NOT MATCHED THEN INSERT (nama, kodeacc, iddata,keterangan) VALUES (s.id, s.kode, s.iddata,s.keterangan)"
+            };
+
+            cmd.Parameters.Add("id", OracleDbType.Varchar2, 50).Value = key;
+            cmd.Parameters.Add("iddata", OracleDbType.Varchar2, 50).Value = CompanyInfo.IDDATA;
+            cmd.Parameters.Add("kode", OracleDbType.Varchar2, 50).Value = code;
+            cmd.Parameters.Add("keterangan", OracleDbType.Varchar2, 100).Value = description;
+
+            try
+            {
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show("Gagal menyimpan data default akun: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

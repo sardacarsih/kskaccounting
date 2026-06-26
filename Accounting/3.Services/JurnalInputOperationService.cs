@@ -721,7 +721,7 @@ namespace Accounting.BusinessLayer
 
         private static TimeSpan ResolveRekalkulasiRunningStaleThreshold()
         {
-            const int defaultStaleSeconds = 180;
+            const int defaultStaleSeconds = 900;
             string? rawValue = Environment.GetEnvironmentVariable("ACCOUNTING_RECALC_STALE_SECONDS");
             if (!int.TryParse(rawValue, out int parsed) || parsed < 30)
             {
