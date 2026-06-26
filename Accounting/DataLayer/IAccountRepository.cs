@@ -27,6 +27,7 @@ namespace Accounting.DataLayer
         DataTable GetParentAccount(string piddata, int p_tahun,string ptipe);
         int RekalkulasiByNoJurnal(string piddata, int p_bulan, int p_tahun, string p_NoJurnal,string p_Periode,string p_Userid);
         void RekalkulasiByJurnalID(string piddata, int p_bulan, int p_tahun, double p_JurnalID, string p_Periode, string p_Userid);
+        void RekalkulasiByJob(string piddata, int p_bulan, int p_tahun, string p_Periode, string p_Userid, long p_JobId, double p_JurnalID);
         int ReCalcByNoHID(string piddata, int p_bulan, int p_tahun, string p_HID, string p_Periode, string p_Userid);
         void RekalkulasiSaldo(string piddata, int p_bulan, int p_tahun , string p_Userid );
         void RekalkulasiSaldoV2(string piddata, int p_bulan, int p_tahun, string p_Userid);

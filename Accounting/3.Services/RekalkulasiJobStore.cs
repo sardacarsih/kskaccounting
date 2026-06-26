@@ -3,7 +3,9 @@ using Dapper;
 using Oracle.ManagedDataAccess.Client;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace Accounting.BusinessLayer
 {
@@ -51,75 +53,121 @@ namespace Accounting.BusinessLayer
             string userId,
             string recalcScope,
             int impactedAccountCount,
-            int impactedRowCount)
+            int impactedRowCount,
+            IReadOnlyList<string> impactedAccountCodes)
         {
+            string[] codes = NormalizeAccountCodes(impactedAccountCodes);
+
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
-
-            const string existingSql = @"SELECT JOB_ID
-                FROM ACCT_RECALC_JOB
-                WHERE IDDATA = :idData
-                  AND PERIODE = :periode
-                  AND JURNALID = :jurnalId
-                  AND STATUS IN ('PENDING', 'RETRY', 'RUNNING')
-                ORDER BY JOB_ID DESC
-                FETCH FIRST 1 ROWS ONLY";
-
-            long? existingJobId = connection.ExecuteScalar<long?>(existingSql, new { idData, periode, jurnalId });
-            if (existingJobId.HasValue)
+            using OracleTransaction transaction = connection.BeginTransaction();
+            try
             {
+                const string existingSql = @"SELECT JOB_ID
+                    FROM ACCT_RECALC_JOB
+                    WHERE IDDATA = :idData
+                      AND PERIODE = :periode
+                      AND JURNALID = :jurnalId
+                      AND STATUS IN ('PENDING', 'RETRY', 'RUNNING')
+                    ORDER BY JOB_ID DESC
+                    FETCH FIRST 1 ROWS ONLY";
+
+                long? existingJobId = connection.ExecuteScalar<long?>(existingSql, new { idData, periode, jurnalId }, transaction);
+                if (existingJobId.HasValue)
+                {
+                    // Merge any newly-impacted accounts into the deduped job so a second
+                    // change to the same journal (before the first job ran) is still covered.
+                    UpsertJobAccounts(connection, transaction, existingJobId.Value, codes);
+                    transaction.Commit();
+                    Log.Information(
+                        "PERF RekalkulasiJobStore enqueue_dedup iddata={IdData} periode={Periode} jurnal_id={JurnalId} job_id={JobId} merged_accounts={MergedAccounts}",
+                        idData,
+                        periode,
+                        jurnalId,
+                        existingJobId.Value,
+                        codes.Length);
+                    return existingJobId.Value;
+                }
+
+                const string insertSql = @"INSERT INTO ACCT_RECALC_JOB
+                    (IDDATA, PERIODE, JURNALID, GLMONTH, GLYEAR, USERID, STATUS, ATTEMPT_COUNT, RECALC_SCOPE, IMPACTED_ACCOUNT_COUNT, IMPACTED_ROW_COUNT, CREATED_DATE, UPDATED_DATE)
+                    VALUES
+                    (:idData, :periode, :jurnalId, :glMonth, :glYear, :userId, 'PENDING', 0, :recalcScope, :impactedAccountCount, :impactedRowCount, SYSTIMESTAMP, SYSTIMESTAMP)
+                    RETURNING JOB_ID INTO :jobId";
+
+                DynamicParameters parameters = new();
+                parameters.Add("idData", idData, DbType.String);
+                parameters.Add("periode", periode, DbType.String);
+                parameters.Add("jurnalId", jurnalId, DbType.Double);
+                parameters.Add("glMonth", glMonth, DbType.Int32);
+                parameters.Add("glYear", glYear, DbType.Int32);
+                parameters.Add("userId", userId, DbType.String);
+                parameters.Add("recalcScope", string.IsNullOrWhiteSpace(recalcScope) ? JurnalRecalcScopes.None : recalcScope, DbType.String);
+                parameters.Add("impactedAccountCount", Math.Max(0, impactedAccountCount), DbType.Int32);
+                parameters.Add("impactedRowCount", Math.Max(0, impactedRowCount), DbType.Int32);
+                parameters.Add("jobId", dbType: DbType.Int64, direction: ParameterDirection.Output);
+
+                connection.Execute(insertSql, parameters, transaction);
+
+                long jobId = parameters.Get<long>("jobId");
+                UpsertJobAccounts(connection, transaction, jobId, codes);
+                transaction.Commit();
+
                 Log.Information(
-                    "PERF RekalkulasiJobStore enqueue_dedup iddata={IdData} periode={Periode} jurnal_id={JurnalId} job_id={JobId}",
+                    "PERF RekalkulasiJobStore enqueue_created iddata={IdData} periode={Periode} jurnal_id={JurnalId} job_id={JobId} scope={Scope} impacted_accounts={ImpactedAccounts} impacted_rows={ImpactedRows} account_rows={AccountRows}",
                     idData,
                     periode,
                     jurnalId,
-                    existingJobId.Value);
-                return existingJobId.Value;
+                    jobId,
+                    recalcScope,
+                    impactedAccountCount,
+                    impactedRowCount,
+                    codes.Length);
+                return jobId;
             }
-
-            const string insertSql = @"INSERT INTO ACCT_RECALC_JOB
-                (IDDATA, PERIODE, JURNALID, GLMONTH, GLYEAR, USERID, STATUS, ATTEMPT_COUNT, CREATED_DATE, UPDATED_DATE)
-                VALUES
-                (:idData, :periode, :jurnalId, :glMonth, :glYear, :userId, 'PENDING', 0, SYSTIMESTAMP, SYSTIMESTAMP)
-                RETURNING JOB_ID INTO :jobId";
-            const string insertSqlWithTelemetry = @"INSERT INTO ACCT_RECALC_JOB
-                (IDDATA, PERIODE, JURNALID, GLMONTH, GLYEAR, USERID, STATUS, ATTEMPT_COUNT, RECALC_SCOPE, IMPACTED_ACCOUNT_COUNT, IMPACTED_ROW_COUNT, CREATED_DATE, UPDATED_DATE)
-                VALUES
-                (:idData, :periode, :jurnalId, :glMonth, :glYear, :userId, 'PENDING', 0, :recalcScope, :impactedAccountCount, :impactedRowCount, SYSTIMESTAMP, SYSTIMESTAMP)
-                RETURNING JOB_ID INTO :jobId";
-
-            DynamicParameters parameters = new();
-            parameters.Add("idData", idData, DbType.String);
-            parameters.Add("periode", periode, DbType.String);
-            parameters.Add("jurnalId", jurnalId, DbType.Double);
-            parameters.Add("glMonth", glMonth, DbType.Int32);
-            parameters.Add("glYear", glYear, DbType.Int32);
-            parameters.Add("userId", userId, DbType.String);
-            parameters.Add("recalcScope", string.IsNullOrWhiteSpace(recalcScope) ? JurnalRecalcScopes.None : recalcScope, DbType.String);
-            parameters.Add("impactedAccountCount", Math.Max(0, impactedAccountCount), DbType.Int32);
-            parameters.Add("impactedRowCount", Math.Max(0, impactedRowCount), DbType.Int32);
-            parameters.Add("jobId", dbType: DbType.Int64, direction: ParameterDirection.Output);
-
-            try
+            catch
             {
-                connection.Execute(insertSqlWithTelemetry, parameters);
+                try
+                {
+                    transaction.Rollback();
+                }
+                catch
+                {
+                    // best effort rollback
+                }
+
+                throw;
             }
-            catch (OracleException ex) when (IsRecalcTelemetryColumnsUnavailable(ex))
+        }
+
+        private static string[] NormalizeAccountCodes(IReadOnlyList<string>? impactedAccountCodes)
+        {
+            if (impactedAccountCodes == null || impactedAccountCodes.Count == 0)
             {
-                connection.Execute(insertSql, parameters);
+                return Array.Empty<string>();
             }
 
-            long jobId = parameters.Get<long>("jobId");
-            Log.Information(
-                "PERF RekalkulasiJobStore enqueue_created iddata={IdData} periode={Periode} jurnal_id={JurnalId} job_id={JobId} scope={Scope} impacted_accounts={ImpactedAccounts} impacted_rows={ImpactedRows}",
-                idData,
-                periode,
-                jurnalId,
-                jobId,
-                recalcScope,
-                impactedAccountCount,
-                impactedRowCount);
-            return jobId;
+            return impactedAccountCodes
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Select(code => code.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private static void UpsertJobAccounts(OracleConnection connection, OracleTransaction transaction, long jobId, string[] codes)
+        {
+            if (codes.Length == 0)
+            {
+                return;
+            }
+
+            const string sql = @"INSERT INTO ACCT_RECALC_JOB_ACCOUNT (JOB_ID, KODEACC)
+                SELECT :jobId, :kode FROM DUAL
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM ACCT_RECALC_JOB_ACCOUNT WHERE JOB_ID = :jobId AND KODEACC = :kode
+                )";
+
+            connection.Execute(sql, codes.Select(code => new { jobId, kode = code }), transaction);
         }
 
         public RekalkulasiJobRecord? TryClaimNextDueJob()
@@ -346,10 +394,5 @@ namespace Accounting.BusinessLayer
             return normalized[..MaxErrorLength];
         }
 
-        private static bool IsRecalcTelemetryColumnsUnavailable(OracleException ex)
-        {
-            string message = ex.Message ?? string.Empty;
-            return message.Contains("ORA-00904", StringComparison.OrdinalIgnoreCase);
-        }
     }
 }

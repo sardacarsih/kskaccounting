@@ -79,6 +79,10 @@ namespace Accounting.BusinessLayer
         {
             repository.RekalkulasiByJurnalID(piddata, p_bulan, p_tahun, p_JurnalID, p_Periode, p_Userid);
         }
+        public static void RekalkulasiByJob(string piddata, int p_bulan, int p_tahun, string p_Periode, string p_Userid, long p_JobId, Double p_JurnalID)
+        {
+            repository.RekalkulasiByJob(piddata, p_bulan, p_tahun, p_Periode, p_Userid, p_JobId, p_JurnalID);
+        }
         public static int ReCalcByNoHID(string piddata, int p_bulan, int p_tahun, string p_HID, string p_Periode, string p_Userid)
         {
             return repository.ReCalcByNoHID(piddata, p_bulan, p_tahun, p_HID, p_Periode, p_Userid);

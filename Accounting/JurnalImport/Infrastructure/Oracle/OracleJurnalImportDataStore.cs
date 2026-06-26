@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Threading;
 using Accounting.BusinessLayer;
 using Accounting.JurnalImport.Application;
 using Accounting.JurnalImport.Domain;
+using Accounting.Model;
 using Accounting.Utilities;
+using Dapper;
 using Oracle.ManagedDataAccess.Client;
 using Serilog;
 
@@ -14,11 +15,16 @@ namespace Accounting.JurnalImport.Infrastructure.Oracle;
 
 public sealed class OracleJurnalImportDataStore : IJurnalImportDataStore
 {
-    /// <summary>Maximum number of retry attempts when a deadlock (ORA-00060) is encountered.</summary>
-    private const int MaxDeadlockRetries = 3;
+    private readonly object _replacePeriodSnapshotGate = new();
+    private HashSet<string> _lastReplacePeriodAccountCodes = new(StringComparer.OrdinalIgnoreCase);
+    private int _lastReplacePeriodImpactedRows;
 
-    /// <summary>Base delay in milliseconds before retrying after a deadlock.</summary>
-    private const int DeadlockRetryBaseDelayMs = 500;
+    private sealed class ImportRecalcPosting
+    {
+        public double JurnalId { get; init; }
+        public string Kode { get; init; } = string.Empty;
+        public int RowCount { get; init; }
+    }
 
     public string GetLockStatus(string idData, string period)
     {
@@ -83,98 +89,186 @@ public sealed class OracleJurnalImportDataStore : IJurnalImportDataStore
 
     public int ImportPartial(JurnalImportScope scope, IReadOnlyList<JurnalImportRow> rows, IProgress<JurnalImportProgress>? progress)
     {
+        CaptureReplacePeriodSnapshot(scope);
         return JurnalServices.ImportJurnalClientSide(scope, rows, progress);
     }
 
-    /// <summary>
-    /// Recalculates saldo for the imported period by processing each JurnalID individually
-    /// using the V2 atomic recalculation procedure. This avoids the ORA-00060 deadlock that
-    /// occurs when the legacy bulk <c>RecalkulasiSaldoDetail</c> updates all ACCT_COA rows
-    /// in one large session while other sessions (or triggers) also lock the same rows.
-    /// </summary>
-    public void RecalculateSaldo(JurnalImportScope scope)
+    public JurnalImportRecalcQueueResult QueueRecalculation(JurnalImportScope scope)
     {
-        List<double> jurnalIds = GetJurnalIdsForPeriod(scope.IdData, scope.Period);
-
-        if (jurnalIds.Count == 0)
+        ReplacePeriodSnapshot replaceSnapshot = ConsumeReplacePeriodSnapshot();
+        List<ImportRecalcPosting> currentPostings = GetCurrentImpactedPostingsForImportedRows(scope);
+        if (currentPostings.Count == 0 && replaceSnapshot.AccountCodes.Count == 0)
         {
-            Log.Warning("RecalculateSaldo: no journal IDs found for period {Period}, skipping recalc", scope.Period);
-            return;
+            Log.Warning("Jurnal import recalc queue skipped: no impacted accounts found for period {Period}", scope.Period);
+            return JurnalImportRecalcQueueResult.Empty();
+        }
+
+        List<long> jobIds = [];
+        HashSet<string> allImpactedAccounts = new(StringComparer.OrdinalIgnoreCase);
+        int impactedRows = replaceSnapshot.ImpactedRows + currentPostings.Sum(row => row.RowCount);
+        string recalcScope = scope.Mode == JurnalImportMode.ReplacePeriod
+            ? JurnalRecalcScopes.UpdateDelta
+            : JurnalRecalcScopes.InsertDelta;
+
+        bool replaceSnapshotQueued = false;
+        foreach (IGrouping<double, ImportRecalcPosting> journalGroup in currentPostings.GroupBy(row => row.JurnalId).OrderBy(group => group.Key))
+        {
+            HashSet<string> journalAccounts = new(journalGroup.Select(row => row.Kode), StringComparer.OrdinalIgnoreCase);
+            int journalRows = journalGroup.Sum(row => row.RowCount);
+
+            if (!replaceSnapshotQueued)
+            {
+                journalAccounts.UnionWith(replaceSnapshot.AccountCodes);
+                journalRows += replaceSnapshot.ImpactedRows;
+                replaceSnapshotQueued = true;
+            }
+
+            foreach (string accountCode in journalAccounts)
+            {
+                allImpactedAccounts.Add(accountCode);
+            }
+
+            JurnalRecalcHint hint = JurnalRecalcHint.Create(
+                recalcScope,
+                journalRows,
+                journalAccounts.Count,
+                journalAccounts);
+            long? jobId = JurnalInputOperationService.QueueRekalkulasiSaldo(
+                scope.IdData,
+                scope.Period,
+                scope.UserId,
+                journalGroup.Key,
+                hint);
+            if (jobId.HasValue)
+            {
+                jobIds.Add(jobId.Value);
+            }
+        }
+
+        if (!replaceSnapshotQueued && replaceSnapshot.AccountCodes.Count > 0)
+        {
+            foreach (string accountCode in replaceSnapshot.AccountCodes)
+            {
+                allImpactedAccounts.Add(accountCode);
+            }
+
+            JurnalRecalcHint hint = JurnalRecalcHint.Create(
+                recalcScope,
+                replaceSnapshot.ImpactedRows,
+                replaceSnapshot.AccountCodes.Count,
+                replaceSnapshot.AccountCodes);
+            long? jobId = JurnalInputOperationService.QueueRekalkulasiSaldo(
+                scope.IdData,
+                scope.Period,
+                scope.UserId,
+                0d,
+                hint);
+            if (jobId.HasValue)
+            {
+                jobIds.Add(jobId.Value);
+            }
         }
 
         Log.Information(
-            "RecalculateSaldo: processing {Count} journal(s) for period {Period} using per-JurnalID V2 recalc",
-            jurnalIds.Count,
-            scope.Period);
+            "Jurnal import recalc queued period={Period} mode={Mode} jobs={JobCount} impacted_accounts={ImpactedAccounts} impacted_rows={ImpactedRows}",
+            scope.Period,
+            scope.Mode,
+            jobIds.Count,
+            allImpactedAccounts.Count,
+            impactedRows);
 
-        foreach (double jurnalId in jurnalIds)
+        return JurnalImportRecalcQueueResult.Create(jobIds, allImpactedAccounts, impactedRows);
+    }
+
+    private void CaptureReplacePeriodSnapshot(JurnalImportScope scope)
+    {
+        if (scope.Mode != JurnalImportMode.ReplacePeriod)
         {
-            RecalculateWithDeadlockRetry(scope, jurnalId);
+            lock (_replacePeriodSnapshotGate)
+            {
+                _lastReplacePeriodAccountCodes.Clear();
+                _lastReplacePeriodImpactedRows = 0;
+            }
+
+            return;
+        }
+
+        List<ImportRecalcPosting> existingPostings = GetCurrentImpactedPostingsForPeriod(scope);
+        lock (_replacePeriodSnapshotGate)
+        {
+            _lastReplacePeriodAccountCodes = new HashSet<string>(
+                existingPostings.Select(row => row.Kode),
+                StringComparer.OrdinalIgnoreCase);
+            _lastReplacePeriodImpactedRows = existingPostings.Sum(row => row.RowCount);
         }
     }
 
-    /// <summary>
-    /// Queries all JurnalIDs from ACCT_JURNAL_HDR for the given IDDATA and PERIODE.
-    /// </summary>
-    private static List<double> GetJurnalIdsForPeriod(string idData, string period)
+    private ReplacePeriodSnapshot ConsumeReplacePeriodSnapshot()
     {
-        const string sql = "SELECT JURNALID FROM ACCT_JURNAL_HDR WHERE IDDATA=:p_iddata AND PERIODE=:p_periode ORDER BY JURNALID";
+        lock (_replacePeriodSnapshotGate)
+        {
+            ReplacePeriodSnapshot snapshot = new(
+                _lastReplacePeriodAccountCodes.ToArray(),
+                _lastReplacePeriodImpactedRows);
+            _lastReplacePeriodAccountCodes.Clear();
+            _lastReplacePeriodImpactedRows = 0;
+            return snapshot;
+        }
+    }
+
+
+    private static List<ImportRecalcPosting> GetCurrentImpactedPostingsForImportedRows(JurnalImportScope scope)
+    {
+        const string sql = @"
+            WITH IMPORTED_JOURNALS AS (
+                SELECT DISTINCT h.JURNALID
+                FROM ACCT_JURNAL_HDR h
+                JOIN ACCT_JURNAL_TMP t
+                  ON t.IDDATA = h.IDDATA
+                 AND t.PERIODE = h.PERIODE
+                 AND t.NOJURNAL = h.NOJURNAL
+                 AND t.TANGGAL = h.TANGGAL
+                WHERE t.IDDATA = :idData
+                  AND t.PERIODE = :period
+                  AND t.USERID = :userId
+            )
+            SELECT h.JURNALID AS JurnalId,
+                   d.KODE AS Kode,
+                   COUNT(1) AS RowCount
+            FROM IMPORTED_JOURNALS h
+            JOIN ACCT_JURNAL_DTL d
+              ON d.REFFID = h.JURNALID
+            WHERE d.KODE IS NOT NULL
+              AND (NVL(d.DEBET, 0) <> 0 OR NVL(d.KREDIT, 0) <> 0)
+            GROUP BY h.JURNALID, d.KODE
+            ORDER BY h.JURNALID, d.KODE";
 
         using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
         connection.Open();
-        using OracleCommand cmd = new(sql, connection) { CommandType = CommandType.Text };
-        cmd.BindByName = true;
-        cmd.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = idData;
-        cmd.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = period;
-
-        List<double> ids = [];
-        using OracleDataReader reader = cmd.ExecuteReader();
-        while (reader.Read())
-        {
-            ids.Add(reader.GetDouble(0));
-        }
-
-        return ids;
+        return connection.Query<ImportRecalcPosting>(
+            sql,
+            new { idData = scope.IdData, period = scope.Period, userId = scope.UserId }).ToList();
     }
-
-    /// <summary>
-    /// Calls the V2 per-JurnalID recalculation with retry on ORA-00060 deadlock.
-    /// </summary>
-    private static void RecalculateWithDeadlockRetry(JurnalImportScope scope, double jurnalId)
+    private static List<ImportRecalcPosting> GetCurrentImpactedPostingsForPeriod(JurnalImportScope scope)
     {
-        for (int attempt = 0; attempt <= MaxDeadlockRetries; attempt++)
-        {
-            try
-            {
-                AccountServices.RekalkulasiByJurnalID(
-                    scope.IdData,
-                    scope.Month,
-                    scope.Year,
-                    jurnalId,
-                    scope.Period,
-                    scope.UserId);
-                return;
-            }
-            catch (OracleException ex) when (IsDeadlock(ex) && attempt < MaxDeadlockRetries)
-            {
-                int delayMs = DeadlockRetryBaseDelayMs * (1 << attempt);
-                Log.Warning(
-                    "RecalculateSaldo: deadlock (ORA-00060) on JurnalID={JurnalId} attempt {Attempt}/{MaxRetries}, retrying in {DelayMs}ms",
-                    jurnalId,
-                    attempt + 1,
-                    MaxDeadlockRetries,
-                    delayMs);
-                Thread.Sleep(delayMs);
-            }
-        }
+        const string sql = @"
+            SELECT h.JURNALID AS JurnalId,
+                   d.KODE AS Kode,
+                   COUNT(1) AS RowCount
+            FROM ACCT_JURNAL_HDR h
+            JOIN ACCT_JURNAL_DTL d
+              ON d.REFFID = h.JURNALID
+            WHERE h.IDDATA = :idData
+              AND h.PERIODE = :period
+              AND d.KODE IS NOT NULL
+              AND (NVL(d.DEBET, 0) <> 0 OR NVL(d.KREDIT, 0) <> 0)
+            GROUP BY h.JURNALID, d.KODE
+            ORDER BY h.JURNALID, d.KODE";
+
+        using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
+        connection.Open();
+        return connection.Query<ImportRecalcPosting>(sql, new { idData = scope.IdData, period = scope.Period }).ToList();
     }
 
-    /// <summary>
-    /// Checks whether an OracleException represents a deadlock (ORA-00060).
-    /// </summary>
-    private static bool IsDeadlock(OracleException ex)
-    {
-        return ex.Number == 60
-            || (ex.Message?.Contains("ORA-00060", StringComparison.OrdinalIgnoreCase) ?? false);
-    }
+    private sealed record ReplacePeriodSnapshot(IReadOnlyList<string> AccountCodes, int ImpactedRows);
 }
