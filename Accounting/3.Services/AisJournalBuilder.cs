@@ -88,6 +88,12 @@ namespace Accounting.BusinessLayer
 
             foreach (AIS_JURNAL item in journalRows)
             {
+                // Round harvest rows up front so totals (and the balancing credits derived from
+                // them) agree with the per-row rounding applied later in NormalizeAisFinalRows.
+                item.DEBET = JurnalAmountRounding.RoundJournalAmount(item.DEBET);
+                item.KREDIT = JurnalAmountRounding.RoundJournalAmount(item.KREDIT);
+                item.PPH21 = JurnalAmountRounding.RoundJournalAmount(item.PPH21);
+
                 decimal debetWithPph21 = JurnalAmountRounding.RoundJournalAmount(item.DEBETPPH / 0.975m);
                 if (item.DEBET < debetWithPph21)
                 {
@@ -139,6 +145,16 @@ namespace Accounting.BusinessLayer
                 .ThenBy(f => f.BLOK)
                 .Select(CloneAisJournal)
                 .ToList();
+
+            // Round harvest rows to 2 decimals up front so the balancing "operasional" credit
+            // (computed from these sums) agrees with the per-row rounding applied later in
+            // NormalizeAisFinalRows. Without this the journal can be off by 0.01 when inputs
+            // carry more than 2 decimals.
+            foreach (AIS_JURNAL item in journalRows)
+            {
+                item.DEBET = JurnalAmountRounding.RoundJournalAmount(item.DEBET);
+                item.KREDIT = JurnalAmountRounding.RoundJournalAmount(item.KREDIT);
+            }
 
             List<AIS_JURNAL> componentJournalRows = componentRows
                 .Where(x => x.Divisi == divisiId && !x.IsBorongan)

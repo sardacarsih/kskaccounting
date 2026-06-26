@@ -1,4 +1,5 @@
-﻿using Accounting.Model;
+﻿using Accounting.BusinessLayer;
+using Accounting.Model;
 using Dapper;
 using Oracle.ManagedDataAccess.Client;
 using Serilog;
@@ -74,7 +75,7 @@ namespace Accounting.DataLayer
         }
 
         
-        public double CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module)
+        public decimal CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module)
         {
             using OracleCommand _command = new("ACCT_IMPORT_MODULE.CEK_NILAI_TOTAL_TRANSAKSI", conn)
             {
@@ -84,14 +85,15 @@ namespace Accounting.DataLayer
             {
                 conn.Open();
             }
-            _command.Parameters.Add("TOTAL", OracleDbType.Double).Direction = ParameterDirection.ReturnValue;
+            _command.Parameters.Add("TOTAL", OracleDbType.Decimal).Direction = ParameterDirection.ReturnValue;
             _command.Parameters.Add(":p_periode_int", OracleDbType.Int16).Value = p_periode;
             _command.Parameters.Add(":p_ptlokasi", OracleDbType.Varchar2, 5).Value = p_ptlokasi;
             _command.Parameters.Add(":p_module", OracleDbType.Varchar2, 20).Value = p_module;
             OracleDataReader dr;
             dr = _command.ExecuteReader();
 
-            Double result = Convert.ToDouble(_command.Parameters["TOTAL"].Value.ToString());
+            decimal result = JurnalAmountRounding.RoundJournalAmount(
+                Convert.ToDecimal(_command.Parameters["TOTAL"].Value.ToString(), System.Globalization.CultureInfo.InvariantCulture));
             conn.Close();
             return result;
         }
@@ -409,8 +411,16 @@ namespace Accounting.DataLayer
                     WHERE COA.KODEACC = IR.""CreditAccountNumber""
                       AND COA.IDDATA = :p_iddata
                       AND COA.TAHUN = :p_glyear) AS CREDIT_ACCOUNT_NAME,
-                   IIT.""CreditAccountNumber"" AS DEBIT_ACCOUNT,
-                   IIT.""Name"" AS DEBIT_ACCOUNT_NAME,
+                   NVL(IIT.""CreditAccountNumber"",
+                       (SELECT MAX(AD.kodeacc) FROM ACCT_DEFAULT AD
+                        WHERE AD.nama = 'PERSEDIAAN' AND AD.iddata = :p_iddata)) AS DEBIT_ACCOUNT,
+                   (SELECT MAX(COA.NAMAACC)
+                    FROM ACCT_COA COA
+                    WHERE COA.KODEACC = NVL(IIT.""CreditAccountNumber"",
+                            (SELECT MAX(AD.kodeacc) FROM ACCT_DEFAULT AD
+                             WHERE AD.nama = 'PERSEDIAAN' AND AD.iddata = :p_iddata))
+                      AND COA.IDDATA = :p_iddata
+                      AND COA.TAHUN = :p_glyear) AS DEBIT_ACCOUNT_NAME,
                    II.""Name"" AS ITEM_NAME,
                    IU.""Name"" AS UNIT_NAME,
                    IRI.""Quantity"" AS QUANTITY,
@@ -427,10 +437,16 @@ namespace Accounting.DataLayer
         LK_BASE AS (
             SELECT IUS.""Number"" AS NOJURNAL,
                    IUS.""Date"" AS TANGGAL,
-                   IUSI.""UsageDebitAccountNumber"" AS DEBIT_ACCOUNT,
+                   NVL((SELECT MAX(COA.KODEACC) FROM ACCT_COA COA
+                        WHERE COA.ACCTCOAID = IUSI.""ACCTCOAID""
+                          AND COA.IDDATA = :p_iddata AND COA.TAHUN = :p_glyear),
+                       IUSI.""UsageDebitAccountNumber"") AS DEBIT_ACCOUNT,
                    (SELECT MAX(COA.NAMAACC)
                     FROM ACCT_COA COA
-                    WHERE COA.KODEACC = IUSI.""UsageDebitAccountNumber""
+                    WHERE COA.KODEACC = NVL((SELECT MAX(C2.KODEACC) FROM ACCT_COA C2
+                                            WHERE C2.ACCTCOAID = IUSI.""ACCTCOAID""
+                                              AND C2.IDDATA = :p_iddata AND C2.TAHUN = :p_glyear),
+                                           IUSI.""UsageDebitAccountNumber"")
                       AND COA.IDDATA = :p_iddata
                       AND COA.TAHUN = :p_glyear) AS DEBIT_ACCOUNT_NAME,
                    IIT.""CreditAccountNumber"" AS CREDIT_ACCOUNT,
@@ -564,8 +580,8 @@ namespace Accounting.DataLayer
                         BARIS = Convert.ToInt16(reader["BARIS"]),
                         KODE = reader["KODE"]?.ToString(),
                         REKENING = reader["REKENING"]?.ToString(),
-                        DEBET = Convert.ToDouble(reader["DEBET"]),
-                        KREDIT = Convert.ToDouble(reader["KREDIT"]),
+                        DEBET = JurnalAmountRounding.RoundJournalAmount(Convert.ToDecimal(reader["DEBET"])),
+                        KREDIT = JurnalAmountRounding.RoundJournalAmount(Convert.ToDecimal(reader["KREDIT"])),
                         KETERANGAN = reader["KETERANGAN"]?.ToString(),
                         POSTED = reader["POSTED"]?.ToString(),
                         PERIODE = reader["PERIODE"]?.ToString(),
@@ -615,8 +631,8 @@ namespace Accounting.DataLayer
                         BARIS = Convert.ToInt16(reader["BARIS"]),
                         KODE = reader["KODE"]?.ToString(),
                         REKENING = reader["REKENING"]?.ToString(),
-                        DEBET = Convert.ToDouble(reader["DEBET"]),
-                        KREDIT = Convert.ToDouble(reader["KREDIT"]),
+                        DEBET = JurnalAmountRounding.RoundJournalAmount(Convert.ToDecimal(reader["DEBET"])),
+                        KREDIT = JurnalAmountRounding.RoundJournalAmount(Convert.ToDecimal(reader["KREDIT"])),
                         KETERANGAN = reader["KETERANGAN"]?.ToString(),
                         POSTED = reader["POSTED"]?.ToString(),
                         PERIODE = reader["PERIODE"]?.ToString(),

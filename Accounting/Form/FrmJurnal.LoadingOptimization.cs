@@ -118,14 +118,23 @@ namespace Accounting.Form
             string operationName,
             int delayMs)
         {
+            // Capture the token up front. A subsequent debounced call disposes this
+            // CancellationTokenSource via CancelAndDispose; reading cancellation.Token
+            // after that point would throw ObjectDisposedException.
+            CancellationToken token = cancellation.Token;
+
             try
             {
-                await Task.Delay(delayMs, cancellation.Token);
-                await operation(cancellation.Token);
+                await Task.Delay(delayMs, token);
+                await operation(token);
             }
             catch (OperationCanceledException)
             {
                 // Expected during quick user input changes.
+            }
+            catch (ObjectDisposedException)
+            {
+                // The CancellationTokenSource was disposed by a newer debounced call; treat as cancelled.
             }
             catch (Exception ex)
             {

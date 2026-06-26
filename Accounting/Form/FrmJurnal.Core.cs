@@ -276,8 +276,8 @@ namespace Accounting.Form
                 switch (summaryID)
                 {
                     case 1: // The total summary calculated against the 'UnitPrice' column. 
-                        var Debet = Convert.ToDouble(JDgridView.Columns["Debet"].SummaryItem.SummaryValue.ToString());
-                        var Kredit = Convert.ToDouble(JDgridView.Columns["Kredit"].SummaryItem.SummaryValue.ToString());
+                        var Debet = Convert.ToDecimal(JDgridView.Columns["Debet"].SummaryItem.SummaryValue);
+                        var Kredit = Convert.ToDecimal(JDgridView.Columns["Kredit"].SummaryItem.SummaryValue);
                         if (Debet > Kredit)
                         {
                             nilai = 0;
