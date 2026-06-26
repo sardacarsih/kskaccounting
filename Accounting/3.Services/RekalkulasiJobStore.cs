@@ -179,13 +179,21 @@ namespace Accounting.BusinessLayer
             {
                 const string candidateSql = @"SELECT JOB_ID
                     FROM (
-                        SELECT JOB_ID
-                        FROM ACCT_RECALC_JOB
-                        WHERE STATUS IN ('PENDING', 'RETRY')
-                          AND (NEXT_RETRY_AT IS NULL OR NEXT_RETRY_AT <= SYSTIMESTAMP)
-                        ORDER BY CREATED_DATE, JOB_ID
+                        SELECT j.JOB_ID
+                        FROM ACCT_RECALC_JOB j
+                        WHERE j.STATUS IN ('PENDING', 'RETRY')
+                          AND (j.NEXT_RETRY_AT IS NULL OR j.NEXT_RETRY_AT <= SYSTIMESTAMP)
+                          AND NOT EXISTS (
+                              SELECT 1
+                              FROM ACCT_RECALC_JOB r
+                              WHERE r.STATUS = 'RUNNING'
+                                AND r.IDDATA = j.IDDATA
+                                AND r.PERIODE = j.PERIODE
+                          )
+                        ORDER BY j.CREATED_DATE, j.JOB_ID
                     )
-                    WHERE ROWNUM <= :candidateLimit";
+                    WHERE ROWNUM <= :candidateLimit
+                    FOR UPDATE SKIP LOCKED";
 
                 const string claimByIdSql = @"UPDATE ACCT_RECALC_JOB
                       SET STATUS = 'RUNNING',

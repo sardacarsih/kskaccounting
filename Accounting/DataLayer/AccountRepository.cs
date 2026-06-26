@@ -1,4 +1,4 @@
-﻿using Accounting.Model;
+using Accounting.Model;
 using Accounting.Utilities;
 using Dapper;
 using DevExpress.Data.ODataLinq;
@@ -782,16 +782,26 @@ namespace Accounting.DataLayer
             Stopwatch stopwatch = Stopwatch.StartNew();
             using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
             connection.Open();
-
-            ExecuteRekalkulasiByJurnalIdProcedure(
-                connection,
-                "ACCT_RECALLCULATIONS_V2.ReCalcByJurnalID",
-                piddata,
-                p_bulan,
-                p_tahun,
-                p_JurnalID,
-                p_Periode,
-                p_Userid);
+            using OracleTransaction transaction = connection.BeginTransaction();
+            try
+            {
+                ExecuteRekalkulasiByJurnalIdProcedure(
+                    connection,
+                    transaction,
+                    "ACCT_RECALLCULATIONS_V2.ReCalcByJurnalID",
+                    piddata,
+                    p_bulan,
+                    p_tahun,
+                    p_JurnalID,
+                    p_Periode,
+                    p_Userid);
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
 
             Log.Information(
                 "PERF AccountRepository.RekalkulasiByJurnalID elapsed_ms={ElapsedMs} jurnal_id={JurnalId} periode={Periode} entrypoint={Entrypoint}",
@@ -802,6 +812,7 @@ namespace Accounting.DataLayer
         }
         private static void ExecuteRekalkulasiByJurnalIdProcedure(
             OracleConnection connection,
+            OracleTransaction transaction,
             string procedureName,
             string piddata,
             int p_bulan,
@@ -813,7 +824,8 @@ namespace Accounting.DataLayer
             string plsql = $"BEGIN {procedureName}(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_JURNALID, :p_PERIODE, :p_USERID); END;";
             using OracleCommand cmd = new(plsql, connection)
             {
-                CommandType = CommandType.Text
+                CommandType = CommandType.Text,
+                Transaction = transaction
             };
 
             cmd.BindByName = true;
@@ -832,8 +844,17 @@ namespace Accounting.DataLayer
             Stopwatch stopwatch = Stopwatch.StartNew();
             using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
             connection.Open();
-
-            ExecuteRecalcByJobProcedure(connection, piddata, p_bulan, p_tahun, p_Periode, p_Userid, p_JobId);
+            using OracleTransaction transaction = connection.BeginTransaction();
+            try
+            {
+                ExecuteRecalcByJobProcedure(connection, transaction, piddata, p_bulan, p_tahun, p_Periode, p_Userid, p_JobId);
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
 
             Log.Information(
                 "PERF AccountRepository.RekalkulasiByJob elapsed_ms={ElapsedMs} job_id={JobId} jurnal_id={JurnalId} periode={Periode} entrypoint={Entrypoint}",
@@ -845,6 +866,7 @@ namespace Accounting.DataLayer
         }
         private static void ExecuteRecalcByJobProcedure(
             OracleConnection connection,
+            OracleTransaction transaction,
             string piddata,
             int p_bulan,
             int p_tahun,
@@ -855,7 +877,8 @@ namespace Accounting.DataLayer
             const string plsql = "BEGIN ACCT_RECALLCULATIONS_V2.ReCalcByJob(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_PERIODE, :p_USERID, :p_JOBID); END;";
             using OracleCommand cmd = new(plsql, connection)
             {
-                CommandType = CommandType.Text
+                CommandType = CommandType.Text,
+                Transaction = transaction
             };
 
             cmd.BindByName = true;
