@@ -783,41 +783,23 @@ namespace Accounting.DataLayer
             using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
             connection.Open();
 
-            string usedEntrypoint = "v2";
-            try
-            {
-                ExecuteRekalkulasiByJurnalIdProcedure(
-                    connection,
-                    "ACCT_RECALLCULATIONS_V2.ReCalcByJurnalID",
-                    piddata,
-                    p_bulan,
-                    p_tahun,
-                    p_JurnalID,
-                    p_Periode,
-                    p_Userid);
-            }
-            catch (OracleException ex) when (IsRecalcV2EntrypointUnavailable(ex))
-            {
-                usedEntrypoint = "legacy";
-                ExecuteRekalkulasiByJurnalIdProcedure(
-                    connection,
-                    "ACCT_RECALLCULATIONS.ReCalcByNoJurnalID",
-                    piddata,
-                    p_bulan,
-                    p_tahun,
-                    p_JurnalID,
-                    p_Periode,
-                    p_Userid);
-            }
+            ExecuteRekalkulasiByJurnalIdProcedure(
+                connection,
+                "ACCT_RECALLCULATIONS_V2.ReCalcByJurnalID",
+                piddata,
+                p_bulan,
+                p_tahun,
+                p_JurnalID,
+                p_Periode,
+                p_Userid);
 
             Log.Information(
                 "PERF AccountRepository.RekalkulasiByJurnalID elapsed_ms={ElapsedMs} jurnal_id={JurnalId} periode={Periode} entrypoint={Entrypoint}",
                 stopwatch.ElapsedMilliseconds,
                 p_JurnalID,
                 p_Periode,
-                usedEntrypoint);
+                "v2");
         }
-
         private static void ExecuteRekalkulasiByJurnalIdProcedure(
             OracleConnection connection,
             string procedureName,
@@ -845,16 +827,46 @@ namespace Accounting.DataLayer
             cmd.ExecuteNonQuery();
         }
 
-        private static bool IsRecalcV2EntrypointUnavailable(OracleException ex)
+        public void RekalkulasiByJob(string piddata, int p_bulan, int p_tahun, string p_Periode, string p_Userid, long p_JobId, double p_JurnalID)
         {
-            string message = ex.Message ?? string.Empty;
-            bool missingIdentifier = message.Contains("PLS-00201", StringComparison.OrdinalIgnoreCase)
-                || message.Contains("ORA-04043", StringComparison.OrdinalIgnoreCase);
-            bool invalidEntrypoint = message.Contains("ORA-06550", StringComparison.OrdinalIgnoreCase)
-                && (message.Contains("ACCT_RECALLCULATIONS_V2", StringComparison.OrdinalIgnoreCase)
-                    || message.Contains("RECALCBYJURNALID", StringComparison.OrdinalIgnoreCase));
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
+            connection.Open();
 
-            return missingIdentifier || invalidEntrypoint;
+            ExecuteRecalcByJobProcedure(connection, piddata, p_bulan, p_tahun, p_Periode, p_Userid, p_JobId);
+
+            Log.Information(
+                "PERF AccountRepository.RekalkulasiByJob elapsed_ms={ElapsedMs} job_id={JobId} jurnal_id={JurnalId} periode={Periode} entrypoint={Entrypoint}",
+                stopwatch.ElapsedMilliseconds,
+                p_JobId,
+                p_JurnalID,
+                p_Periode,
+                "v2_job");
+        }
+        private static void ExecuteRecalcByJobProcedure(
+            OracleConnection connection,
+            string piddata,
+            int p_bulan,
+            int p_tahun,
+            string p_Periode,
+            string p_Userid,
+            long p_JobId)
+        {
+            const string plsql = "BEGIN ACCT_RECALLCULATIONS_V2.ReCalcByJob(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_PERIODE, :p_USERID, :p_JOBID); END;";
+            using OracleCommand cmd = new(plsql, connection)
+            {
+                CommandType = CommandType.Text
+            };
+
+            cmd.BindByName = true;
+            cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
+            cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+            cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
+            cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
+            cmd.Parameters.Add("p_PERIODE", OracleDbType.Varchar2, 7).Value = p_Periode;
+            cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = p_Userid;
+            cmd.Parameters.Add("p_JOBID", OracleDbType.Int64).Value = p_JobId;
+            cmd.ExecuteNonQuery();
         }
 
         public IEnumerable<coaHIA> GetPerkiraanSaldo_TreeView(string p_iddata, int p_tahun, int p_bulan)

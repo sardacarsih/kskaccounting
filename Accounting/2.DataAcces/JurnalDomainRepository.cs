@@ -237,7 +237,7 @@ namespace Accounting._2.DataAcces
             return JurnalFromModuleServices.Jurnal_InventoriBaru(pPeriodeInt, pPtLokasi, pIdData, pPosted, pPeriodeStr, pUserId, pGlYear, pGlMonth, pSourceFilter);
         }
 
-        public double CEK_TOTAL_TRANSAKSI(int pPeriodeInt, string pPtLokasi, string pModule)
+        public decimal CEK_TOTAL_TRANSAKSI(int pPeriodeInt, string pPtLokasi, string pModule)
         {
             return JurnalFromModuleServices.CEK_TOTAL_TRANSAKSI(pPeriodeInt, pPtLokasi, pModule);
         }

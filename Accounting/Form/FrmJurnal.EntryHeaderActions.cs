@@ -553,6 +553,7 @@ namespace Accounting.Form
                 CompanyInfo.IDDATA,
                 periode,
                 impactedAccountCodes);
+            MonitorRecalcJob(recalcJobId.Value);
         }
 
         private void PublishCoaRekalkulasiNotification(IReadOnlyList<long>? recalcJobIds, string periode, IReadOnlyList<string>? impactedAccountCodes)
@@ -568,6 +569,7 @@ namespace Accounting.Form
                 CompanyInfo.IDDATA,
                 periode,
                 impactedAccountCodes);
+            MonitorRecalcJob(latestJobId);
         }
 
         private void txtfilterjurnal_KeyDown(object sender, KeyEventArgs e)

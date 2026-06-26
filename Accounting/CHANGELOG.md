@@ -29,14 +29,22 @@ Tanggal: -
 
 - Preview detail AIS dan export all AIS memakai logika pembentukan jurnal yang sama agar hasil preview, export per baris, dan export all konsisten.
 
+### Added
+
+- Peringatan otomatis di layar jurnal jika rekalkulasi saldo untuk jurnal yang baru disimpan/diubah/dihapus GAGAL diproses, agar saldo yang belum akurat tidak terlewat.
+
 ### Fixed
 
 - Import jurnal Excel dengan periode kosong.
 - RJE multi lokasi.
+- Saldo COA salah setelah edit/hapus jurnal: rekalkulasi async kini menghitung ulang dari sumber (idempoten) sehingga edit tidak lagi menggandakan saldo dan hapus mengurangi saldo dengan benar. Aman terhadap retry/recovery.
 
 ### Technical
 
 - Refactor pembentukan jurnal AIS ke builder berbasis list raw query.
+- Rekalkulasi saldo COA dipindah ke model recompute-from-source (`ACCT_RECALLCULATIONS_V2.ReCalcByJob`/`ReCalcByJurnalID`): kolom mutasi bulanan di-SET ke SUM absolut subtree akun+periode, bukan akumulasi (`+=`). Migrasi `V20260626_001..003` menambah tabel `ACCT_RECALC_JOB_ACCOUNT` (daftar akun terdampak per job), mengganti body proc, dan menghapus trigger `UPDATE_COA_FROM_UPDATE`/`UPDATE_COA_FROM_DELETE`. Jalankan migrasi GLMigrator sebelum deploy build ini.
+- Penjamin sisi server (`ACCT_RECALC_DRAINER` + scheduler job `ACCT_RECALC_DRAINER_JOB`, migrasi `V20260626_004`) memproses antrian `ACCT_RECALC_JOB` setiap menit, sehingga rekalkulasi tetap selesai walau tidak ada aplikasi client yang berjalan. Klaim job aman terhadap eksekusi paralel (FOR UPDATE SKIP LOCKED + recompute idempoten).
+- Hapus kode mati `RekalkulasiCoordinator` (antrian in-memory lama yang tidak terpakai); antrian recalc memakai `RekalkulasiJobStore` berbasis DB.
 
 ## Release 1.0.8
 
