@@ -1,4 +1,4 @@
-﻿using Accounting.Model;
+using Accounting.Model;
 using Dapper;
 using Oracle.ManagedDataAccess.Client;
 using Serilog;
@@ -74,7 +74,7 @@ namespace Accounting.DataLayer
         }
 
         
-        public double CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module)
+        public decimal CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module)
         {
             using OracleCommand _command = new("ACCT_IMPORT_MODULE.CEK_NILAI_TOTAL_TRANSAKSI", conn)
             {
@@ -84,14 +84,14 @@ namespace Accounting.DataLayer
             {
                 conn.Open();
             }
-            _command.Parameters.Add("TOTAL", OracleDbType.Double).Direction = ParameterDirection.ReturnValue;
+            _command.Parameters.Add("TOTAL", OracleDbType.Decimal).Direction = ParameterDirection.ReturnValue;
             _command.Parameters.Add(":p_periode_int", OracleDbType.Int16).Value = p_periode;
             _command.Parameters.Add(":p_ptlokasi", OracleDbType.Varchar2, 5).Value = p_ptlokasi;
             _command.Parameters.Add(":p_module", OracleDbType.Varchar2, 20).Value = p_module;
             OracleDataReader dr;
             dr = _command.ExecuteReader();
 
-            Double result = Convert.ToDouble(_command.Parameters["TOTAL"].Value.ToString());
+            decimal result = Convert.ToDecimal(_command.Parameters["TOTAL"].Value.ToString(), System.Globalization.CultureInfo.InvariantCulture);
             conn.Close();
             return result;
         }

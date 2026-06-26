@@ -1,4 +1,4 @@
-﻿using Accounting.DataLayer;
+using Accounting.DataLayer;
 using Accounting.Model;
 using System;
 using System.Collections.Generic;
@@ -79,7 +79,7 @@ namespace Accounting.BusinessLayer
         {
             repository.InserJurnal_FromKasir( JurnalFromKasir);
         }
-        public static double CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module)
+        public static decimal CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module)
         {
             return repository.CEK_TOTAL_TRANSAKSI(  p_periode,   p_ptlokasi,   p_module);
         }
