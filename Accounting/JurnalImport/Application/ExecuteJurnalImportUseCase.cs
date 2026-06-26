@@ -78,10 +78,12 @@ public sealed class ExecuteJurnalImportUseCase
                 return JurnalImportResult.Failed(statusCode, "Import Jurnal di Batalkan \nJurnal Tidak Seimbang ", stopwatch);
             }
 
-            progress?.Report(new JurnalImportProgress(95, "Menghitung ulang saldo jurnal...", totalRows, totalRows));
+            progress?.Report(new JurnalImportProgress(95, "Menjadwalkan hitung ulang saldo jurnal...", totalRows, totalRows));
             try
             {
-                _dataStore.RecalculateSaldo(scope);
+                JurnalImportRecalcQueueResult recalcQueueResult = _dataStore.QueueRecalculation(scope);
+                progress?.Report(new JurnalImportProgress(100, "Import jurnal selesai.", totalRows, totalRows));
+                return JurnalImportResult.Success(statusCode, stopwatch, recalcQueueResult);
             }
             catch (Exception ex)
             {
@@ -90,9 +92,6 @@ public sealed class ExecuteJurnalImportUseCase
                     BuildRecalculationWarning(scope, ex),
                     stopwatch);
             }
-
-            progress?.Report(new JurnalImportProgress(100, "Import jurnal selesai.", totalRows, totalRows));
-            return JurnalImportResult.Success(statusCode, stopwatch);
         }
         finally
         {

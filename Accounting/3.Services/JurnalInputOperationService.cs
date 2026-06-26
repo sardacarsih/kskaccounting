@@ -475,6 +475,12 @@ namespace Accounting.BusinessLayer
                 recalcHint);
         }
 
+        internal static long? QueueRekalkulasiSaldo(string idData, string periode, string userId, double jurnalId, JurnalRecalcHint recalcHint)
+        {
+            EnsureRekalkulasiWorkersStarted();
+            return QueueRekalkulasiSaldoAsync(idData, periode, userId, jurnalId, recalcHint);
+        }
+
         private static long? QueueRekalkulasiSaldoAsync(string idData, string periode, string userId, double jurnalId, JurnalRecalcHint recalcHint)
         {
             if (!recalcHint.RequiresRecalc)
@@ -502,7 +508,8 @@ namespace Accounting.BusinessLayer
                 userId,
                 recalcHint.Scope,
                 recalcHint.ImpactedAccountCount,
-                recalcHint.ImpactedRowCount);
+                recalcHint.ImpactedRowCount,
+                recalcHint.ImpactedAccountCodes);
             Log.Information(
                 "PERF JurnalInputOperationService.Rekalkulasi job_enqueued job_id={JobId} jurnal_id={JurnalId} periode={Periode} scope={Scope} impacted_rows={ImpactedRows} impacted_accounts={ImpactedAccounts}",
                 jobId,
@@ -583,13 +590,14 @@ namespace Accounting.BusinessLayer
                 try
                 {
                     Stopwatch stopwatch = Stopwatch.StartNew();
-                    AccountServices.RekalkulasiByJurnalID(
+                    AccountServices.RekalkulasiByJob(
                         job.IdData,
                         job.GlMonth,
                         job.GlYear,
-                        job.JurnalId,
                         job.Periode,
-                        job.UserId);
+                        job.UserId,
+                        job.JobId,
+                        job.JurnalId);
 
                     RekalkulasiJobStore.MarkDone(job.JobId);
                     Log.Information(

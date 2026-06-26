@@ -64,7 +64,7 @@ namespace Accounting._1.Interface
         IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int pPeriodeInt, string pPtLokasi, string? pSourceFilter = null);
         DataTable Jurnal_Inventori(int pPeriodeInt, string pPtLokasi, string pIdData, string pPosted, string pPeriodeStr, string pUserId, int pGlYear, int pGlMonth);
         DataTable Jurnal_InventoriBaru(int pPeriodeInt, string pPtLokasi, string pIdData, string pPosted, string pPeriodeStr, string pUserId, int pGlYear, int pGlMonth, string? pSourceFilter = null);
-        double CEK_TOTAL_TRANSAKSI(int pPeriodeInt, string pPtLokasi, string pModule);
+        decimal CEK_TOTAL_TRANSAKSI(int pPeriodeInt, string pPtLokasi, string pModule);
         Task<List<Estate>> GetEstateAsync(string pIdData);
         Task<List<Division>> GetDivisionsAsync(string pIdData, string pEstateId, int pPeriode, int pRemise);
         Task<List<AIS_JURNAL>> GetAISforJurnalAsync(string pIdData, string pEstateId, int pPeriode, int pRemise, int pTahun, string pPeriodeKet);
