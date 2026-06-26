@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.05.28.1",
+  "version": "2026.06.26.2",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -193,6 +193,46 @@
       "script": "migrations/V20260602_003__promote_dharyadi_admin.sql",
       "rollbackScript": "migrations/R20260602_003__promote_dharyadi_admin.sql",
       "checkScript": "migrations/C20260602_003__promote_dharyadi_admin_check.sql"
+    },
+    {
+      "id": "20260626_001_recalc_job_account_table",
+      "order": 25,
+      "description": "Add durable per-job impacted account list for async saldo recompute.",
+      "script": "migrations/V20260626_001__recalc_job_account_table.sql",
+      "rollbackScript": "migrations/R20260626_001__recalc_job_account_table.sql",
+      "checkScript": "migrations/C20260626_001__recalc_job_account_table_check.sql"
+    },
+    {
+      "id": "20260626_002_recalc_v2_recompute_body",
+      "order": 26,
+      "description": "Replace additive recalc V2 with idempotent recompute-from-source and ReCalcByJob.",
+      "script": "migrations/V20260626_002__recalc_v2_recompute_body.sql",
+      "rollbackScript": "migrations/R20260626_002__recalc_v2_recompute_body.sql",
+      "checkScript": "migrations/C20260626_002__recalc_v2_recompute_body_check.sql"
+    },
+    {
+      "id": "20260626_003_drop_legacy_coa_triggers",
+      "order": 27,
+      "description": "Drop legacy ACCT_JURNAL_DTL COA mutation triggers now replaced by async recompute.",
+      "script": "migrations/V20260626_003__drop_legacy_coa_triggers.sql",
+      "rollbackScript": "migrations/R20260626_003__drop_legacy_coa_triggers.sql",
+      "checkScript": "migrations/C20260626_003__drop_legacy_coa_triggers_check.sql"
+    },
+    {
+      "id": "20260626_004_recalc_server_drainer",
+      "order": 28,
+      "description": "Add server-side scheduler drainer for ACCT_RECALC_JOB.",
+      "script": "migrations/V20260626_004__recalc_server_drainer.sql",
+      "rollbackScript": "migrations/R20260626_004__recalc_server_drainer.sql",
+      "checkScript": "migrations/C20260626_004__recalc_server_drainer_check.sql"
+    },
+    {
+      "id": "20260626_005_recalc_v2_period_entrypoint",
+      "order": 29,
+      "description": "Add full-period ACCT_RECALLCULATIONS_V2.ReCalcPeriod entrypoint for monthly closing.",
+      "script": "migrations/V20260626_005__recalc_v2_period_entrypoint.sql",
+      "rollbackScript": "migrations/R20260626_005__recalc_v2_period_entrypoint.sql",
+      "checkScript": "migrations/C20260626_005__recalc_v2_period_entrypoint_check.sql"
     }
   ]
 }

@@ -47,4 +47,22 @@ public sealed class JurnalAmountRoundingTests
         Assert.Equal("AIS-001", normalized[0].NOJURNAL);
         Assert.Equal("Test", normalized[0].KETERANGAN);
     }
+
+    [Fact]
+    public void NormalizeAisFinalRows_WhenRowsBalancedAtTwoDecimals_KeepsTotalsBalanced()
+    {
+        // Debit and credit sides already balance at 2-decimal precision (100.01 = 40.00 + 60.01).
+        List<AIS_JURNAL_FINAL> rows =
+        [
+            new() { NOJURNAL = "AIS-1", KODE = "40", DEBET = 100.01m, KREDIT = 0m },
+            new() { NOJURNAL = "AIS-1", KODE = "33", DEBET = 0m, KREDIT = 40.00m },
+            new() { NOJURNAL = "AIS-1", KODE = "31", DEBET = 0m, KREDIT = 60.01m }
+        ];
+
+        List<AIS_JURNAL_FINAL> normalized = JurnalAmountRounding.NormalizeAisFinalRows(rows);
+
+        decimal totalDebet = normalized.Sum(r => r.DEBET);
+        decimal totalKredit = normalized.Sum(r => r.KREDIT);
+        Assert.Equal(totalDebet, totalKredit);
+    }
 }

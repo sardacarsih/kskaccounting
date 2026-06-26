@@ -1,4 +1,5 @@
-﻿using Accounting.Model;
+﻿using Accounting.BusinessLayer;
+using Accounting.Model;
 using Dapper;
 using Oracle.ManagedDataAccess.Client;
 using Serilog;
@@ -74,7 +75,7 @@ namespace Accounting.DataLayer
         }
 
         
-        public double CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module)
+        public decimal CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module)
         {
             using OracleCommand _command = new("ACCT_IMPORT_MODULE.CEK_NILAI_TOTAL_TRANSAKSI", conn)
             {
@@ -84,14 +85,15 @@ namespace Accounting.DataLayer
             {
                 conn.Open();
             }
-            _command.Parameters.Add("TOTAL", OracleDbType.Double).Direction = ParameterDirection.ReturnValue;
+            _command.Parameters.Add("TOTAL", OracleDbType.Decimal).Direction = ParameterDirection.ReturnValue;
             _command.Parameters.Add(":p_periode_int", OracleDbType.Int16).Value = p_periode;
             _command.Parameters.Add(":p_ptlokasi", OracleDbType.Varchar2, 5).Value = p_ptlokasi;
             _command.Parameters.Add(":p_module", OracleDbType.Varchar2, 20).Value = p_module;
             OracleDataReader dr;
             dr = _command.ExecuteReader();
 
-            Double result = Convert.ToDouble(_command.Parameters["TOTAL"].Value.ToString());
+            decimal result = JurnalAmountRounding.RoundJournalAmount(
+                Convert.ToDecimal(_command.Parameters["TOTAL"].Value.ToString(), System.Globalization.CultureInfo.InvariantCulture));
             conn.Close();
             return result;
         }
@@ -354,19 +356,29 @@ namespace Accounting.DataLayer
 
         public IEnumerable<JurnalInventoryHeaderDTO> GetJurnalHeader_InventoryBaru(int p_periode_int, string p_ptlokasi, string? p_source_filter = null)
         {
+            (DateTime dari, DateTime nextMonth) = MonthRange(p_periode_int / 100, p_periode_int % 100);
+
             var parameters = new DynamicParameters();
-            parameters.Add("p_periode_int", p_periode_int, DbType.Int32);
-            parameters.Add("p_ptlokasi", p_ptlokasi, DbType.String);
-            parameters.Add("p_source_filter", NormalizeInventorySourceFilter(p_source_filter), DbType.String);
+            parameters.Add("p_dari", dari, DbType.Date);
+            parameters.Add("p_next_month", nextMonth, DbType.Date);
+            parameters.Add("p_iddata", CompanyInfo.IDDATA, DbType.String);
 
             const string sql = @"
-        SELECT NOJURNAL AS NOMOR,
-               MIN(TANGGAL) AS TANGGAL
-        FROM INV_BARU
-        WHERE PERIODE = :p_periode_int
-          AND PTLOKASI = :p_ptlokasi
-          AND (:p_source_filter IS NULL OR UPPER(NOJURNAL) LIKE :p_source_filter)
-        GROUP BY NOJURNAL
+        SELECT IR.""ReceptionNumber"" AS NOMOR,
+               MIN(IR.""ReceptionDate"") AS TANGGAL
+        FROM ""InvReceptions"" IR
+        JOIN ""InvLocations"" IL ON IL.""Id"" = IR.""LocationId""
+        WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
+          AND IL.""Name"" = :p_iddata
+        GROUP BY IR.""ReceptionNumber""
+        UNION ALL
+        SELECT IUS.""Number"" AS NOMOR,
+               MIN(IUS.""Date"") AS TANGGAL
+        FROM ""InvUsages"" IUS
+        JOIN ""InvLocations"" IL ON IL.""Id"" = IUS.""LocationId""
+        WHERE IUS.""Date"" >= :p_dari AND IUS.""Date"" < :p_next_month
+          AND IL.""Name"" = :p_iddata
+        GROUP BY IUS.""Number""
         ORDER BY NOMOR, TANGGAL";
 
             using var connection = new OracleConnection(LoginInfo.OracleConnString);
@@ -383,6 +395,153 @@ namespace Accounting.DataLayer
             {
                 throw new Exception("Gagal mengambil data jurnal inventory baru", ex);
             }
+        }
+
+        // Live LT/LK detail journal, sourced from the inventory app schema (Inv* tables).
+        // LT: debit each reception item to its item-type account and credit the reception account.
+        // LK: debit each usage item to its usage account and credit inventory by item-type account.
+        private const string InventoryBaruDetailSql = @"
+        WITH LT_BASE AS (
+            SELECT IR.""ReceptionNumber"" AS NOJURNAL,
+                   IR.""ReceptionDate"" AS TANGGAL,
+                   IR.""DeliveryNumber"" AS REFERENCE_NUMBER,
+                   IR.""CreditAccountNumber"" AS CREDIT_ACCOUNT,
+                   (SELECT MAX(COA.NAMAACC)
+                    FROM ACCT_COA COA
+                    WHERE COA.KODEACC = IR.""CreditAccountNumber""
+                      AND COA.IDDATA = :p_iddata
+                      AND COA.TAHUN = :p_glyear) AS CREDIT_ACCOUNT_NAME,
+                   NVL(IIT.""CreditAccountNumber"",
+                       (SELECT MAX(AD.kodeacc) FROM ACCT_DEFAULT AD
+                        WHERE AD.nama = 'PERSEDIAAN' AND AD.iddata = :p_iddata)) AS DEBIT_ACCOUNT,
+                   (SELECT MAX(COA.NAMAACC)
+                    FROM ACCT_COA COA
+                    WHERE COA.KODEACC = NVL(IIT.""CreditAccountNumber"",
+                            (SELECT MAX(AD.kodeacc) FROM ACCT_DEFAULT AD
+                             WHERE AD.nama = 'PERSEDIAAN' AND AD.iddata = :p_iddata))
+                      AND COA.IDDATA = :p_iddata
+                      AND COA.TAHUN = :p_glyear) AS DEBIT_ACCOUNT_NAME,
+                   II.""Name"" AS ITEM_NAME,
+                   IU.""Name"" AS UNIT_NAME,
+                   IRI.""Quantity"" AS QUANTITY,
+                   ROUND(NVL(IRI.""Quantity"", 0) * NVL(IRI.""UnitPrice"", 0), 2) AS AMOUNT
+            FROM ""InvReceptions"" IR
+            JOIN ""InvReceptionItems"" IRI ON IRI.""ReceptionId"" = IR.""Id""
+            LEFT JOIN ""InvItems"" II ON II.""Id"" = IRI.""ItemId""
+            LEFT JOIN ""InvUnits"" IU ON IU.""Id"" = II.""UnitId""
+            LEFT JOIN ""InvItemTypes"" IIT ON IIT.""Id"" = II.""ItemTypeId""
+            JOIN ""InvLocations"" IL ON IL.""Id"" = IR.""LocationId""
+            WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
+              AND IL.""Name"" = :p_iddata
+        ),
+        LK_BASE AS (
+            SELECT IUS.""Number"" AS NOJURNAL,
+                   IUS.""Date"" AS TANGGAL,
+                   NVL((SELECT MAX(COA.KODEACC) FROM ACCT_COA COA
+                        WHERE COA.ACCTCOAID = IUSI.""ACCTCOAID""
+                          AND COA.IDDATA = :p_iddata AND COA.TAHUN = :p_glyear),
+                       IUSI.""UsageDebitAccountNumber"") AS DEBIT_ACCOUNT,
+                   (SELECT MAX(COA.NAMAACC)
+                    FROM ACCT_COA COA
+                    WHERE COA.KODEACC = NVL((SELECT MAX(C2.KODEACC) FROM ACCT_COA C2
+                                            WHERE C2.ACCTCOAID = IUSI.""ACCTCOAID""
+                                              AND C2.IDDATA = :p_iddata AND C2.TAHUN = :p_glyear),
+                                           IUSI.""UsageDebitAccountNumber"")
+                      AND COA.IDDATA = :p_iddata
+                      AND COA.TAHUN = :p_glyear) AS DEBIT_ACCOUNT_NAME,
+                   IIT.""CreditAccountNumber"" AS CREDIT_ACCOUNT,
+                   IIT.""Name"" AS CREDIT_ACCOUNT_NAME,
+                   II.""Name"" AS ITEM_NAME,
+                   IU.""Name"" AS UNIT_NAME,
+                   IUSI.""Quantity"" AS QUANTITY,
+                   ROUND(NVL(IUSI.""Quantity"", 0) * NVL(IUSI.""UnitValue"", 0), 2) AS AMOUNT
+            FROM ""InvUsages"" IUS
+            JOIN ""InvUsageItems"" IUSI ON IUSI.""UsageId"" = IUS.""Id""
+            LEFT JOIN ""InvItems"" II ON II.""Id"" = IUSI.""ItemId""
+            LEFT JOIN ""InvUnits"" IU ON IU.""Id"" = IUSI.""UnitId""
+            LEFT JOIN ""InvItemTypes"" IIT ON IIT.""Id"" = II.""ItemTypeId""
+            JOIN ""InvLocations"" IL ON IL.""Id"" = IUS.""LocationId""
+            WHERE IUS.""Date"" >= :p_dari AND IUS.""Date"" < :p_next_month
+              AND IL.""Name"" = :p_iddata
+        )
+        SELECT X.NOJURNAL,
+               X.TANGGAL,
+               ROW_NUMBER() OVER (PARTITION BY X.NOJURNAL ORDER BY X.SORT_ORDER, X.KODE) AS BARIS,
+               X.KODE,
+               X.REKENING,
+               X.DEBET,
+               X.KREDIT,
+               X.KETERANGAN,
+               :p_posted AS POSTED,
+               :p_periode_str AS PERIODE,
+               :p_iddata AS IDDATA,
+               :p_userid AS USERID,
+               :p_glyear AS GLYEAR,
+               :p_glmonth AS GLMONTH
+        FROM (
+            SELECT LT.NOJURNAL,
+                   LT.TANGGAL,
+                   CAST(LT.DEBIT_ACCOUNT AS VARCHAR2(50)) AS KODE,
+                   CAST(LT.DEBIT_ACCOUNT_NAME AS NVARCHAR2(200)) AS REKENING,
+                   LT.AMOUNT AS DEBET,
+                   ROUND(0, 2) AS KREDIT,
+                   TO_NCHAR(LT.REFERENCE_NUMBER) || N', ' || TO_NCHAR(LT.ITEM_NAME) || N' = '
+                       || TO_NCHAR(LT.QUANTITY) || N' ' || TO_NCHAR(LT.UNIT_NAME) AS KETERANGAN,
+                   1 AS SORT_ORDER
+            FROM LT_BASE LT
+            UNION ALL
+            SELECT LT.NOJURNAL,
+                   LT.TANGGAL,
+                   CAST(LT.CREDIT_ACCOUNT AS VARCHAR2(50)) AS KODE,
+                   CAST(LT.CREDIT_ACCOUNT_NAME AS NVARCHAR2(200)) AS REKENING,
+                   ROUND(0, 2) AS DEBET,
+                   SUM(LT.AMOUNT) AS KREDIT,
+                   TO_NCHAR(LT.CREDIT_ACCOUNT_NAME) || N', ' || TO_NCHAR(LT.REFERENCE_NUMBER) AS KETERANGAN,
+                   2 AS SORT_ORDER
+            FROM LT_BASE LT
+            GROUP BY LT.NOJURNAL, LT.TANGGAL, LT.CREDIT_ACCOUNT, LT.CREDIT_ACCOUNT_NAME, LT.REFERENCE_NUMBER
+            UNION ALL
+            SELECT LK.NOJURNAL,
+                   LK.TANGGAL,
+                   CAST(LK.DEBIT_ACCOUNT AS VARCHAR2(50)) AS KODE,
+                   CAST(LK.DEBIT_ACCOUNT_NAME AS NVARCHAR2(200)) AS REKENING,
+                   LK.AMOUNT AS DEBET,
+                   ROUND(0, 2) AS KREDIT,
+                   TO_NCHAR(LK.NOJURNAL) || N', ' || TO_NCHAR(LK.ITEM_NAME) || N' = '
+                       || TO_NCHAR(LK.QUANTITY) || N' ' || TO_NCHAR(LK.UNIT_NAME) AS KETERANGAN,
+                   3 AS SORT_ORDER
+            FROM LK_BASE LK
+            UNION ALL
+            SELECT LK.NOJURNAL,
+                   LK.TANGGAL,
+                   CAST(LK.CREDIT_ACCOUNT AS VARCHAR2(50)) AS KODE,
+                   CAST(LK.CREDIT_ACCOUNT_NAME AS NVARCHAR2(200)) AS REKENING,
+                   ROUND(0, 2) AS DEBET,
+                   SUM(LK.AMOUNT) AS KREDIT,
+                   TO_NCHAR(LK.CREDIT_ACCOUNT_NAME) || N', ' || TO_NCHAR(LK.NOJURNAL) AS KETERANGAN,
+                   4 AS SORT_ORDER
+            FROM LK_BASE LK
+            GROUP BY LK.NOJURNAL, LK.TANGGAL, LK.CREDIT_ACCOUNT, LK.CREDIT_ACCOUNT_NAME
+        ) X
+        ORDER BY X.TANGGAL, X.NOJURNAL, X.SORT_ORDER, X.KODE";
+
+        private static (DateTime dari, DateTime nextMonth) MonthRange(int year, int month)
+        {
+            DateTime dari = new(year, month, 1);
+            return (dari, dari.AddMonths(1));
+        }
+
+        private static void AddInventoryBaruDetailParameters(OracleCommand command, DateTime dari, DateTime nextMonth,
+            string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth)
+        {
+            command.Parameters.Add(":p_posted", OracleDbType.Varchar2, 20).Value = p_posted;
+            command.Parameters.Add(":p_periode_str", OracleDbType.Varchar2, 20).Value = p_periode_str;
+            command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
+            command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_userid;
+            command.Parameters.Add(":p_glyear", OracleDbType.Int16).Value = p_glyear;
+            command.Parameters.Add(":p_glmonth", OracleDbType.Int16).Value = p_glmonth;
+            command.Parameters.Add(":p_dari", OracleDbType.Date).Value = dari;
+            command.Parameters.Add(":p_next_month", OracleDbType.Date).Value = nextMonth;
         }
 
         public IEnumerable<JurnalInventoryDetailDTO> GetJurnalDetails_Inventory(
@@ -421,8 +580,8 @@ namespace Accounting.DataLayer
                         BARIS = Convert.ToInt16(reader["BARIS"]),
                         KODE = reader["KODE"]?.ToString(),
                         REKENING = reader["REKENING"]?.ToString(),
-                        DEBET = Convert.ToDouble(reader["DEBET"]),
-                        KREDIT = Convert.ToDouble(reader["KREDIT"]),
+                        DEBET = JurnalAmountRounding.RoundJournalAmount(Convert.ToDecimal(reader["DEBET"])),
+                        KREDIT = JurnalAmountRounding.RoundJournalAmount(Convert.ToDecimal(reader["KREDIT"])),
                         KETERANGAN = reader["KETERANGAN"]?.ToString(),
                         POSTED = reader["POSTED"]?.ToString(),
                         PERIODE = reader["PERIODE"]?.ToString(),
@@ -448,29 +607,10 @@ namespace Accounting.DataLayer
         {
             var result = new List<JurnalInventoryDetailDTO>();
 
-            const string sql = @"
-        SELECT NOJURNAL,
-               TANGGAL,
-               BARIS,
-               KODE,
-               REKENING,
-               DEBET,
-               KREDIT,
-               KETERANGAN,
-               :p_posted AS POSTED,
-               :p_periode_str AS PERIODE,
-               :p_iddata AS IDDATA,
-               :p_userid AS USERID,
-               :p_glyear AS GLYEAR,
-               :p_glmonth AS GLMONTH
-        FROM INV_BARU
-        WHERE PERIODE = :p_periode_int
-          AND PTLOKASI = :p_ptlokasi
-          AND (:p_source_filter IS NULL OR UPPER(NOJURNAL) LIKE :p_source_filter)
-        ORDER BY NOJURNAL, BARIS";
+            (DateTime dari, DateTime nextMonth) = MonthRange(p_glyear, p_glmonth);
 
             using OracleConnection connection = new(LoginInfo.OracleConnString);
-            using OracleCommand command = new(sql, connection)
+            using OracleCommand command = new(InventoryBaruDetailSql, connection)
             {
                 CommandType = CommandType.Text,
                 BindByName = true
@@ -479,15 +619,7 @@ namespace Accounting.DataLayer
             try
             {
                 connection.Open();
-                command.Parameters.Add(":p_posted", OracleDbType.Varchar2, 20).Value = p_posted;
-                command.Parameters.Add(":p_periode_str", OracleDbType.Varchar2, 20).Value = p_periode_str;
-                command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
-                command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_userid;
-                command.Parameters.Add(":p_glyear", OracleDbType.Int16).Value = p_glyear;
-                command.Parameters.Add(":p_glmonth", OracleDbType.Int16).Value = p_glmonth;
-                command.Parameters.Add(":p_periode_int", OracleDbType.Int16).Value = p_periode_int;
-                command.Parameters.Add(":p_ptlokasi", OracleDbType.Varchar2, 20).Value = p_ptlokasi;
-                command.Parameters.Add(":p_source_filter", OracleDbType.Varchar2, 100).Value = (object?)NormalizeInventorySourceFilter(p_source_filter) ?? DBNull.Value;
+                AddInventoryBaruDetailParameters(command, dari, nextMonth, p_iddata, p_posted, p_periode_str, p_userid, p_glyear, p_glmonth);
 
                 using OracleDataReader reader = command.ExecuteReader();
                 while (reader.Read())
@@ -499,8 +631,8 @@ namespace Accounting.DataLayer
                         BARIS = Convert.ToInt16(reader["BARIS"]),
                         KODE = reader["KODE"]?.ToString(),
                         REKENING = reader["REKENING"]?.ToString(),
-                        DEBET = Convert.ToDouble(reader["DEBET"]),
-                        KREDIT = Convert.ToDouble(reader["KREDIT"]),
+                        DEBET = JurnalAmountRounding.RoundJournalAmount(Convert.ToDecimal(reader["DEBET"])),
+                        KREDIT = JurnalAmountRounding.RoundJournalAmount(Convert.ToDecimal(reader["KREDIT"])),
                         KETERANGAN = reader["KETERANGAN"]?.ToString(),
                         POSTED = reader["POSTED"]?.ToString(),
                         PERIODE = reader["PERIODE"]?.ToString(),
@@ -522,44 +654,17 @@ namespace Accounting.DataLayer
 
         public DataTable Jurnal_InventoriBaru(int p_periode_int, string p_ptlokasi, string p_iddata, string p_posted, string p_periode_str, string p_userid, int p_glyear, int p_glmonth, string? p_source_filter = null)
         {
-            const string sql = @"
-        SELECT NOJURNAL,
-               TANGGAL,
-               BARIS,
-               KODE,
-               REKENING,
-               DEBET,
-               KREDIT,
-               KETERANGAN,
-               :p_posted AS POSTED,
-               :p_periode_str AS PERIODE,
-               :p_iddata AS IDDATA,
-               :p_userid AS USERID,
-               :p_glyear AS GLYEAR,
-               :p_glmonth AS GLMONTH
-        FROM INV_BARU
-        WHERE PERIODE = :p_periode_int
-          AND PTLOKASI = :p_ptlokasi
-          AND (:p_source_filter IS NULL OR UPPER(NOJURNAL) LIKE :p_source_filter)
-        ORDER BY NOJURNAL, BARIS";
+            (DateTime dari, DateTime nextMonth) = MonthRange(p_glyear, p_glmonth);
 
             using OracleConnection connection = new(LoginInfo.OracleConnString);
-            using OracleCommand command = new(sql, connection)
+            using OracleCommand command = new(InventoryBaruDetailSql, connection)
             {
                 CommandType = CommandType.Text,
                 BindByName = true
             };
 
             connection.Open();
-            command.Parameters.Add(":p_posted", OracleDbType.Varchar2, 20).Value = p_posted;
-            command.Parameters.Add(":p_periode_str", OracleDbType.Varchar2, 20).Value = p_periode_str;
-            command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
-            command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_userid;
-            command.Parameters.Add(":p_glyear", OracleDbType.Int16).Value = p_glyear;
-            command.Parameters.Add(":p_glmonth", OracleDbType.Int16).Value = p_glmonth;
-            command.Parameters.Add(":p_periode_int", OracleDbType.Int16).Value = p_periode_int;
-            command.Parameters.Add(":p_ptlokasi", OracleDbType.Varchar2, 20).Value = p_ptlokasi;
-            command.Parameters.Add(":p_source_filter", OracleDbType.Varchar2, 100).Value = (object?)NormalizeInventorySourceFilter(p_source_filter) ?? DBNull.Value;
+            AddInventoryBaruDetailParameters(command, dari, nextMonth, p_iddata, p_posted, p_periode_str, p_userid, p_glyear, p_glmonth);
 
             using OracleDataReader reader = command.ExecuteReader();
             DataTable dataTable = new();

@@ -32,6 +32,16 @@ namespace Accounting.Form
 
         private void Load_Kode_Inv()
         {
+            if (UseInventoryBaruSource)
+            {
+                // Inventory Baru sources directly from the Inv* schema, filtered by IDDATA.
+                // The ACCT_CONV_PTLOKASI location combo is not used; hide it and load directly.
+                lookUpEditINV.Visible = false;
+                RefreshInventoryData();
+                return;
+            }
+
+            lookUpEditINV.Visible = true;
             lookUpEditINV.Properties.DataSource = GetINVKode(CompanyInfo.IDDATA);
             lookUpEditINV.Properties.ValueMember = "PTLOKASI";
             lookUpEditINV.Properties.DisplayMember = "INV";
@@ -385,7 +395,13 @@ namespace Accounting.Form
             pbulan = CMBBULANINV.SelectedIndex + 1;
             p_ptlokasi = lookUpEditINV.EditValue?.ToString() ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(p_ptlokasi) || SETAHUNINV.Value < 2022 || CMBBULANINV.SelectedIndex < 0)
+            if (SETAHUNINV.Value < 2022 || CMBBULANINV.SelectedIndex < 0)
+            {
+                return false;
+            }
+
+            // Inventory Baru filters by IDDATA, not by the (hidden) location combo.
+            if (!UseInventoryBaruSource && string.IsNullOrWhiteSpace(p_ptlokasi))
             {
                 return false;
             }

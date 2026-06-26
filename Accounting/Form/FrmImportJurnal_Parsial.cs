@@ -157,6 +157,7 @@ namespace Accounting.Form
                 }
 
                 SBImport.Enabled = false;
+                PublishCoaRekalkulasiNotification(result, $"{viewModel.Month:00}/{viewModel.Year}");
                 if (result.HasRecalculationWarning)
                 {
                     XtraMessageBox.Show(BuildRecalculationWarningMessage(result), "Import Jurnal Selesai Dengan Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -269,6 +270,19 @@ namespace Accounting.Form
                 Environment.NewLine + FormatElapsed(result.Elapsed) +
                 Environment.NewLine + Environment.NewLine +
                 result.RecalculationWarning;
+        }
+        private static void PublishCoaRekalkulasiNotification(JurnalImportResult result, string period)
+        {
+            if (result.RecalcJobIds.Count == 0)
+            {
+                return;
+            }
+
+            JurnalRekalkulasiNotifier.Publish(
+                result.RecalcJobIds[^1],
+                CompanyInfo.IDDATA,
+                period,
+                result.ImpactedAccountCodes);
         }
 
         private void ShowImportProgress(JurnalImportProgress progress)

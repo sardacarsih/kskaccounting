@@ -56,6 +56,25 @@
             this.labelControl12 = new DevExpress.XtraEditors.LabelControl();
             this.lookUpEdit_ASTEK = new DevExpress.XtraEditors.LookUpEdit();
             this.LBL_TUNJANGAN_ASTEK = new DevExpress.XtraEditors.LabelControl();
+            this.xtraTabControl1 = new DevExpress.XtraTab.XtraTabControl();
+            this.tabDefaultAccount = new DevExpress.XtraTab.XtraTabPage();
+            this.tabInventory = new DevExpress.XtraTab.XtraTabPage();
+            this.groupControl2 = new DevExpress.XtraEditors.GroupControl();
+            this.labelControl13 = new DevExpress.XtraEditors.LabelControl();
+            this.labelControl14 = new DevExpress.XtraEditors.LabelControl();
+            this.labelControl15 = new DevExpress.XtraEditors.LabelControl();
+            this.labelControl16 = new DevExpress.XtraEditors.LabelControl();
+            this.labelControl17 = new DevExpress.XtraEditors.LabelControl();
+            this.lookUpEdit_persediaan = new DevExpress.XtraEditors.LookUpEdit();
+            this.lookUpEdit_bebanPemakaian = new DevExpress.XtraEditors.LookUpEdit();
+            this.lookUpEdit_hutangPembelian = new DevExpress.XtraEditors.LookUpEdit();
+            this.lookUpEdit_selisih = new DevExpress.XtraEditors.LookUpEdit();
+            this.lookUpEdit_barangDalamPerjalanan = new DevExpress.XtraEditors.LookUpEdit();
+            this.LBL_PERSEDIAAN = new DevExpress.XtraEditors.LabelControl();
+            this.LBL_BEBAN_PEMAKAIAN_PERSEDIAAN = new DevExpress.XtraEditors.LabelControl();
+            this.LBL_HUTANG_PEMBELIAN_PERSEDIAAN = new DevExpress.XtraEditors.LabelControl();
+            this.LBL_SELISIH_PERSEDIAAN = new DevExpress.XtraEditors.LabelControl();
+            this.LBL_BARANG_DALAM_PERJALANAN = new DevExpress.XtraEditors.LabelControl();
             ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_labatahunberjalan.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_labaditahan.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_alokasiLaba.Properties)).BeginInit();
@@ -64,6 +83,17 @@
             ((System.ComponentModel.ISupportInitialize)(this.groupControl1)).BeginInit();
             this.groupControl1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_ASTEK.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).BeginInit();
+            this.xtraTabControl1.SuspendLayout();
+            this.tabDefaultAccount.SuspendLayout();
+            this.tabInventory.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.groupControl2)).BeginInit();
+            this.groupControl2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_persediaan.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_bebanPemakaian.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_hutangPembelian.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_selisih.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_barangDalamPerjalanan.Properties)).BeginInit();
             this.SuspendLayout();
             // 
             // labelControl5
@@ -262,7 +292,7 @@
             this.groupControl1.Controls.Add(this.labelControl3);
             this.groupControl1.Controls.Add(this.labelControl2);
             this.groupControl1.Controls.Add(this.labelControl1);
-            this.groupControl1.Location = new System.Drawing.Point(7, 57);
+            this.groupControl1.Location = new System.Drawing.Point(3, 3);
             this.groupControl1.Margin = new System.Windows.Forms.Padding(2);
             this.groupControl1.Name = "groupControl1";
             this.groupControl1.Size = new System.Drawing.Size(554, 209);
@@ -335,12 +365,196 @@
             this.LBL_TUNJANGAN_ASTEK.Size = new System.Drawing.Size(97, 13);
             this.LBL_TUNJANGAN_ASTEK.TabIndex = 2;
             this.LBL_TUNJANGAN_ASTEK.Text = "TUNJANGAN_ASTEK";
-            // 
+            //
+            // xtraTabControl1
+            //
+            this.xtraTabControl1.Location = new System.Drawing.Point(7, 52);
+            this.xtraTabControl1.Name = "xtraTabControl1";
+            this.xtraTabControl1.SelectedTabPage = this.tabDefaultAccount;
+            this.xtraTabControl1.Size = new System.Drawing.Size(566, 242);
+            this.xtraTabControl1.TabIndex = 3;
+            this.xtraTabControl1.TabPages.AddRange(new DevExpress.XtraTab.XtraTabPage[] {
+            this.tabDefaultAccount,
+            this.tabInventory});
+            //
+            // tabDefaultAccount
+            //
+            this.tabDefaultAccount.Controls.Add(this.groupControl1);
+            this.tabDefaultAccount.Name = "tabDefaultAccount";
+            this.tabDefaultAccount.Size = new System.Drawing.Size(560, 213);
+            this.tabDefaultAccount.Text = "Default Account";
+            //
+            // tabInventory
+            //
+            this.tabInventory.Controls.Add(this.groupControl2);
+            this.tabInventory.Name = "tabInventory";
+            this.tabInventory.Size = new System.Drawing.Size(560, 213);
+            this.tabInventory.Text = "Default Account For Inventory";
+            //
+            // groupControl2
+            //
+            this.groupControl2.Controls.Add(this.LBL_BARANG_DALAM_PERJALANAN);
+            this.groupControl2.Controls.Add(this.LBL_SELISIH_PERSEDIAAN);
+            this.groupControl2.Controls.Add(this.LBL_HUTANG_PEMBELIAN_PERSEDIAAN);
+            this.groupControl2.Controls.Add(this.LBL_BEBAN_PEMAKAIAN_PERSEDIAAN);
+            this.groupControl2.Controls.Add(this.LBL_PERSEDIAAN);
+            this.groupControl2.Controls.Add(this.lookUpEdit_barangDalamPerjalanan);
+            this.groupControl2.Controls.Add(this.lookUpEdit_selisih);
+            this.groupControl2.Controls.Add(this.lookUpEdit_hutangPembelian);
+            this.groupControl2.Controls.Add(this.lookUpEdit_bebanPemakaian);
+            this.groupControl2.Controls.Add(this.lookUpEdit_persediaan);
+            this.groupControl2.Controls.Add(this.labelControl17);
+            this.groupControl2.Controls.Add(this.labelControl16);
+            this.groupControl2.Controls.Add(this.labelControl15);
+            this.groupControl2.Controls.Add(this.labelControl14);
+            this.groupControl2.Controls.Add(this.labelControl13);
+            this.groupControl2.Location = new System.Drawing.Point(3, 3);
+            this.groupControl2.Margin = new System.Windows.Forms.Padding(2);
+            this.groupControl2.Name = "groupControl2";
+            this.groupControl2.Size = new System.Drawing.Size(554, 209);
+            this.groupControl2.TabIndex = 4;
+            this.groupControl2.Text = "Default Account For Inventory";
+            //
+            // labelControl13
+            //
+            this.labelControl13.Location = new System.Drawing.Point(12, 42);
+            this.labelControl13.Name = "labelControl13";
+            this.labelControl13.Size = new System.Drawing.Size(54, 13);
+            this.labelControl13.TabIndex = 0;
+            this.labelControl13.Text = "Persediaan";
+            //
+            // labelControl14
+            //
+            this.labelControl14.Location = new System.Drawing.Point(12, 65);
+            this.labelControl14.Name = "labelControl14";
+            this.labelControl14.Size = new System.Drawing.Size(120, 13);
+            this.labelControl14.TabIndex = 0;
+            this.labelControl14.Text = "Beban Pemakaian / HPP";
+            //
+            // labelControl15
+            //
+            this.labelControl15.Location = new System.Drawing.Point(12, 88);
+            this.labelControl15.Name = "labelControl15";
+            this.labelControl15.Size = new System.Drawing.Size(121, 13);
+            this.labelControl15.TabIndex = 0;
+            this.labelControl15.Text = "Hutang Pembelian / GR-IR";
+            //
+            // labelControl16
+            //
+            this.labelControl16.Location = new System.Drawing.Point(12, 111);
+            this.labelControl16.Name = "labelControl16";
+            this.labelControl16.Size = new System.Drawing.Size(86, 13);
+            this.labelControl16.TabIndex = 0;
+            this.labelControl16.Text = "Selisih Persediaan";
+            //
+            // labelControl17
+            //
+            this.labelControl17.Location = new System.Drawing.Point(12, 134);
+            this.labelControl17.Name = "labelControl17";
+            this.labelControl17.Size = new System.Drawing.Size(122, 13);
+            this.labelControl17.TabIndex = 0;
+            this.labelControl17.Text = "Barang Dalam Perjalanan";
+            //
+            // lookUpEdit_persediaan
+            //
+            this.lookUpEdit_persediaan.Location = new System.Drawing.Point(162, 39);
+            this.lookUpEdit_persediaan.Name = "lookUpEdit_persediaan";
+            this.lookUpEdit_persediaan.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.lookUpEdit_persediaan.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.lookUpEdit_persediaan.Size = new System.Drawing.Size(114, 20);
+            this.lookUpEdit_persediaan.TabIndex = 1;
+            this.lookUpEdit_persediaan.EditValueChanged += new System.EventHandler(this.lookUpEdit_persediaan_EditValueChanged);
+            //
+            // lookUpEdit_bebanPemakaian
+            //
+            this.lookUpEdit_bebanPemakaian.Location = new System.Drawing.Point(162, 62);
+            this.lookUpEdit_bebanPemakaian.Name = "lookUpEdit_bebanPemakaian";
+            this.lookUpEdit_bebanPemakaian.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.lookUpEdit_bebanPemakaian.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.lookUpEdit_bebanPemakaian.Size = new System.Drawing.Size(114, 20);
+            this.lookUpEdit_bebanPemakaian.TabIndex = 1;
+            this.lookUpEdit_bebanPemakaian.EditValueChanged += new System.EventHandler(this.lookUpEdit_bebanPemakaian_EditValueChanged);
+            //
+            // lookUpEdit_hutangPembelian
+            //
+            this.lookUpEdit_hutangPembelian.Location = new System.Drawing.Point(162, 85);
+            this.lookUpEdit_hutangPembelian.Name = "lookUpEdit_hutangPembelian";
+            this.lookUpEdit_hutangPembelian.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.lookUpEdit_hutangPembelian.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.lookUpEdit_hutangPembelian.Size = new System.Drawing.Size(114, 20);
+            this.lookUpEdit_hutangPembelian.TabIndex = 1;
+            this.lookUpEdit_hutangPembelian.EditValueChanged += new System.EventHandler(this.lookUpEdit_hutangPembelian_EditValueChanged);
+            //
+            // lookUpEdit_selisih
+            //
+            this.lookUpEdit_selisih.Location = new System.Drawing.Point(162, 108);
+            this.lookUpEdit_selisih.Name = "lookUpEdit_selisih";
+            this.lookUpEdit_selisih.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.lookUpEdit_selisih.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.lookUpEdit_selisih.Size = new System.Drawing.Size(114, 20);
+            this.lookUpEdit_selisih.TabIndex = 1;
+            this.lookUpEdit_selisih.EditValueChanged += new System.EventHandler(this.lookUpEdit_selisih_EditValueChanged);
+            //
+            // lookUpEdit_barangDalamPerjalanan
+            //
+            this.lookUpEdit_barangDalamPerjalanan.Location = new System.Drawing.Point(162, 131);
+            this.lookUpEdit_barangDalamPerjalanan.Name = "lookUpEdit_barangDalamPerjalanan";
+            this.lookUpEdit_barangDalamPerjalanan.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.lookUpEdit_barangDalamPerjalanan.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.lookUpEdit_barangDalamPerjalanan.Size = new System.Drawing.Size(114, 20);
+            this.lookUpEdit_barangDalamPerjalanan.TabIndex = 1;
+            this.lookUpEdit_barangDalamPerjalanan.EditValueChanged += new System.EventHandler(this.lookUpEdit_barangDalamPerjalanan_EditValueChanged);
+            //
+            // LBL_PERSEDIAAN
+            //
+            this.LBL_PERSEDIAAN.Location = new System.Drawing.Point(291, 42);
+            this.LBL_PERSEDIAAN.Name = "LBL_PERSEDIAAN";
+            this.LBL_PERSEDIAAN.Size = new System.Drawing.Size(63, 13);
+            this.LBL_PERSEDIAAN.TabIndex = 2;
+            this.LBL_PERSEDIAAN.Text = "PERSEDIAAN";
+            //
+            // LBL_BEBAN_PEMAKAIAN_PERSEDIAAN
+            //
+            this.LBL_BEBAN_PEMAKAIAN_PERSEDIAAN.Location = new System.Drawing.Point(291, 65);
+            this.LBL_BEBAN_PEMAKAIAN_PERSEDIAAN.Name = "LBL_BEBAN_PEMAKAIAN_PERSEDIAAN";
+            this.LBL_BEBAN_PEMAKAIAN_PERSEDIAAN.Size = new System.Drawing.Size(154, 13);
+            this.LBL_BEBAN_PEMAKAIAN_PERSEDIAAN.TabIndex = 2;
+            this.LBL_BEBAN_PEMAKAIAN_PERSEDIAAN.Text = "BEBAN_PEMAKAIAN_PERSEDIAAN";
+            //
+            // LBL_HUTANG_PEMBELIAN_PERSEDIAAN
+            //
+            this.LBL_HUTANG_PEMBELIAN_PERSEDIAAN.Location = new System.Drawing.Point(291, 88);
+            this.LBL_HUTANG_PEMBELIAN_PERSEDIAAN.Name = "LBL_HUTANG_PEMBELIAN_PERSEDIAAN";
+            this.LBL_HUTANG_PEMBELIAN_PERSEDIAAN.Size = new System.Drawing.Size(157, 13);
+            this.LBL_HUTANG_PEMBELIAN_PERSEDIAAN.TabIndex = 2;
+            this.LBL_HUTANG_PEMBELIAN_PERSEDIAAN.Text = "HUTANG_PEMBELIAN_PERSEDIAAN";
+            //
+            // LBL_SELISIH_PERSEDIAAN
+            //
+            this.LBL_SELISIH_PERSEDIAAN.Location = new System.Drawing.Point(291, 111);
+            this.LBL_SELISIH_PERSEDIAAN.Name = "LBL_SELISIH_PERSEDIAAN";
+            this.LBL_SELISIH_PERSEDIAAN.Size = new System.Drawing.Size(101, 13);
+            this.LBL_SELISIH_PERSEDIAAN.TabIndex = 2;
+            this.LBL_SELISIH_PERSEDIAAN.Text = "SELISIH_PERSEDIAAN";
+            //
+            // LBL_BARANG_DALAM_PERJALANAN
+            //
+            this.LBL_BARANG_DALAM_PERJALANAN.Location = new System.Drawing.Point(291, 134);
+            this.LBL_BARANG_DALAM_PERJALANAN.Name = "LBL_BARANG_DALAM_PERJALANAN";
+            this.LBL_BARANG_DALAM_PERJALANAN.Size = new System.Drawing.Size(138, 13);
+            this.LBL_BARANG_DALAM_PERJALANAN.TabIndex = 2;
+            this.LBL_BARANG_DALAM_PERJALANAN.Text = "BARANG_DALAM_PERJALANAN";
+            //
             // FrmSetAkun
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(567, 277);
+            this.ClientSize = new System.Drawing.Size(581, 303);
             this.Controls.Add(this.labelControl5);
             this.Controls.Add(this.labelControl9);
             this.Controls.Add(this.labelControl6);
@@ -350,7 +564,7 @@
             this.Controls.Add(this.labelControl8);
             this.Controls.Add(this.labelControl7);
             this.Controls.Add(this.labelControl10);
-            this.Controls.Add(this.groupControl1);
+            this.Controls.Add(this.xtraTabControl1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Margin = new System.Windows.Forms.Padding(2);
             this.MaximizeBox = false;
@@ -367,6 +581,18 @@
             this.groupControl1.ResumeLayout(false);
             this.groupControl1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_ASTEK.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_persediaan.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_bebanPemakaian.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_hutangPembelian.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_selisih.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit_barangDalamPerjalanan.Properties)).EndInit();
+            this.groupControl2.ResumeLayout(false);
+            this.groupControl2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.groupControl2)).EndInit();
+            this.tabInventory.ResumeLayout(false);
+            this.tabDefaultAccount.ResumeLayout(false);
+            this.xtraTabControl1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -401,5 +627,24 @@
         private DevExpress.XtraEditors.LabelControl LBL_TUNJANGAN_ASTEK;
         private DevExpress.XtraEditors.LookUpEdit lookUpEdit_ASTEK;
         private DevExpress.XtraEditors.LabelControl labelControl12;
+        private DevExpress.XtraTab.XtraTabControl xtraTabControl1;
+        private DevExpress.XtraTab.XtraTabPage tabDefaultAccount;
+        private DevExpress.XtraTab.XtraTabPage tabInventory;
+        private DevExpress.XtraEditors.GroupControl groupControl2;
+        private DevExpress.XtraEditors.LabelControl labelControl13;
+        private DevExpress.XtraEditors.LabelControl labelControl14;
+        private DevExpress.XtraEditors.LabelControl labelControl15;
+        private DevExpress.XtraEditors.LabelControl labelControl16;
+        private DevExpress.XtraEditors.LabelControl labelControl17;
+        private DevExpress.XtraEditors.LookUpEdit lookUpEdit_persediaan;
+        private DevExpress.XtraEditors.LookUpEdit lookUpEdit_bebanPemakaian;
+        private DevExpress.XtraEditors.LookUpEdit lookUpEdit_hutangPembelian;
+        private DevExpress.XtraEditors.LookUpEdit lookUpEdit_selisih;
+        private DevExpress.XtraEditors.LookUpEdit lookUpEdit_barangDalamPerjalanan;
+        private DevExpress.XtraEditors.LabelControl LBL_PERSEDIAAN;
+        private DevExpress.XtraEditors.LabelControl LBL_BEBAN_PEMAKAIAN_PERSEDIAAN;
+        private DevExpress.XtraEditors.LabelControl LBL_HUTANG_PEMBELIAN_PERSEDIAAN;
+        private DevExpress.XtraEditors.LabelControl LBL_SELISIH_PERSEDIAAN;
+        private DevExpress.XtraEditors.LabelControl LBL_BARANG_DALAM_PERJALANAN;
     }
 }

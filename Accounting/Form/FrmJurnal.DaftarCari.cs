@@ -13,7 +13,7 @@ namespace Accounting.Form
 {
     public partial class FrmJurnal
     {
-        private void CariJurnal_Bulan(bool useLoading = true)
+        private void CariJurnal_Bulan(bool useLoading = true, bool moveFocusToGrid = false)
         {
             int resultRows = 0;
             int headerRows = 0;
@@ -67,7 +67,10 @@ namespace Accounting.Form
                     PencarianJurnal_Bulan = Enumerable.Empty<JurnalDetailDTO>();
                 }
 
-                GCHeader.Focus();
+                if (moveFocusToGrid)
+                {
+                    GCHeader.Focus();
+                }
             }
             catch (Exception ex)
             {
@@ -295,7 +298,7 @@ namespace Accounting.Form
         {
             if (e.KeyCode == Keys.Enter)
             {
-                CariJurnal_Bulan();
+                CariJurnal_Bulan(moveFocusToGrid: true);
             }
         }
 
@@ -316,7 +319,7 @@ namespace Accounting.Form
         {
             if (e.KeyCode == Keys.Enter)
             {
-                CariJurnal_Bulan();
+                CariJurnal_Bulan(moveFocusToGrid: true);
             }
         }
 
@@ -474,7 +477,7 @@ namespace Accounting.Form
         {
             if (e.KeyCode == Keys.Enter)
             {
-                CariJurnal_Bulan();
+                CariJurnal_Bulan(moveFocusToGrid: true);
             }
         }
 
@@ -487,7 +490,7 @@ namespace Accounting.Form
         {
             if (e.KeyCode == Keys.Enter)
             {
-                CariJurnal_Bulan();
+                CariJurnal_Bulan(moveFocusToGrid: true);
             }
         }
 

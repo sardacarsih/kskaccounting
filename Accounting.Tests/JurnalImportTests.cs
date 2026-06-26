@@ -46,7 +46,7 @@ public sealed class JurnalImportTests
     }
 
     [Fact]
-    public void Execute_WhenRowsValid_UsesScopedOrderAndRecalculatesAfterImport()
+    public void Execute_WhenRowsValid_UsesScopedOrderAndQueuesRecalculationAfterImport()
     {
         FakeDataStore dataStore = new();
         ExecuteJurnalImportUseCase useCase = new(dataStore);
@@ -57,8 +57,10 @@ public sealed class JurnalImportTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(
-            ["GetLockStatus", "CountPeriod", "ClearStage", "StageRows", "FindRowsWithNullKode", "FindExistingJournalNumbers", "FindMissingAccounts", "ImportPartial", "RecalculateSaldo", "ClearStage"],
+            ["GetLockStatus", "CountPeriod", "ClearStage", "StageRows", "FindRowsWithNullKode", "FindExistingJournalNumbers", "FindMissingAccounts", "ImportPartial", "QueueRecalculation", "ClearStage"],
             dataStore.Calls);
+        Assert.Equal([101L, 102L], result.RecalcJobIds);
+        Assert.Equal(["10.01", "20.01"], result.ImpactedAccountCodes);
         Assert.Equal(JurnalImportMode.AddOnly, dataStore.ImportScope?.Mode);
         Assert.Same(rows, dataStore.ImportRows);
     }
@@ -75,11 +77,12 @@ public sealed class JurnalImportTests
         Assert.True(result.IsSuccess);
         Assert.DoesNotContain("FindExistingJournalNumbers", dataStore.Calls);
         Assert.Contains("ImportPartial", dataStore.Calls);
+        Assert.Contains("QueueRecalculation", dataStore.Calls);
         Assert.Equal(JurnalImportMode.ReplacePeriod, dataStore.ImportScope?.Mode);
     }
 
     [Fact]
-    public void Execute_WhenAddOnlyAndJournalExists_DoesNotImportOrRecalculateAndCleansUp()
+    public void Execute_WhenAddOnlyAndJournalExists_DoesNotImportOrQueueRecalculationAndCleansUp()
     {
         FakeDataStore dataStore = new()
         {
@@ -95,12 +98,12 @@ public sealed class JurnalImportTests
         Assert.False(result.IsSuccess);
         Assert.Equal("NOJURNAL_EXISTS", result.Issues[0].Code);
         Assert.DoesNotContain("ImportPartial", dataStore.Calls);
-        Assert.DoesNotContain("RecalculateSaldo", dataStore.Calls);
+        Assert.DoesNotContain("QueueRecalculation", dataStore.Calls);
         Assert.Equal("ClearStage", dataStore.Calls[^1]);
     }
 
     [Fact]
-    public void Execute_WhenStageValidationFails_DoesNotImportOrRecalculateAndCleansUp()
+    public void Execute_WhenStageValidationFails_DoesNotImportOrQueueRecalculationAndCleansUp()
     {
         FakeDataStore dataStore = new()
         {
@@ -115,7 +118,7 @@ public sealed class JurnalImportTests
 
         Assert.False(result.IsSuccess);
         Assert.DoesNotContain("ImportPartial", dataStore.Calls);
-        Assert.DoesNotContain("RecalculateSaldo", dataStore.Calls);
+        Assert.DoesNotContain("QueueRecalculation", dataStore.Calls);
         Assert.Equal("ClearStage", dataStore.Calls[^1]);
     }
 
@@ -151,11 +154,11 @@ public sealed class JurnalImportTests
     }
 
     [Fact]
-    public void Execute_WhenRecalculateFailsAfterImport_ReturnsSuccessWithWarning()
+    public void Execute_WhenQueueRecalculationFailsAfterImport_ReturnsSuccessWithWarning()
     {
         FakeDataStore dataStore = new()
         {
-            RecalculateException = new InvalidOperationException("ORA-01008: not all variables bound")
+            QueueException = new InvalidOperationException("ORA-01008: not all variables bound")
         };
         ExecuteJurnalImportUseCase useCase = new(dataStore);
 
@@ -181,7 +184,7 @@ public sealed class JurnalImportTests
             () => useCase.Execute(CreateScope(), CreateBalancedRows()));
 
         Assert.Contains("insert failed", ex.Message);
-        Assert.DoesNotContain("RecalculateSaldo", dataStore.Calls);
+        Assert.DoesNotContain("QueueRecalculation", dataStore.Calls);
         Assert.Equal("ClearStage", dataStore.Calls[^1]);
     }
 
@@ -197,7 +200,7 @@ public sealed class JurnalImportTests
     }
 
     [Fact]
-    public void Execute_WhenProgressProvided_ReportsValidationImportAndCompletion()
+    public void Execute_WhenProgressProvided_ReportsValidationImportQueueAndCompletion()
     {
         FakeDataStore dataStore = new();
         ExecuteJurnalImportUseCase useCase = new(dataStore);
@@ -211,15 +214,16 @@ public sealed class JurnalImportTests
         Assert.Contains(progressEvents, p => p.Percent == 0 && p.Stage.Contains("Menyiapkan"));
         Assert.Contains(progressEvents, p => p.Percent == 5 && p.Stage.Contains("validasi"));
         Assert.Contains(progressEvents, p => p.Percent == 40 && p.Stage.Contains("Menyimpan"));
+        Assert.Contains(progressEvents, p => p.Percent == 95 && p.Stage.Contains("ulang"));
         Assert.Equal(100, progressEvents[^1].Percent);
     }
 
     [Fact]
-    public void Execute_WhenRecalculateFails_ReportsProgressUpToRecalculationStage()
+    public void Execute_WhenQueueRecalculationFails_ReportsProgressUpToQueueStage()
     {
         FakeDataStore dataStore = new()
         {
-            RecalculateException = new InvalidOperationException("recalc error")
+            QueueException = new InvalidOperationException("queue error")
         };
         ExecuteJurnalImportUseCase useCase = new(dataStore);
         List<JurnalImportProgress> progressEvents = [];
@@ -309,7 +313,8 @@ public sealed class JurnalImportTests
         public IReadOnlyList<JurnalImportValidationIssue> MissingAccountIssues { get; init; } = [];
         public IReadOnlyList<JurnalImportValidationIssue> ExistingJournalIssues { get; init; } = [];
         public Exception? ImportException { get; init; }
-        public Exception? RecalculateException { get; init; }
+        public Exception? QueueException { get; init; }
+        public JurnalImportRecalcQueueResult QueueResult { get; init; } = JurnalImportRecalcQueueResult.Create([101L, 102L], ["10.01", "20.01"], 2);
         public JurnalImportScope? ImportScope { get; private set; }
         public IReadOnlyList<JurnalImportRow>? ImportRows { get; private set; }
 
@@ -371,13 +376,15 @@ public sealed class JurnalImportTests
             return 99;
         }
 
-        public void RecalculateSaldo(JurnalImportScope scope)
+        public JurnalImportRecalcQueueResult QueueRecalculation(JurnalImportScope scope)
         {
-            Calls.Add("RecalculateSaldo");
-            if (RecalculateException != null)
+            Calls.Add("QueueRecalculation");
+            if (QueueException != null)
             {
-                throw RecalculateException;
+                throw QueueException;
             }
+
+            return QueueResult;
         }
     }
 }

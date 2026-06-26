@@ -237,39 +237,9 @@ namespace Accounting.Services
                 return false;
             }
 
-            if (password.Length < 12)
+            if (password.Length < 6)
             {
-                validationMessage = "Password minimal 12 karakter.";
-                return false;
-            }
-
-            if (password.Any(char.IsWhiteSpace))
-            {
-                validationMessage = "Password tidak boleh mengandung spasi.";
-                return false;
-            }
-
-            if (!password.Any(char.IsUpper))
-            {
-                validationMessage = "Password harus mengandung huruf besar.";
-                return false;
-            }
-
-            if (!password.Any(char.IsLower))
-            {
-                validationMessage = "Password harus mengandung huruf kecil.";
-                return false;
-            }
-
-            if (!password.Any(char.IsDigit))
-            {
-                validationMessage = "Password harus mengandung angka.";
-                return false;
-            }
-
-            if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
-            {
-                validationMessage = "Password harus mengandung karakter spesial.";
+                validationMessage = "Password minimal 6 karakter.";
                 return false;
             }
 
