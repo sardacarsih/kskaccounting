@@ -10,7 +10,7 @@ namespace Accounting
         private const string FormatMarker = "PBKDF2";
         private const int SaltSize = 16;
         private const int HashSize = 32;
-        private const int IterationCount = 210000;
+        private const int IterationCount = 600000;
         private const int LegacySaltSize = 20;
         private const int LegacyHashSize = 20;
         private const int LegacyIterationCount = 100000;

@@ -15,5 +15,5 @@ public interface IJurnalImportDataStore
     IReadOnlyList<JurnalImportValidationIssue> FindExistingJournalNumbers(JurnalImportScope scope);
     IReadOnlyList<JurnalImportValidationIssue> FindMissingAccounts(JurnalImportScope scope);
     int ImportPartial(JurnalImportScope scope, IReadOnlyList<JurnalImportRow> rows, IProgress<JurnalImportProgress>? progress);
-    void RecalculateSaldo(JurnalImportScope scope);
+    JurnalImportRecalcQueueResult QueueRecalculation(JurnalImportScope scope);
 }

@@ -64,6 +64,26 @@ namespace Accounting.Form
             lookUpEdit_ymh.Properties.DataSource = dt;
             lookUpEdit_ymh.Properties.DisplayMember = "KODE";
             lookUpEdit_ymh.Properties.ValueMember = "KODE";
+
+            lookUpEdit_persediaan.Properties.DataSource = dt;
+            lookUpEdit_persediaan.Properties.DisplayMember = "KODE";
+            lookUpEdit_persediaan.Properties.ValueMember = "KODE";
+
+            lookUpEdit_bebanPemakaian.Properties.DataSource = dt;
+            lookUpEdit_bebanPemakaian.Properties.DisplayMember = "KODE";
+            lookUpEdit_bebanPemakaian.Properties.ValueMember = "KODE";
+
+            lookUpEdit_hutangPembelian.Properties.DataSource = dt;
+            lookUpEdit_hutangPembelian.Properties.DisplayMember = "KODE";
+            lookUpEdit_hutangPembelian.Properties.ValueMember = "KODE";
+
+            lookUpEdit_selisih.Properties.DataSource = dt;
+            lookUpEdit_selisih.Properties.DisplayMember = "KODE";
+            lookUpEdit_selisih.Properties.ValueMember = "KODE";
+
+            lookUpEdit_barangDalamPerjalanan.Properties.DataSource = dt;
+            lookUpEdit_barangDalamPerjalanan.Properties.DisplayMember = "KODE";
+            lookUpEdit_barangDalamPerjalanan.Properties.ValueMember = "KODE";
         }
 
         private void Akun_Default()
@@ -166,8 +186,94 @@ namespace Accounting.Form
             if (GAJI_DAN_UPAH_YMH_DIBAYAR.Rows.Count > 0)
                     lookUpEdit_ymh.EditValue = GAJI_DAN_UPAH_YMH_DIBAYAR.Rows[0]["KODEACC"].ToString();
 
-
+            LoadDefaultAccount(_dt, "PERSEDIAAN", lookUpEdit_persediaan);
+            LoadDefaultAccount(_dt, "BEBAN_PEMAKAIAN_PERSEDIAAN", lookUpEdit_bebanPemakaian);
+            LoadDefaultAccount(_dt, "HUTANG_PEMBELIAN_PERSEDIAAN", lookUpEdit_hutangPembelian);
+            LoadDefaultAccount(_dt, "SELISIH_PERSEDIAAN", lookUpEdit_selisih);
+            LoadDefaultAccount(_dt, "BARANG_DALAM_PERJALANAN", lookUpEdit_barangDalamPerjalanan);
         }
+
+        private static void LoadDefaultAccount(DataTable source, string nama, LookUpEdit edit)
+        {
+            DataView dv = new(source)
+            {
+                RowFilter = "nama = '" + nama + "'"
+            };
+            DataTable filtered = dv.ToTable();
+            if (filtered.Rows.Count > 0)
+                edit.EditValue = filtered.Rows[0]["KODEACC"].ToString();
+        }
+
+        private void SaveDefaultAccount(string nama, LookUpEdit edit, LabelControl lbl)
+        {
+            // A cleared lookup reports its placeholder text ("[EditValue is null]") via edit.Text;
+            // never persist that as a kodeacc.
+            if (edit.EditValue == null)
+            {
+                return;
+            }
+
+            string keterangan = (edit.Properties.GetDataSourceRowByKeyValue(edit.EditValue)
+                                    as DataRowView)?["PERKIRAAN"].ToString() ?? string.Empty;
+
+            // ACCT_DEFAULT.ID is a manually-assigned NOT NULL key (no sequence/trigger), so a
+            // MERGE insert fails with ORA-01400. Update existing rows; insert with MAX(ID)+1 otherwise.
+            try
+            {
+                OracleCommand update = new()
+                {
+                    Connection = con,
+                    CommandType = CommandType.Text,
+                    BindByName = true,
+                    CommandText = "UPDATE ACCT_DEFAULT SET kodeacc = :kode, keterangan = :keterangan " +
+                                  "WHERE nama = :id AND iddata = :iddata"
+                };
+                update.Parameters.Add("kode", OracleDbType.Varchar2, 50).Value = edit.Text;
+                update.Parameters.Add("keterangan", OracleDbType.Varchar2, 100).Value = keterangan;
+                update.Parameters.Add("id", OracleDbType.Varchar2, 50).Value = nama;
+                update.Parameters.Add("iddata", OracleDbType.Varchar2, 50).Value = CompanyInfo.IDDATA;
+
+                int rowsAffected = update.ExecuteNonQuery();
+
+                if (rowsAffected == 0)
+                {
+                    OracleCommand insert = new()
+                    {
+                        Connection = con,
+                        CommandType = CommandType.Text,
+                        BindByName = true,
+                        CommandText = "INSERT INTO ACCT_DEFAULT (id, nama, kodeacc, iddata, keterangan) " +
+                                      "VALUES ((SELECT NVL(MAX(id), 0) + 1 FROM ACCT_DEFAULT), :id, :kode, :iddata, :keterangan)"
+                    };
+                    insert.Parameters.Add("id", OracleDbType.Varchar2, 50).Value = nama;
+                    insert.Parameters.Add("kode", OracleDbType.Varchar2, 50).Value = edit.Text;
+                    insert.Parameters.Add("iddata", OracleDbType.Varchar2, 50).Value = CompanyInfo.IDDATA;
+                    insert.Parameters.Add("keterangan", OracleDbType.Varchar2, 100).Value = keterangan;
+                    insert.ExecuteNonQuery();
+                }
+
+                lbl.Text = keterangan;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred: " + ex.Message);
+            }
+        }
+
+        private void lookUpEdit_persediaan_EditValueChanged(object sender, EventArgs e)
+            => SaveDefaultAccount("PERSEDIAAN", lookUpEdit_persediaan, LBL_PERSEDIAAN);
+
+        private void lookUpEdit_bebanPemakaian_EditValueChanged(object sender, EventArgs e)
+            => SaveDefaultAccount("BEBAN_PEMAKAIAN_PERSEDIAAN", lookUpEdit_bebanPemakaian, LBL_BEBAN_PEMAKAIAN_PERSEDIAAN);
+
+        private void lookUpEdit_hutangPembelian_EditValueChanged(object sender, EventArgs e)
+            => SaveDefaultAccount("HUTANG_PEMBELIAN_PERSEDIAAN", lookUpEdit_hutangPembelian, LBL_HUTANG_PEMBELIAN_PERSEDIAAN);
+
+        private void lookUpEdit_selisih_EditValueChanged(object sender, EventArgs e)
+            => SaveDefaultAccount("SELISIH_PERSEDIAAN", lookUpEdit_selisih, LBL_SELISIH_PERSEDIAAN);
+
+        private void lookUpEdit_barangDalamPerjalanan_EditValueChanged(object sender, EventArgs e)
+            => SaveDefaultAccount("BARANG_DALAM_PERJALANAN", lookUpEdit_barangDalamPerjalanan, LBL_BARANG_DALAM_PERJALANAN);
 
         
 

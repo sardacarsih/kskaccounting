@@ -10,7 +10,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <Nullable>annotations</Nullable>
     <AssemblyVersion></AssemblyVersion>
-    <FileVersion>1.0.9</FileVersion>
+    <FileVersion>2.0.0</FileVersion>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 

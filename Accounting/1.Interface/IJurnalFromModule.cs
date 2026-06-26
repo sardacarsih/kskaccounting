@@ -36,7 +36,7 @@ namespace Accounting.DataLayer
         DataTable AIS_Jurnal_Detail_ALL_BORONGAN(DateTime TanggalJurnal, int p_periode, string p_periode_str, string p_ptlokasi, string p_estate, int p_remise, string p_iddata);
         DataTable AIS_Jurnal_Detail_ALL_HARIAN(DateTime TanggalJurnal, int p_periode, string p_periode_str, string p_ptlokasi, string p_estate, int p_remise, string p_iddata);
         void InserJurnal_FromKasir(List<JurnalKasirDetailDTO> JurnalFromKasir);
-        double CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module);
+        decimal CEK_TOTAL_TRANSAKSI(int p_periode, string p_ptlokasi, string p_module);
 
         string CekSumber_Jurnal(double p_jurnalid);
     }
