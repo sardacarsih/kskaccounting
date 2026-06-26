@@ -1,13 +1,12 @@
--- Purpose: Add full-period recompute entrypoint to ACCT_RECALLCULATIONS_V2 for monthly closing.
---          For each impacted account (and all its ancestors), the monthly
---          mutation columns are SET to the absolute SUM over the account's
---          subtree for the period (not "+="), making recalc safe to re-run
---          (retry / stale-recovery / duplicate claim) and correct for
---          insert, update AND delete.
---          Adds ReCalcByJob which is driven by the durable per-job account
---          list (ACCT_RECALC_JOB_ACCOUNT) so deletes recompute correctly even
---          though the journal detail rows are already gone.
--- Date: 2026-06-26
+-- Tujuan: Menambahkan titik masuk hitung ulang periode penuh ke ACCT_RECALLCULATIONS_V2 untuk tutup buku bulanan.
+--         Untuk setiap akun yang terdampak (dan semua induknya), kolom mutasi bulanan
+--         di-SET ke SUM absolut dari sub-tree akun tersebut pada periode berjalan (bukan "+="),
+--         sehingga aman untuk dijalankan ulang (retry / stale-recovery / klaim ganda)
+--         dan akurat untuk operasi insert, update, DAN delete.
+--         Menambahkan ReCalcByJob yang digerakkan oleh daftar akun per-job yang persisten
+--         (ACCT_RECALC_JOB_ACCOUNT) agar penghapusan dihitung dengan benar meskipun
+--         baris detail jurnal sudah terhapus.
+-- Tanggal: 2026-06-26
 
 SET SERVEROUTPUT ON;
 
@@ -27,8 +26,8 @@ END;
 BEGIN
     EXECUTE IMMEDIATE q'[
 CREATE OR REPLACE PACKAGE ACCT_RECALLCULATIONS_V2 AS
-    -- Recompute impacted accounts derived from a journal's current detail rows.
-    -- Suitable for insert/update where the detail rows still exist.
+    -- Menghitung ulang akun terdampak dari baris detail jurnal saat ini.
+    -- Cocok untuk insert/update di mana baris detail masih ada.
     PROCEDURE ReCalcByJurnalID(
         p_IDDATA   IN VARCHAR2,
         p_BULAN    IN INTEGER,
@@ -38,9 +37,9 @@ CREATE OR REPLACE PACKAGE ACCT_RECALLCULATIONS_V2 AS
         p_USERID   IN VARCHAR2
     );
 
-    -- Recompute impacted accounts from the durable per-job account list.
-    -- Correct for insert/update/delete because it does not depend on the
-    -- journal detail rows still being present.
+    -- Menghitung ulang akun terdampak dari daftar akun per-job yang persisten.
+    -- Akurat untuk insert/update/delete karena tidak bergantung pada apakah
+    -- baris detail jurnal masih ada.
     PROCEDURE ReCalcByJob(
         p_IDDATA  IN VARCHAR2,
         p_BULAN   IN INTEGER,
@@ -50,8 +49,8 @@ CREATE OR REPLACE PACKAGE ACCT_RECALLCULATIONS_V2 AS
         p_JOBID   IN NUMBER
     );
 
-    -- Recompute the whole accounting period synchronously.
-    -- Used by monthly closing because balance checks must see final values.
+    -- Menghitung ulang seluruh periode akuntansi secara sinkron.
+    -- Digunakan saat tutup buku bulanan karena pengecekan saldo harus melihat nilai akhir.
     PROCEDURE ReCalcPeriod(
         p_IDDATA  IN VARCHAR2,
         p_BULAN   IN INTEGER,
@@ -64,8 +63,8 @@ END ACCT_RECALLCULATIONS_V2;]';
     EXECUTE IMMEDIATE q'[
 CREATE OR REPLACE PACKAGE BODY ACCT_RECALLCULATIONS_V2 AS
 
-    -- Recompute one COA node's monthly mutation columns as the absolute SUM
-    -- of all journal detail postings under that node's subtree for the period.
+    -- Menghitung ulang kolom mutasi bulanan satu node COA sebagai SUM absolut
+    -- dari semua posting detail jurnal di bawah sub-tree node tersebut untuk periode terkait.
     PROCEDURE RecomputeNode(
         p_IDDATA  IN VARCHAR2,
         p_TAHUN   IN INTEGER,
@@ -151,8 +150,8 @@ CREATE OR REPLACE PACKAGE BODY ACCT_RECALLCULATIONS_V2 AS
         p_USERID   IN VARCHAR2
     ) IS
     BEGIN
-        -- Recompute each impacted leaf account plus all of its ancestors. The
-        -- impacted leaves are the accounts posted by this journal.
+        -- Menghitung ulang setiap akun daun (leaf) yang terdampak beserta semua induknya.
+        -- Akun daun terdampak adalah akun yang diposting oleh jurnal ini.
         FOR node IN (
             WITH coa_scope AS (
                 SELECT c.KODEACC, c.PARENTACC
@@ -185,9 +184,9 @@ CREATE OR REPLACE PACKAGE BODY ACCT_RECALLCULATIONS_V2 AS
         p_JOBID   IN NUMBER
     ) IS
     BEGIN
-        -- Recompute each impacted leaf account plus all of its ancestors. The
-        -- impacted leaves are read from the durable per-job account list so
-        -- this is correct even for deletes (detail rows already gone).
+        -- Menghitung ulang setiap akun daun (leaf) yang terdampak beserta semua induknya.
+        -- Akun daun terdampak dibaca dari daftar akun per-job yang persisten
+        -- sehingga ini akurat bahkan untuk proses delete (baris detail sudah hilang).
         FOR node IN (
             WITH coa_scope AS (
                 SELECT c.KODEACC, c.PARENTACC
