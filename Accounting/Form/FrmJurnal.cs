@@ -76,7 +76,8 @@ namespace Accounting.Form
         bool editjurnal, filter = false;
         string periodetujuan = string.Empty, p_iddata = string.Empty;
         int pbulan, ptahun;
-        double selisihD, selisihK, nilai, nilai2, old_JurnalID;
+        decimal selisihD, selisihK, nilai, nilai2;
+        double old_JurnalID;
         DateTime? old_HeaderVersionUtc;
         private SoundPlayer? _player;
         private SoundPlayer Player => _player ??= new SoundPlayer();
@@ -293,6 +294,7 @@ namespace Accounting.Form
                 XtraMessageBox.Show(BuildJurnalImportResultMessage(result), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+            PublishCoaRekalkulasiNotification(result.RecalcJobIds, p_periode, result.ImpactedAccountCodes);
 
             if (result.HasRecalculationWarning)
             {

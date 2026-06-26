@@ -141,7 +141,7 @@ namespace Accounting.BusinessLayer
                 Kredit = aisJurnal.KREDIT,
                 Keterangan = aisJurnal.KETERANGAN,
                 Posted = aisJurnal.POSTED ? "Yes" : "No",
-                NoJurnal = aisJurnal.KODE,
+                NoJurnal = aisJurnal.NOJURNAL,
                 Periode = aisJurnal.PERIODE
             };
         }

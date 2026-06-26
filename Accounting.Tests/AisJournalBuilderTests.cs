@@ -152,6 +152,62 @@ public sealed class AisJournalBuilderTests
     }
 
     [Fact]
+    public void BuildForDivision_WhenBoronganWithFractionalAmounts_DebetEqualsKredit()
+    {
+        Division division = new()
+        {
+            ISBORONGAN = 1,
+            DIVISIID = "D01",
+            DIVISI = "Divisi 01",
+            NOMOR = "BOR-01"
+        };
+
+        List<AIS_JURNAL> aisRows =
+        [
+            new() { ISBORONGAN = 1, DIVISI = "D01", JENIS = "PANEN", PEKERJAAN = "Panen", BLOK = "A1", DEBET = 975.005m, DEBETPPH = 975.005m, KREDIT = 0m, POSTED = true, PERIODE = "05/2026" },
+            new() { ISBORONGAN = 1, DIVISI = "D01", JENIS = "PANEN", PEKERJAAN = "Panen", BLOK = "A2", DEBET = 333.337m, DEBETPPH = 333.337m, KREDIT = 0m, POSTED = true, PERIODE = "05/2026" }
+        ];
+
+        List<JurnalKomponen> components =
+        [
+            new() { IsBorongan = true, Divisi = "D01", Keterangan = "Potongan", Jumlah = 12.345m, Sisi = "K" },
+            new() { IsBorongan = true, Divisi = "D01", Keterangan = "Tambahan", Jumlah = 7.005m, Sisi = "D" }
+        ];
+
+        List<AIS_JURNAL_FINAL> result = AisJournalBuilder.BuildForDivision(aisRows, components, division, Context);
+
+        Assert.Equal(result.Sum(r => r.DEBET), result.Sum(r => r.KREDIT));
+    }
+
+    [Fact]
+    public void BuildForDivision_WhenHarianWithFractionalAmounts_DebetEqualsKredit()
+    {
+        Division division = new()
+        {
+            ISBORONGAN = 0,
+            DIVISIID = "D02",
+            DIVISI = "Divisi 02",
+            NOMOR = "HAR-02"
+        };
+
+        List<AIS_JURNAL> aisRows =
+        [
+            new() { ISBORONGAN = 0, DIVISI = "D02", JENIS = "RAWAT", PEKERJAAN = "Rawat", BLOK = "B1", DEBET = 100.005m, KREDIT = 0m, POSTED = true, PERIODE = "05/2026" },
+            new() { ISBORONGAN = 0, DIVISI = "D02", JENIS = "RAWAT", PEKERJAAN = "Rawat", BLOK = "B2", DEBET = 55.557m, KREDIT = 0m, POSTED = true, PERIODE = "05/2026" }
+        ];
+
+        List<JurnalKomponen> components =
+        [
+            new() { IsBorongan = false, Divisi = "D02", Keterangan = "Tambahan", Jumlah = 20.005m, Sisi = "D" },
+            new() { IsBorongan = false, Divisi = "D02", Keterangan = "Potongan", Jumlah = 5.005m, Sisi = "K" }
+        ];
+
+        List<AIS_JURNAL_FINAL> result = AisJournalBuilder.BuildForDivision(aisRows, components, division, Context);
+
+        Assert.Equal(result.Sum(r => r.DEBET), result.Sum(r => r.KREDIT));
+    }
+
+    [Fact]
     public void BuildForDivisions_WhenExportingAllHarian_ExcludesBoronganHeaders()
     {
         List<Division> divisions =

@@ -14,8 +14,8 @@ namespace Accounting.Model
         public Int16 BARIS { get; set; }
         public string KODE { get; set; }
         public string REKENING { get; set; }
-        public double DEBET  { get; set; }
-        public double KREDIT { get; set; }
+        public decimal DEBET  { get; set; }
+        public decimal KREDIT { get; set; }
         public string KETERANGAN { get; set; }
         public string POSTED { get; set; }
         public string PERIODE { get; set; }

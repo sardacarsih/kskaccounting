@@ -23,6 +23,13 @@ namespace Accounting.BusinessLayer
                 throw new InvalidOperationException("Data tidak ditemukan");
             }
 
+            // Bulatkan nilai sebenarnya ke 2 desimal sebelum ditulis (bukan sekadar format tampilan).
+            foreach (JurnalDetailDTO row in data)
+            {
+                row.Debet = row.Debet.HasValue ? JurnalAmountRounding.RoundJournalAmount(row.Debet.Value) : null;
+                row.Kredit = row.Kredit.HasValue ? JurnalAmountRounding.RoundJournalAmount(row.Kredit.Value) : null;
+            }
+
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             using ExcelPackage package = new();
             ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Jurnal Entries");
@@ -78,6 +85,13 @@ namespace Accounting.BusinessLayer
 
         private static void WriteAisWorkbook(List<AIS_JURNAL_FINAL> data, string destinationPath)
         {
+            // Bulatkan nilai sebenarnya ke 2 desimal sebelum ditulis (defensif; data umumnya sudah dinormalisasi).
+            foreach (AIS_JURNAL_FINAL row in data)
+            {
+                row.DEBET = JurnalAmountRounding.RoundJournalAmount(row.DEBET);
+                row.KREDIT = JurnalAmountRounding.RoundJournalAmount(row.KREDIT);
+            }
+
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             using ExcelPackage package = new();
             ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Jurnal Entries");
@@ -122,8 +136,8 @@ namespace Accounting.BusinessLayer
                 worksheet.Cells[index + 2, 3].Formula = index == 0 ? "1" : $"IF(A{index + 2}<>A{index + 1},1,C{index + 1}+1)";
                 worksheet.Cells[index + 2, 4].Value = row["KODE"];
                 worksheet.Cells[index + 2, 5].Value = row["REKENING"];
-                worksheet.Cells[index + 2, 6].Value = row["DEBET"];
-                worksheet.Cells[index + 2, 7].Value = row["KREDIT"];
+                worksheet.Cells[index + 2, 6].Value = RoundCell(row["DEBET"]);
+                worksheet.Cells[index + 2, 7].Value = RoundCell(row["KREDIT"]);
                 worksheet.Cells[index + 2, 8].Value = row["KETERANGAN"];
                 worksheet.Cells[index + 2, 9].Value = row["POSTED"];
                 worksheet.Cells[index + 2, 10].Value = row["PERIODE"];
@@ -166,6 +180,16 @@ namespace Accounting.BusinessLayer
             const string zeroFormat = "-_)";
             string fullNumberFormat = positiveFormat + ";" + negativeFormat + ";" + zeroFormat;
             worksheet.Cells[2, 6, rowCount + 1, 7].Style.Numberformat.Format = fullNumberFormat;
+        }
+
+        private static object RoundCell(object value)
+        {
+            if (value == null || value == DBNull.Value)
+            {
+                return value;
+            }
+
+            return JurnalAmountRounding.RoundJournalAmount(Convert.ToDecimal(value));
         }
 
         private static void OpenFile(string path)

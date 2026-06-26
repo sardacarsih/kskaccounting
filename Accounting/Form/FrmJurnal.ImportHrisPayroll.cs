@@ -303,6 +303,10 @@ namespace Accounting.Form
 				}
 			}
 		}
+		catch (OperationCanceledException)
+		{
+			// Expected when a newer debounced reload cancels this one (e.g. during form init).
+		}
 		catch (Exception ex)
 		{
 			Exception ex2 = ex;
