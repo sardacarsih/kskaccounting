@@ -1,8 +1,11 @@
 -- Purpose: Migrate Neraca to metadata-driven ACCT_REPORT_ENGINE_V1 tables
---          and implement LAP_NERACA_V2 & LAP_NERACA_SUB_V2.
+--          and implement LAP_NERACA_V2 and LAP_NERACA_SUB_V2.
 -- Date: 2026-06-28
 
 SET SERVEROUTPUT ON;
+-- Disable SQL*Plus substitution so '&' in comments/string literals is not treated
+-- as a bind/substitution variable (would otherwise prompt and abort the script).
+SET DEFINE OFF;
 
 DECLARE
     v_sec_id NUMBER;
@@ -324,6 +327,6 @@ CREATE OR REPLACE PACKAGE BODY ACCT_LAPORAN_V2 AS
     END LAP_NERACA_SUB_V2;
 END ACCT_LAPORAN_V2;]';
 
-    DBMS_OUTPUT.PUT_LINE('MIGRATED LAP_NERACA_V2 & LAP_NERACA_SUB_V2 TO METADATA-DRIVEN ENGINE');
+    DBMS_OUTPUT.PUT_LINE('MIGRATED LAP_NERACA_V2 AND LAP_NERACA_SUB_V2 TO METADATA-DRIVEN ENGINE');
 END;
 /
