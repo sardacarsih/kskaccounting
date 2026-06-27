@@ -1,4 +1,4 @@
-﻿using Accounting.BusinessLayer;
+using Accounting.BusinessLayer;
 using DevExpress.XtraEditors;
 using DevExpress.XtraReports.UI;
 using System;
@@ -16,7 +16,6 @@ namespace Accounting.Laporan
         {
             InitializeComponent();
         }
-        DataSet DSGL;
 
         private void xrTableCell1_BeforePrint(object sender, CancelEventArgs e)
         {
@@ -25,101 +24,7 @@ namespace Accounting.Laporan
 
         private void xrTableCell1_PreviewClick(object sender, PreviewMouseEventArgs e)
         {
-            try
-            {
-                string[] bulanbi = { "Bulan", "Januari", "Pebruari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" };
-
-                DataRowView dataRow = e.Brick.Value as DataRowView;
-                var userid = LoginInfo.userID;
-                var iddata =CompanyInfo.IDDATA;
-                var pbulan = (int)this.Parameters["PBULAN"].Value;
-                var p_sampaibulan = (int)this.Parameters["PBULAN"].Value;
-                var ptahun = (int)this.Parameters["PTAHUN"].Value;
-                var periode = pbulan.ToString("00") + "/" + ptahun.ToString();
-                var bulan = bulanbi[pbulan].ToString() + "-" + ptahun.ToString();
-                var kode = dataRow.Row["KODEACC"].ToString();
-                var header = dataRow.Row["HEADER"].ToString();
-                var posisi = dataRow.Row["POSISI"].ToString();
-                var KELOMPOK = dataRow.Row["KELOMPOK"].ToString();
-                if (header == "G")
-                {
-                    XtraMessageBox.Show("Silahkan klik pada Detail", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                var darikode = kode;
-                var sampaikode = kode;
-                if (posisi == "D")
-                {
-                    if (KELOMPOK == "NERACA")
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "NERACA");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-                    }
-                    else
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "LABARUGI");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-
-                    }
-
-
-                    GeneralLedgerD2 laporan = new ()
-                    {
-                        DataSource = DSGL
-                    };
-
-                    laporan.Parameters["PBULAN"].Value = pbulan;
-                    laporan.Parameters["PTAHUN"].Value = ptahun;
-                    laporan.Parameters["BULAN"].Value = bulan;
-                    laporan.Parameters["PERIODE"].Value = periode;
-                    laporan.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                    laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                    laporan.Parameters["USERID"].Value = userid;
-                    laporan.RequestParameters = true;
-                    ReportPrintTool tool = new ReportPrintTool(laporan);
-                    tool.ShowPreview();
-                }
-                else
-                {
-                    if (KELOMPOK == "NERACA")
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "NERACA");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-                    }
-                    else
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "LABARUGI");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-
-                    }
-
-                    GeneralLedgerK2 laporan = new ()
-                    {
-                        DataSource = DSGL
-                    };
-
-                    laporan.Parameters["PBULAN"].Value = pbulan;
-                    laporan.Parameters["PTAHUN"].Value = ptahun;
-                    laporan.Parameters["BULAN"].Value = bulan;
-                    laporan.Parameters["PERIODE"].Value = periode;
-                    laporan.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                    laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                    laporan.Parameters["USERID"].Value = userid;
-                    laporan.RequestParameters = true;
-                    ReportPrintTool tool = new (laporan);
-                    tool.ShowPreview();
-                }
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            LabaRugiDrillDownPreview.Show(this, e);
         }
 
         private void xrTableCell1_PreviewMouseMove(object sender, PreviewMouseEventArgs e)
@@ -154,197 +59,12 @@ namespace Accounting.Laporan
 
         private void tableCell12_PreviewClick(object sender, PreviewMouseEventArgs e)
         {
-            try
-            {
-                string[] bulanbi = { "Bulan", "Januari", "Pebruari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" };
-
-                DataRowView dataRow = e.Brick.Value as DataRowView;
-                var userid = LoginInfo.userID;
-                var iddata =CompanyInfo.IDDATA;
-                var pbulan = (int)this.Parameters["PBULAN"].Value;
-                var p_sampaibulan = (int)this.Parameters["PBULAN"].Value;
-                var ptahun = (int)this.Parameters["PTAHUN"].Value;
-                var periode = pbulan.ToString("00") + "/" + ptahun.ToString();
-                var bulan = bulanbi[pbulan].ToString() + "-" + ptahun.ToString();
-                var kode = dataRow.Row["KODEACC"].ToString();
-                var header = dataRow.Row["HEADER"].ToString();
-                var posisi = dataRow.Row["POSISI"].ToString();
-                var KELOMPOK = dataRow.Row["KELOMPOK"].ToString();
-                if (header == "G")
-                {
-                    XtraMessageBox.Show("Silahkan klik pada Detail", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                var darikode = kode;
-                var sampaikode = kode;
-                if (posisi == "D")
-                {
-                    if (KELOMPOK == "NERACA")
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "NERACA");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-                    }
-                    else
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "LABARUGI");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-
-                    }
-
-
-                    GeneralLedgerD2 laporan = new ()
-                    {
-                        DataSource = DSGL
-                    };
-
-                    laporan.Parameters["PBULAN"].Value = pbulan;
-                    laporan.Parameters["PTAHUN"].Value = ptahun;
-                    laporan.Parameters["BULAN"].Value = bulan;
-                    laporan.Parameters["PERIODE"].Value = periode;
-                    laporan.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                    laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                    laporan.Parameters["USERID"].Value = userid;
-                    laporan.RequestParameters = true;
-                    ReportPrintTool tool = new ReportPrintTool(laporan);
-                    tool.ShowPreview();
-                }
-                else
-                {
-                    if (KELOMPOK == "NERACA")
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "NERACA");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-                    }
-                    else
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "LABARUGI");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-
-                    }
-                    GeneralLedgerK2 laporan = new ()
-                    {
-                        DataSource = DSGL
-                    };
-
-                    laporan.Parameters["PBULAN"].Value = pbulan;
-                    laporan.Parameters["PTAHUN"].Value = ptahun;
-                    laporan.Parameters["BULAN"].Value = bulan;
-                    laporan.Parameters["PERIODE"].Value = periode;
-                    laporan.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                    laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                    laporan.Parameters["USERID"].Value = userid;
-                    laporan.RequestParameters = true;
-                    ReportPrintTool tool = new ReportPrintTool(laporan);
-                    tool.ShowPreview();
-                }
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            LabaRugiDrillDownPreview.Show(this, e);
         }
 
         private void tableCell13_PreviewClick(object sender, PreviewMouseEventArgs e)
         {
-            try
-            {
-                string[] bulanbi = { "Bulan", "Januari", "Pebruari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" };
-
-                DataRowView dataRow = e.Brick.Value as DataRowView;
-                var userid = LoginInfo.userID;
-                var iddata =CompanyInfo.IDDATA;
-                var pbulan = (int)this.Parameters["PBULAN"].Value;
-                var p_sampaibulan = (int)this.Parameters["PBULAN"].Value;
-                var ptahun = (int)this.Parameters["PTAHUN"].Value;
-                var periode = pbulan.ToString("00") + "/" + ptahun.ToString();
-                var bulan = bulanbi[pbulan].ToString() + "-" + ptahun.ToString();
-                var kode = dataRow.Row["KODEACC"].ToString();
-                var header = dataRow.Row["HEADER"].ToString();
-                var posisi = dataRow.Row["POSISI"].ToString();
-                var KELOMPOK = dataRow.Row["KELOMPOK"].ToString();
-                if (header == "G")
-                {
-                    XtraMessageBox.Show("Silahkan klik pada Detail", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                var darikode = kode;
-                var sampaikode = kode;
-                if (posisi == "D")
-                {
-                    if (KELOMPOK == "NERACA")
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "NERACA");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-                    }
-                    else
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "LABARUGI");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-
-                    }
-
-                    GeneralLedgerD2 laporan = new()
-                    {
-                        DataSource = DSGL
-                    };
-
-                    laporan.Parameters["PBULAN"].Value = pbulan;
-                    laporan.Parameters["PTAHUN"].Value = ptahun;
-                    laporan.Parameters["BULAN"].Value = bulan;
-                    laporan.Parameters["PERIODE"].Value = periode;
-                    laporan.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                    laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                    laporan.Parameters["USERID"].Value = userid;
-                    laporan.RequestParameters = true;
-                    ReportPrintTool tool = new ReportPrintTool(laporan);
-                    tool.ShowPreview();
-                }
-                else
-                {
-                    if (KELOMPOK == "NERACA")
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "NERACA");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-                    }
-                    else
-                    {
-                        //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "LABARUGI");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-
-                    }
-                    GeneralLedgerK2 laporan = new ()
-                    {
-                        DataSource = DSGL
-                    };
-
-                    laporan.Parameters["PBULAN"].Value = pbulan;
-                    laporan.Parameters["PTAHUN"].Value = ptahun;
-                    laporan.Parameters["BULAN"].Value = bulan;
-                    laporan.Parameters["PERIODE"].Value = periode;
-                    laporan.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                    laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                    laporan.Parameters["USERID"].Value = userid;
-                    laporan.RequestParameters = true;
-                    ReportPrintTool tool = new ReportPrintTool(laporan);
-                    tool.ShowPreview();
-                }
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            LabaRugiDrillDownPreview.Show(this, e);
         }
 
         private void xrTableCell4_BeforePrint(object sender, CancelEventArgs e)
