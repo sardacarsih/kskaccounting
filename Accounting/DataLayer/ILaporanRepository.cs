@@ -19,11 +19,14 @@ namespace Accounting.DataLayer
         DataSet ViewLap_LabaRugi_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
         List<LabaRugiRow> ViewLap_LabaRugiRows_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
         DataSet ViewLap_Neraca(string piddata, int p_bulan, int p_tahun, string userid);
+        List<NeracaRow> ViewLap_NeracaRows_V2(string piddata, int p_bulan, int p_tahun, string userid);
+        DataSet ViewSub_Neraca(string piddata, int p_bulan, int p_tahun, string p_kodeacc, string userid, string posisi);
         DataSet ViewLap_NeracaHalfYear(string piddata, int p_tahun, string userid, int ishalf);
         DataTable ViewLap_NeracaKonsolidasi(int p_tahun, string p_pt,int p_bulan, string userid);
         DataSet ViewSub_LabaRugi(string piddata, string userid);        
         DataSet ViewLap_BukuBesar(string P_IDDATA, int p_tahun, int p_bulan, int p_sampaibulan, string DARIKODE, string SAMPAIKODE
             ,string p_Userid, string DARILAPORAN);
+        DataSet ViewLap_BukuBesar_Tree(string P_IDDATA, int p_tahun, int p_bulan, int p_sampaibulan, string p_kode);
         DataSet ViewLap_BukuBesarMultiTahun(
             string P_IDDATA
             , int p_tahundari

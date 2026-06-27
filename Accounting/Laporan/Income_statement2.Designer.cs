@@ -217,7 +217,7 @@ namespace Accounting.Laporan
             this.xrLabelSectionHeader.Multiline = true;
             this.xrLabelSectionHeader.Name = "xrLabelSectionHeader";
             this.xrLabelSectionHeader.Padding = new DevExpress.XtraPrinting.PaddingInfo(6, 2, 0, 0, 100F);
-            this.xrLabelSectionHeader.SizeF = new System.Drawing.SizeF(472.8751F, 23F);
+            this.xrLabelSectionHeader.SizeF = new System.Drawing.SizeF(750.9999F, 23F);
             this.xrLabelSectionHeader.StyleName = "th";
             this.xrLabelSectionHeader.StylePriority.UseFont = false;
             this.xrLabelSectionHeader.StylePriority.UseTextAlignment = false;

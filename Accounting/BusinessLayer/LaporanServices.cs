@@ -51,6 +51,14 @@ namespace Accounting.BusinessLayer
         {
             return repository.ViewLap_Neraca(p_IDDATA, p_bulan, p_tahun,  userid);
         }
+        public static List<NeracaRow> ViewLap_NeracaRows_V2(string p_IDDATA, int p_bulan, int p_tahun,   string userid)
+        {
+            return repository.ViewLap_NeracaRows_V2(p_IDDATA, p_bulan, p_tahun,  userid);
+        }
+        public static DataSet ViewSub_Neraca(string p_IDDATA, int p_bulan, int p_tahun, string p_kodeacc, string userid, string posisi)
+        {
+            return repository.ViewSub_Neraca(p_IDDATA, p_bulan, p_tahun, p_kodeacc, userid, posisi);
+        }
         public static DataSet ViewLap_NeracaLajur(string p_IDDATA, int p_bulan, int p_tahun)
         {
             return repository.ViewLap_NeracaLajur(p_IDDATA, p_bulan, p_tahun);
@@ -76,6 +84,10 @@ namespace Accounting.BusinessLayer
             , string p_Userid, string DARILAPORAN)
         {
             return repository.ViewLap_BukuBesar( P_IDDATA, p_tahun, p_bulan, p_sampaibulan,  DARIKODE,  SAMPAIKODE,p_Userid, DARILAPORAN);
+        }
+        public static DataSet ViewLap_BukuBesar_Tree(string P_IDDATA, int p_tahun, int p_bulan, int p_sampaibulan, string p_kode)
+        {
+            return repository.ViewLap_BukuBesar_Tree(P_IDDATA, p_tahun, p_bulan, p_sampaibulan, p_kode);
         }
         public static DataSet ViewLap_BukuBesarMultiTahun(string P_IDDATA, int p_tahundari, int p_tahunsampai, int p_bulan, int p_sampaibulan, string DARIKODE, string SAMPAIKODE
             , string p_Userid, string DARILAPORAN)

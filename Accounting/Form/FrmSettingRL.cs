@@ -4,6 +4,7 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
+using DevExpress.XtraTab;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Configuration;
@@ -23,6 +24,8 @@ namespace Accounting.Form
         private SimpleButton deactivateRootButton;
         private SimpleButton moveRootUpButton;
         private SimpleButton moveRootDownButton;
+        private XtraTabControl tabControl;
+        private string currentReportCode = "LABARUGI";
 
         public FrmSettingRL()
         {
@@ -62,16 +65,28 @@ namespace Accounting.Form
 
         private void ConfigureLayout()
         {
-            Text = "Setting Laporan Laba Rugi - Metadata COA";
+            Text = "Pengaturan Laporan";
             MinimumSize = new Size(1180, 680);
 
+            // Initialize and configure TabControl programmatically at the top
+            tabControl = new XtraTabControl
+            {
+                Location = new Point(0, 0),
+                Size = new Size(ClientSize.Width, 40),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            tabControl.TabPages.Add("Laba Rugi");
+            tabControl.TabPages.Add("Neraca");
+            tabControl.SelectedPageChanged += TabControl_SelectedPageChanged;
+            Controls.Add(tabControl);
+
             gridControl1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
-            gridControl1.Location = new Point(12, 12);
-            gridControl1.Size = new Size(520, ClientSize.Height - 92);
+            gridControl1.Location = new Point(12, 52);
+            gridControl1.Size = new Size(520, ClientSize.Height - 132);
 
             gridControl2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            gridControl2.Location = new Point(544, 52);
-            gridControl2.Size = new Size(ClientSize.Width - 556, ClientSize.Height - 64);
+            gridControl2.Location = new Point(544, 92);
+            gridControl2.Size = new Size(ClientSize.Width - 556, ClientSize.Height - 104);
 
             labelControl1.Anchor = AnchorStyles.Left | AnchorStyles.Bottom;
             labelControl1.Location = new Point(12, ClientSize.Height - 62);
@@ -88,12 +103,26 @@ namespace Accounting.Form
             simpleButton1.Text = "Reset Default";
         }
 
+        private void TabControl_SelectedPageChanged(object sender, TabPageChangedEventArgs e)
+        {
+            currentReportCode = tabControl.SelectedTabPageIndex == 0 ? "LABARUGI" : "NERACA";
+            Text = $"Pengaturan Laporan {(currentReportCode == "LABARUGI" ? "Laba Rugi" : "Neraca")}";
+
+            Load_SettingsRL();
+            BindSectionGrid();
+            if (gridView1.RowCount > 0)
+            {
+                gridView1.FocusedRowHandle = 0;
+            }
+            Load_AkunSetting();
+        }
+
         private void ConfigureMappingButtons()
         {
-            addRootButton = CreateMappingButton("Add Root", 544, addRootButton_Click);
-            deactivateRootButton = CreateMappingButton("Deactivate", 654, deactivateRootButton_Click);
-            moveRootUpButton = CreateMappingButton("Move Up", 780, moveRootUpButton_Click);
-            moveRootDownButton = CreateMappingButton("Move Down", 890, moveRootDownButton_Click);
+            addRootButton = CreateMappingButton("Add Root", 544, 52, addRootButton_Click);
+            deactivateRootButton = CreateMappingButton("Deactivate", 654, 52, deactivateRootButton_Click);
+            moveRootUpButton = CreateMappingButton("Move Up", 780, 52, moveRootUpButton_Click);
+            moveRootDownButton = CreateMappingButton("Move Down", 890, 52, moveRootDownButton_Click);
 
             Controls.Add(addRootButton);
             Controls.Add(deactivateRootButton);
@@ -101,12 +130,12 @@ namespace Accounting.Form
             Controls.Add(moveRootDownButton);
         }
 
-        private static SimpleButton CreateMappingButton(string text, int x, EventHandler clickHandler)
+        private static SimpleButton CreateMappingButton(string text, int x, int y, EventHandler clickHandler)
         {
             SimpleButton button = new()
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Left,
-                Location = new Point(x, 12),
+                Location = new Point(x, y),
                 Size = new Size(104, 30),
                 Text = text
             };
@@ -165,7 +194,7 @@ namespace Accounting.Form
 
         private DataSet Load_SettingsRL()
         {
-            const string selectQuery = @"
+            string selectQuery = $@"
                 SELECT SECTION_ID,
                        SECTION_CODE,
                        SECTION_NAME,
@@ -175,7 +204,7 @@ namespace Accounting.Form
                        SHOW_ZERO,
                        IS_ACTIVE
                   FROM ACCT_REPORT_SECTION
-                 WHERE REPORT_CODE = 'LABARUGI'
+                 WHERE REPORT_CODE = '{currentReportCode}'
                  ORDER BY DISPLAY_ORDER";
 
             using OracleCommand command = new(selectQuery, conn)
@@ -335,11 +364,11 @@ namespace Accounting.Form
                 return;
             }
 
-            const string resetSql = @"
+            string resetSql = $@"
                 UPDATE ACCT_REPORT_SECTION
                    SET SHOW_ZERO = 'N',
                        IS_ACTIVE = 'Y'
-                 WHERE REPORT_CODE = 'LABARUGI'";
+                  WHERE REPORT_CODE = '{currentReportCode}'";
 
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
@@ -450,7 +479,8 @@ namespace Accounting.Form
             sectionId = 0;
             if (gridView1.FocusedRowHandle < 0)
             {
-                XtraMessageBox.Show("Pilih section Laba Rugi terlebih dahulu.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                string reportName = currentReportCode == "LABARUGI" ? "Laba Rugi" : "Neraca";
+                XtraMessageBox.Show($"Pilih section {reportName} terlebih dahulu.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return false;
             }
 

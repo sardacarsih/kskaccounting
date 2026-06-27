@@ -1,4 +1,4 @@
-﻿
+
 namespace Accounting.Form
 {
     partial class FrmSettingRL
@@ -204,7 +204,7 @@ namespace Accounting.Form
             this.Controls.Add(this.gridControl2);
             this.Controls.Add(this.gridControl1);
             this.Name = "FrmSettingRL";
-            this.Text = "Setting Laporan Laba Rugi";
+            this.Text = "Pengaturan Laporan";
             this.Load += new System.EventHandler(this.FrmSettingRL_Load);
             ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridView1)).EndInit();
