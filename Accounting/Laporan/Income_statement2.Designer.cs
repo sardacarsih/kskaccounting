@@ -1,14 +1,14 @@
-﻿
+
 namespace Accounting.Laporan
 {
-    partial class Income_statement
+    partial class Income_statement2
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary> 
+        /// <summary>
         /// Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
@@ -30,42 +30,6 @@ namespace Accounting.Laporan
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            DevExpress.DataAccess.ConnectionParameters.XmlFileConnectionParameters xmlFileConnectionParameters1 = new DevExpress.DataAccess.ConnectionParameters.XmlFileConnectionParameters();
-            DevExpress.DataAccess.Sql.SelectQuery selectQuery1 = new DevExpress.DataAccess.Sql.SelectQuery();
-            DevExpress.DataAccess.Sql.Column column1 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression1 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Table table1 = new DevExpress.DataAccess.Sql.Table();
-            DevExpress.DataAccess.Sql.Column column2 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression2 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column3 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression3 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column4 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression4 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column5 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression5 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column6 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression6 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column7 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression7 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column8 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression8 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column9 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression9 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column10 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression10 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column11 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression11 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column12 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression12 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column13 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression13 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column14 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression14 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column15 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression15 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            DevExpress.DataAccess.Sql.Column column16 = new DevExpress.DataAccess.Sql.Column();
-            DevExpress.DataAccess.Sql.ColumnExpression columnExpression16 = new DevExpress.DataAccess.Sql.ColumnExpression();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Income_statement));
             this.TopMargin = new DevExpress.XtraReports.UI.TopMarginBand();
             this.BottomMargin = new DevExpress.XtraReports.UI.BottomMarginBand();
             this.pageInfo2 = new DevExpress.XtraReports.UI.XRPageInfo();
@@ -91,38 +55,38 @@ namespace Accounting.Laporan
             this.DetailData3_Odd = new DevExpress.XtraReports.UI.XRControlStyle();
             this.PageInfo = new DevExpress.XtraReports.UI.XRControlStyle();
             this.th = new DevExpress.XtraReports.UI.XRControlStyle();
+            this.colHead = new DevExpress.XtraReports.UI.XRControlStyle();
             this.BULAN = new DevExpress.XtraReports.Parameters.Parameter();
             this.PERIODE = new DevExpress.XtraReports.Parameters.Parameter();
             this.NAMAPT = new DevExpress.XtraReports.Parameters.Parameter();
             this.WILAYAH = new DevExpress.XtraReports.Parameters.Parameter();
             this.PBULAN = new DevExpress.XtraReports.Parameters.Parameter();
             this.PTAHUN = new DevExpress.XtraReports.Parameters.Parameter();
-            this.sqlDataSource1 = new DevExpress.DataAccess.Sql.SqlDataSource(this.components);
             ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
-            // 
+            //
             // TopMargin
-            // 
+            //
             this.TopMargin.HeightF = 52F;
             this.TopMargin.Name = "TopMargin";
-            // 
+            //
             // BottomMargin
-            // 
+            //
             this.BottomMargin.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
             this.pageInfo2});
             this.BottomMargin.HeightF = 50F;
             this.BottomMargin.Name = "BottomMargin";
-            // 
+            //
             // pageInfo2
-            // 
+            //
             this.pageInfo2.LocationFloat = new DevExpress.Utils.PointFloat(602.8751F, 0F);
             this.pageInfo2.Name = "pageInfo2";
             this.pageInfo2.SizeF = new System.Drawing.SizeF(148.1247F, 23F);
             this.pageInfo2.StyleName = "PageInfo";
             this.pageInfo2.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
             this.pageInfo2.TextFormatString = "Page {0} of {1}";
-            // 
+            //
             // ReportHeader
-            // 
+            //
             this.ReportHeader.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
             this.xrLine3,
             this.xrLabel13,
@@ -135,28 +99,26 @@ namespace Accounting.Laporan
             this.label1});
             this.ReportHeader.HeightF = 130.4445F;
             this.ReportHeader.Name = "ReportHeader";
-            // 
+            //
             // xrLine3
-            // 
+            //
             this.xrLine3.LocationFloat = new DevExpress.Utils.PointFloat(6.103516E-05F, 128.3611F);
             this.xrLine3.Name = "xrLine3";
             this.xrLine3.SizeF = new System.Drawing.SizeF(750.9999F, 2.083374F);
-            // 
+            //
             // xrLabel13
-            // 
-            this.xrLabel13.Font = new DevExpress.Drawing.DXFont("Segoe UI Semibold", 9.75F);
+            //
             this.xrLabel13.LocationFloat = new DevExpress.Utils.PointFloat(6.357829E-05F, 105.3611F);
             this.xrLabel13.Multiline = true;
             this.xrLabel13.Name = "xrLabel13";
-            this.xrLabel13.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabel13.Padding = new DevExpress.XtraPrinting.PaddingInfo(6, 2, 0, 0, 100F);
             this.xrLabel13.SizeF = new System.Drawing.SizeF(472.875F, 22.99998F);
-            this.xrLabel13.StylePriority.UseFont = false;
-            this.xrLabel13.StylePriority.UseTextAlignment = false;
+            this.xrLabel13.StyleName = "colHead";
             this.xrLabel13.Text = "KETERANGAN";
             this.xrLabel13.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
+            //
             // xrLabel9
-            // 
+            //
             this.xrLabel9.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "?BULAN")});
             this.xrLabel9.LocationFloat = new DevExpress.Utils.PointFloat(0F, 80.27771F);
@@ -167,9 +129,9 @@ namespace Accounting.Laporan
             this.xrLabel9.StylePriority.UseTextAlignment = false;
             this.xrLabel9.Text = "xrLabel9";
             this.xrLabel9.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
-            // 
+            //
             // xrLabel8
-            // 
+            //
             this.xrLabel8.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "?WILAYAH")});
             this.xrLabel8.Font = new DevExpress.Drawing.DXFont("Arial", 12F);
@@ -180,9 +142,9 @@ namespace Accounting.Laporan
             this.xrLabel8.SizeF = new System.Drawing.SizeF(472.8751F, 23F);
             this.xrLabel8.StylePriority.UseFont = false;
             this.xrLabel8.Text = "xrLabel8";
-            // 
+            //
             // xrLabel7
-            // 
+            //
             this.xrLabel7.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "?NAMAPT")});
             this.xrLabel7.Font = new DevExpress.Drawing.DXFont("Arial", 14F);
@@ -193,63 +155,58 @@ namespace Accounting.Laporan
             this.xrLabel7.SizeF = new System.Drawing.SizeF(472.8751F, 23F);
             this.xrLabel7.StylePriority.UseFont = false;
             this.xrLabel7.Text = "xrLabel7";
-            // 
+            //
             // xrLabel12
-            // 
-            this.xrLabel12.Font = new DevExpress.Drawing.DXFont("Segoe UI Semibold", 9.75F);
+            //
             this.xrLabel12.LocationFloat = new DevExpress.Utils.PointFloat(602.875F, 105.3611F);
             this.xrLabel12.Multiline = true;
             this.xrLabel12.Name = "xrLabel12";
-            this.xrLabel12.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabel12.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 6, 0, 0, 100F);
             this.xrLabel12.SizeF = new System.Drawing.SizeF(148.1248F, 22.99998F);
-            this.xrLabel12.StylePriority.UseFont = false;
-            this.xrLabel12.StylePriority.UseTextAlignment = false;
+            this.xrLabel12.StyleName = "colHead";
             this.xrLabel12.Text = "TAHUN INI";
             this.xrLabel12.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter;
-            // 
+            //
             // xrLabel11
-            // 
-            this.xrLabel11.Font = new DevExpress.Drawing.DXFont("Segoe UI Semibold", 9.75F);
+            //
             this.xrLabel11.LocationFloat = new DevExpress.Utils.PointFloat(472.8751F, 105.3611F);
             this.xrLabel11.Multiline = true;
             this.xrLabel11.Name = "xrLabel11";
-            this.xrLabel11.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabel11.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 6, 0, 0, 100F);
             this.xrLabel11.SizeF = new System.Drawing.SizeF(130F, 22.99999F);
-            this.xrLabel11.StylePriority.UseFont = false;
-            this.xrLabel11.StylePriority.UseTextAlignment = false;
+            this.xrLabel11.StyleName = "colHead";
             this.xrLabel11.Text = "BULAN INI";
             this.xrLabel11.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter;
-            // 
+            //
             // xrLine1
-            // 
+            //
             this.xrLine1.LocationFloat = new DevExpress.Utils.PointFloat(0F, 103.2777F);
             this.xrLine1.Name = "xrLine1";
             this.xrLine1.SizeF = new System.Drawing.SizeF(750.9999F, 2.083374F);
-            // 
+            //
             // label1
-            // 
+            //
             this.label1.LocationFloat = new DevExpress.Utils.PointFloat(0F, 56.08337F);
             this.label1.Name = "label1";
             this.label1.SizeF = new System.Drawing.SizeF(750.9999F, 24.19433F);
             this.label1.StyleName = "Title";
             this.label1.StylePriority.UseTextAlignment = false;
-            this.label1.Text = "INCOME STATEMENT";
+            this.label1.Text = "LAPORAN LABA RUGI";
             this.label1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
-            // 
+            //
             // Detail
-            // 
+            //
             this.Detail.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
             this.xrLabel10,
             this.tNilai,
             this.xrLabel1});
             this.Detail.HeightF = 23F;
             this.Detail.Name = "Detail";
-            this.Detail.Scripts.OnBeforePrint = "Detail_BeforePrint";
             this.Detail.SortFields.AddRange(new DevExpress.XtraReports.UI.GroupField[] {
             new DevExpress.XtraReports.UI.GroupField("URUT", DevExpress.XtraReports.UI.XRColumnSortOrder.Ascending)});
-            // 
+            //
             // xrLabel10
-            // 
+            //
             this.xrLabel10.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([TIPEACC]=\'TH\' ,\'th\' ,? )\n"),
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "ForeColor", "Iif([BULANINI]<0,\'Red\' ,\'Black\' )\n"),
@@ -259,7 +216,7 @@ namespace Accounting.Laporan
             this.xrLabel10.LocationFloat = new DevExpress.Utils.PointFloat(472.8751F, 0F);
             this.xrLabel10.Multiline = true;
             this.xrLabel10.Name = "xrLabel10";
-            this.xrLabel10.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabel10.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 6, 0, 0, 100F);
             this.xrLabel10.SizeF = new System.Drawing.SizeF(130F, 23F);
             this.xrLabel10.StylePriority.UseFont = false;
             this.xrLabel10.StylePriority.UseTextAlignment = false;
@@ -269,9 +226,9 @@ namespace Accounting.Laporan
             this.xrLabel10.BeforePrint += new DevExpress.XtraReports.UI.BeforePrintEventHandler(this.xrLabel10_BeforePrint);
             this.xrLabel10.PreviewMouseMove += new DevExpress.XtraReports.UI.PreviewMouseEventHandler(this.xrLabel10_PreviewMouseMove);
             this.xrLabel10.PreviewClick += new DevExpress.XtraReports.UI.PreviewMouseEventHandler(this.xrLabel10_PreviewClick);
-            // 
+            //
             // tNilai
-            // 
+            //
             this.tNilai.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "ForeColor", "Iif([TAHUNINI]<0,\'Red\' ,\'Black\' )\n"),
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([TIPEACC]=\'TH\' ,\'th\' ,? )\n"),
@@ -281,16 +238,16 @@ namespace Accounting.Laporan
             this.tNilai.LocationFloat = new DevExpress.Utils.PointFloat(602.8751F, 0F);
             this.tNilai.Multiline = true;
             this.tNilai.Name = "tNilai";
-            this.tNilai.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.tNilai.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 6, 0, 0, 100F);
             this.tNilai.SizeF = new System.Drawing.SizeF(148.1249F, 23F);
             this.tNilai.StylePriority.UseFont = false;
             this.tNilai.StylePriority.UseTextAlignment = false;
             this.tNilai.Text = "tNilai";
             this.tNilai.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
             this.tNilai.TextFormatString = "{0:N2}";
-            // 
+            //
             // xrLabel1
-            // 
+            //
             this.xrLabel1.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[sub1]"),
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([TIPEACC]=\'TH\' ,\'th\' ,? )\n")});
@@ -298,38 +255,38 @@ namespace Accounting.Laporan
             this.xrLabel1.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
             this.xrLabel1.Multiline = true;
             this.xrLabel1.Name = "xrLabel1";
-            this.xrLabel1.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabel1.Padding = new DevExpress.XtraPrinting.PaddingInfo(6, 2, 0, 0, 100F);
             this.xrLabel1.SizeF = new System.Drawing.SizeF(472.8751F, 23F);
             this.xrLabel1.StylePriority.UseFont = false;
             this.xrLabel1.StylePriority.UseTextAlignment = false;
             this.xrLabel1.Text = "xrLabel1";
             this.xrLabel1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
+            //
             // ReportFooter
-            // 
+            //
             this.ReportFooter.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
             this.xrLine2});
             this.ReportFooter.HeightF = 10.12503F;
             this.ReportFooter.Name = "ReportFooter";
-            // 
+            //
             // xrLine2
-            // 
+            //
             this.xrLine2.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
             this.xrLine2.Name = "xrLine2";
             this.xrLine2.SizeF = new System.Drawing.SizeF(750.9999F, 8.416663F);
-            // 
+            //
             // Title
-            // 
+            //
             this.Title.BackColor = System.Drawing.Color.Transparent;
             this.Title.BorderColor = System.Drawing.Color.Black;
             this.Title.Borders = DevExpress.XtraPrinting.BorderSide.None;
             this.Title.BorderWidth = 1F;
-            this.Title.Font = new DevExpress.Drawing.DXFont("Arial", 14.25F);
+            this.Title.Font = new DevExpress.Drawing.DXFont("Arial", 14.25F, DevExpress.Drawing.DXFontStyle.Bold);
             this.Title.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(75)))), ((int)(((byte)(75)))), ((int)(((byte)(75)))));
             this.Title.Name = "Title";
-            // 
+            //
             // DetailCaption1
-            // 
+            //
             this.DetailCaption1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(75)))), ((int)(((byte)(75)))), ((int)(((byte)(75)))));
             this.DetailCaption1.BorderColor = System.Drawing.Color.White;
             this.DetailCaption1.Borders = DevExpress.XtraPrinting.BorderSide.Left;
@@ -339,9 +296,9 @@ namespace Accounting.Laporan
             this.DetailCaption1.Name = "DetailCaption1";
             this.DetailCaption1.Padding = new DevExpress.XtraPrinting.PaddingInfo(6, 6, 0, 0, 100F);
             this.DetailCaption1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
+            //
             // DetailData1
-            // 
+            //
             this.DetailData1.BorderColor = System.Drawing.Color.Transparent;
             this.DetailData1.Borders = DevExpress.XtraPrinting.BorderSide.Left;
             this.DetailData1.BorderWidth = 2F;
@@ -350,9 +307,9 @@ namespace Accounting.Laporan
             this.DetailData1.Name = "DetailData1";
             this.DetailData1.Padding = new DevExpress.XtraPrinting.PaddingInfo(6, 6, 0, 0, 100F);
             this.DetailData1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
+            //
             // DetailData3_Odd
-            // 
+            //
             this.DetailData3_Odd.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(231)))), ((int)(((byte)(231)))));
             this.DetailData3_Odd.BorderColor = System.Drawing.Color.Transparent;
             this.DetailData3_Odd.Borders = DevExpress.XtraPrinting.BorderSide.None;
@@ -362,149 +319,77 @@ namespace Accounting.Laporan
             this.DetailData3_Odd.Name = "DetailData3_Odd";
             this.DetailData3_Odd.Padding = new DevExpress.XtraPrinting.PaddingInfo(6, 6, 0, 0, 100F);
             this.DetailData3_Odd.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
+            //
             // PageInfo
-            // 
+            //
             this.PageInfo.Font = new DevExpress.Drawing.DXFont("Arial", 8.25F, DevExpress.Drawing.DXFontStyle.Bold);
             this.PageInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(75)))), ((int)(((byte)(75)))), ((int)(((byte)(75)))));
             this.PageInfo.Name = "PageInfo";
             this.PageInfo.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            // 
+            //
             // th
-            // 
+            //
             this.th.Borders = ((DevExpress.XtraPrinting.BorderSide)((DevExpress.XtraPrinting.BorderSide.Top | DevExpress.XtraPrinting.BorderSide.Bottom)));
             this.th.Font = new DevExpress.Drawing.DXFont("Verdana", 9F, DevExpress.Drawing.DXFontStyle.Bold, DevExpress.Drawing.DXGraphicsUnit.Point, new DevExpress.Drawing.DXFontAdditionalProperty[] {new DevExpress.Drawing.DXFontAdditionalProperty("GdiCharSet", ((byte)(0)))});
             this.th.Name = "th";
-            // 
+            //
+            // colHead
+            //
+            this.colHead.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(75)))), ((int)(((byte)(75)))), ((int)(((byte)(75)))));
+            this.colHead.Borders = DevExpress.XtraPrinting.BorderSide.None;
+            this.colHead.Font = new DevExpress.Drawing.DXFont("Segoe UI Semibold", 9.75F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.colHead.ForeColor = System.Drawing.Color.White;
+            this.colHead.Name = "colHead";
+            //
             // BULAN
-            // 
+            //
             this.BULAN.Description = "BULAN";
             this.BULAN.Name = "BULAN";
             this.BULAN.Visible = false;
-            // 
+            //
             // PERIODE
-            // 
+            //
             this.PERIODE.Description = "PERIODE";
             this.PERIODE.Name = "PERIODE";
             this.PERIODE.Visible = false;
-            // 
+            //
             // NAMAPT
-            // 
+            //
             this.NAMAPT.Description = "NAMAPT";
             this.NAMAPT.Name = "NAMAPT";
             this.NAMAPT.Visible = false;
-            // 
+            //
             // WILAYAH
-            // 
+            //
             this.WILAYAH.Description = "WILAYAH";
             this.WILAYAH.Name = "WILAYAH";
             this.WILAYAH.Visible = false;
-            // 
+            //
             // PBULAN
-            // 
+            //
             this.PBULAN.Description = "PBULAN";
             this.PBULAN.Name = "PBULAN";
             this.PBULAN.Type = typeof(int);
             this.PBULAN.ValueInfo = "0";
             this.PBULAN.Visible = false;
-            // 
+            //
             // PTAHUN
-            // 
+            //
             this.PTAHUN.Description = "PTAHUN";
             this.PTAHUN.Name = "PTAHUN";
             this.PTAHUN.Type = typeof(int);
             this.PTAHUN.ValueInfo = "0";
             this.PTAHUN.Visible = false;
-            // 
-            // sqlDataSource1
-            // 
-            this.sqlDataSource1.ConnectionName = "LabaRugi";
-            xmlFileConnectionParameters1.FileName = "D:\\Project\\DotNet\\Accounting\\Accounting\\bin\\Debug\\net6.0-windows\\LabaRugi.xsd";
-            this.sqlDataSource1.ConnectionParameters = xmlFileConnectionParameters1;
-            this.sqlDataSource1.Name = "sqlDataSource1";
-            columnExpression1.ColumnName = "IDDATA";
-            table1.Name = "LabaRugi";
-            columnExpression1.Table = table1;
-            column1.Expression = columnExpression1;
-            columnExpression2.ColumnName = "KODEACC";
-            columnExpression2.Table = table1;
-            column2.Expression = columnExpression2;
-            columnExpression3.ColumnName = "URUT";
-            columnExpression3.Table = table1;
-            column3.Expression = columnExpression3;
-            columnExpression4.ColumnName = "TIPEACC";
-            columnExpression4.Table = table1;
-            column4.Expression = columnExpression4;
-            columnExpression5.ColumnName = "SUB1";
-            columnExpression5.Table = table1;
-            column5.Expression = columnExpression5;
-            columnExpression6.ColumnName = "SUB2";
-            columnExpression6.Table = table1;
-            column6.Expression = columnExpression6;
-            columnExpression7.ColumnName = "SUB3";
-            columnExpression7.Table = table1;
-            column7.Expression = columnExpression7;
-            columnExpression8.ColumnName = "SUB4";
-            columnExpression8.Table = table1;
-            column8.Expression = columnExpression8;
-            columnExpression9.ColumnName = "SUB5";
-            columnExpression9.Table = table1;
-            column9.Expression = columnExpression9;
-            columnExpression10.ColumnName = "SUB6";
-            columnExpression10.Table = table1;
-            column10.Expression = columnExpression10;
-            columnExpression11.ColumnName = "BULANINI";
-            columnExpression11.Table = table1;
-            column11.Expression = columnExpression11;
-            columnExpression12.ColumnName = "TAHUNINI";
-            columnExpression12.Table = table1;
-            column12.Expression = columnExpression12;
-            columnExpression13.ColumnName = "JENIS";
-            columnExpression13.Table = table1;
-            column13.Expression = columnExpression13;
-            columnExpression14.ColumnName = "SETSUB";
-            columnExpression14.Table = table1;
-            column14.Expression = columnExpression14;
-            columnExpression15.ColumnName = "USERGEN";
-            columnExpression15.Table = table1;
-            column15.Expression = columnExpression15;
-            columnExpression16.ColumnName = "ISHEADER";
-            columnExpression16.Table = table1;
-            column16.Expression = columnExpression16;
-            selectQuery1.Columns.Add(column1);
-            selectQuery1.Columns.Add(column2);
-            selectQuery1.Columns.Add(column3);
-            selectQuery1.Columns.Add(column4);
-            selectQuery1.Columns.Add(column5);
-            selectQuery1.Columns.Add(column6);
-            selectQuery1.Columns.Add(column7);
-            selectQuery1.Columns.Add(column8);
-            selectQuery1.Columns.Add(column9);
-            selectQuery1.Columns.Add(column10);
-            selectQuery1.Columns.Add(column11);
-            selectQuery1.Columns.Add(column12);
-            selectQuery1.Columns.Add(column13);
-            selectQuery1.Columns.Add(column14);
-            selectQuery1.Columns.Add(column15);
-            selectQuery1.Columns.Add(column16);
-            selectQuery1.Name = "LabaRugi";
-            selectQuery1.Tables.Add(table1);
-            this.sqlDataSource1.Queries.AddRange(new DevExpress.DataAccess.Sql.SqlQuery[] {
-            selectQuery1});
-            this.sqlDataSource1.ResultSchemaSerializable = resources.GetString("sqlDataSource1.ResultSchemaSerializable");
-            // 
-            // Income_statement
-            // 
+            //
+            // Income_statement2
+            //
             this.Bands.AddRange(new DevExpress.XtraReports.UI.Band[] {
             this.TopMargin,
             this.BottomMargin,
             this.ReportHeader,
             this.Detail,
             this.ReportFooter});
-            this.ComponentStorage.AddRange(new System.ComponentModel.IComponent[] {
-            this.sqlDataSource1});
             this.DataMember = "LabaRugi";
-            this.DataSource = this.sqlDataSource1;
             this.Font = new DevExpress.Drawing.DXFont("Arial", 9.75F);
             this.Margins = new DevExpress.Drawing.DXMargins(40, 35, 52, 50);
             this.PageHeight = 1169;
@@ -523,7 +408,8 @@ namespace Accounting.Laporan
             this.DetailData1,
             this.DetailData3_Odd,
             this.PageInfo,
-            this.th});
+            this.th,
+            this.colHead});
             this.Version = "22.1";
             ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
 
@@ -549,19 +435,19 @@ namespace Accounting.Laporan
         private DevExpress.XtraReports.UI.XRControlStyle PageInfo;
         private DevExpress.XtraReports.UI.XRLabel xrLabel10;
         private DevExpress.XtraReports.UI.XRControlStyle th;
+        private DevExpress.XtraReports.UI.XRControlStyle colHead;
         private DevExpress.XtraReports.UI.XRLabel xrLabel9;
         private DevExpress.XtraReports.UI.XRLabel xrLabel8;
         private DevExpress.XtraReports.UI.XRLabel xrLabel7;
         private DevExpress.XtraReports.UI.XRLabel xrLabel12;
         private DevExpress.XtraReports.UI.XRLabel xrLabel11;
+        private DevExpress.XtraReports.UI.XRLine xrLine3;
+        private DevExpress.XtraReports.UI.XRLabel xrLabel13;
         private DevExpress.XtraReports.Parameters.Parameter BULAN;
         private DevExpress.XtraReports.Parameters.Parameter PERIODE;
         private DevExpress.XtraReports.Parameters.Parameter NAMAPT;
         private DevExpress.XtraReports.Parameters.Parameter WILAYAH;
-        private DevExpress.XtraReports.UI.XRLine xrLine3;
-        private DevExpress.XtraReports.UI.XRLabel xrLabel13;
         private DevExpress.XtraReports.Parameters.Parameter PBULAN;
         private DevExpress.XtraReports.Parameters.Parameter PTAHUN;
-        private DevExpress.DataAccess.Sql.SqlDataSource sqlDataSource1;
     }
 }

@@ -6,24 +6,20 @@ namespace Accounting.DataLayer
 {
     public class LevelAksesRepository : ILevelAksesRepository
     {
-        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
-
         public bool BaruImport(int aksiid, string userid)
         {
+            using OracleConnection conn = new(LoginInfo.OracleConnString);
+            conn.Open();
             using OracleCommand cmd = new("select baru from vaksesgl where  " +
                 "aksiid=:aksiid and userid=:userid", conn)
             {
                 CommandType = CommandType.Text
             };
-            conn.Open();
             cmd.Parameters.Add(":aksiid", OracleDbType.Int16).Value = aksiid;
             cmd.Parameters.Add(":userid", OracleDbType.Varchar2, 20).Value = userid;
-            OracleDataReader dr;
-            dr = cmd.ExecuteReader();
+            using OracleDataReader dr = cmd.ExecuteReader();
             DataTable _dt = new DataTable();
             _dt.Load(dr);
-            dr.Close();
-            conn.Close();
             char val = Convert.ToChar(_dt.Rows[0]["BARU"].ToString());
             if (val == 'Y')
             {
@@ -183,7 +179,7 @@ namespace Accounting.DataLayer
                     using OracleCommand cmd = new("SELECT ubah FROM vaksesgl WHERE aksiid = :aksiid AND userid = :userid", conn);
                     cmd.Parameters.Add(new OracleParameter(":aksiid", aksiid));
                     cmd.Parameters.Add(new OracleParameter(":userid", userid));
-                    OracleDataReader dr = cmd.ExecuteReader();
+                    using OracleDataReader dr = cmd.ExecuteReader();
 
                     if (dr.Read())
                     {

@@ -20,9 +20,10 @@ namespace Accounting.BusinessLayer
         {
             return repository.Balanced_Check(piddata, p_bulan, p_tahun);
         }
-        public static Decimal Generate_LabaRugi(string piddata, int p_bulan, int p_tahun, string p_Userid,string jenisakunting)
+        // Laba Rugi V2: single round-trip generate + fetch (package ACCT_LAPORAN_V2).
+        public static DataSet ViewLap_LabaRugi_V2(string piddata, int p_bulan, int p_tahun, string p_Userid, string jenisakunting)
         {
-            return repository.Generate_LabaRugi(piddata, p_bulan, p_tahun, p_Userid, jenisakunting);
+            return repository.ViewLap_LabaRugi_V2(piddata, p_bulan, p_tahun, p_Userid, jenisakunting);
         }
         public static Decimal Generate_Jurnal_Closing(string piddata, int p_bulan, int p_tahun, string p_Userid, string jenisakunting)
         {
@@ -47,10 +48,6 @@ namespace Accounting.BusinessLayer
         public static DataTable ViewLap_NeracaKonsolidasi(int p_tahun, string p_pt, int p_bulan, string userid)
         {
             return repository.ViewLap_NeracaKonsolidasi(p_tahun,p_pt, p_bulan, userid);
-        }
-        public static DataSet ViewLap_LabaRugi(string piddata, string userid)
-        {
-            return repository.ViewLap_LabaRugi( piddata,  userid);
         }
         public static DataSet ViewSub_LabaRugi(string piddata, string userid)
         {

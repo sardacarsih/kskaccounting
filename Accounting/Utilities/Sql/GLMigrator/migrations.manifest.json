@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.06.26.2",
+  "version": "2026.06.27.1",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -233,6 +233,14 @@
       "script": "migrations/V20260626_005__recalc_v2_period_entrypoint.sql",
       "rollbackScript": "migrations/R20260626_005__recalc_v2_period_entrypoint.sql",
       "checkScript": "migrations/C20260626_005__recalc_v2_period_entrypoint_check.sql"
+    },
+    {
+      "id": "20260627_001_lap_labarugi_v2",
+      "order": 30,
+      "description": "Add Laba Rugi V2 entrypoint package ACCT_LAPORAN_V2.LAP_LABARUGI_V2 (single-round-trip SYS_REFCURSOR) while keeping legacy ACCT_LAPORAN.LAP_LABARUGI intact.",
+      "script": "migrations/V20260627_001__lap_labarugi_v2.sql",
+      "rollbackScript": "migrations/R20260627_001__lap_labarugi_v2.sql",
+      "checkScript": "migrations/C20260627_001__lap_labarugi_v2_check.sql"
     }
   ]
 }
