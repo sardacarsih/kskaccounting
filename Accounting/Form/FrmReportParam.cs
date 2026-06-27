@@ -123,27 +123,30 @@ namespace Accounting.Form
         {
             cmbbulan2.SelectedIndex = cmbbulan.SelectedIndex;
         }
-        private DataTable ExportLR(string piddata, string puserid)
+        // Laba Rugi V2 export source: reuses the single-round-trip V2 generator and
+        // projects the three export columns (KETERANGAN, BULANINI, TAHUNINI) from the
+        // returned "LabaRugi" table instead of reading acc_tmplrnr directly.
+        private DataTable ExportLR(string piddata, int pbulan, int ptahun, string puserid, string jenisakunting)
         {
-            using (OracleCommand _command = new OracleCommand("select SUB1 KETERANGAN,BULANINI,TAHUNINI FROM acc_tmplrnr WHERE IDDATA=:p_IDDATA AND USERGEN=:p_Userid ORDER BY URUT", conn)
+            DataSet ds = LaporanServices.ViewLap_LabaRugi_V2(piddata, pbulan, ptahun, puserid, jenisakunting);
+            DataTable src = ds.Tables["LabaRugi"];
+
+            DataTable _dt = new();
+            _dt.Columns.Add("KETERANGAN", typeof(string));
+            _dt.Columns.Add("BULANINI", typeof(decimal));
+            _dt.Columns.Add("TAHUNINI", typeof(decimal));
+
+            if (src != null)
             {
-                CommandType = CommandType.Text
-            })
-            {
-                if (conn.State != ConnectionState.Open)
+                foreach (DataRow r in src.Rows)
                 {
-                    conn.Open();
+                    _dt.Rows.Add(
+                        r["SUB1"] == DBNull.Value ? string.Empty : r["SUB1"].ToString(),
+                        r["BULANINI"] == DBNull.Value ? 0m : Convert.ToDecimal(r["BULANINI"]),
+                        r["TAHUNINI"] == DBNull.Value ? 0m : Convert.ToDecimal(r["TAHUNINI"]));
                 }
-                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-                _command.Parameters.Add(":p_Userid", OracleDbType.Varchar2, 20).Value = puserid;
-                OracleDataReader dr;
-                dr = _command.ExecuteReader();
-                DataTable _dt = new DataTable();
-                _dt.Load(dr);
-                dr.Close();
-                conn.Close();
-                return _dt;
             }
+            return _dt;
         }
         private void sbexport_Click(object sender, EventArgs e)
         {
@@ -196,14 +199,8 @@ namespace Accounting.Form
                         return;
                     }
 
-                    //generate data
-                    LaporanServices.Generate_LabaRugi(iddata, pbulan, p_daritahun, userid, CompanyInfo.JENIS_AKUNTING);
-
-                    //get data for report
-                   // DSLabaRugi = LaporanServices.ViewLap_LabaRugi(iddata, userid);
-
-                    DataTable dt = new ();
-                    dt= ExportLR(iddata, userid);
+                    //generate + get data in a single round-trip (Laba Rugi V2)
+                    DataTable dt = ExportLR(iddata, pbulan, p_daritahun, userid, jenis);
 
                     using ExcelPackage package = new ();
 
@@ -867,15 +864,10 @@ namespace Accounting.Form
                         return; 
                     }
 
-                    //generate data
-                    LaporanServices.Generate_LabaRugi(iddata, pbulan, p_daritahun, userid, CompanyInfo.JENIS_AKUNTING);
+                    //generate + get data in a single round-trip (Laba Rugi V2)
+                    DSLabaRugi = LaporanServices.ViewLap_LabaRugi_V2(iddata, pbulan, p_daritahun, userid, CompanyInfo.JENIS_AKUNTING);
 
-                    //get data for report
-                    DSLabaRugi = LaporanServices.ViewLap_LabaRugi(iddata, userid);
-                   // DSLabaRugi.WriteXmlSchema("LabaRugi.xsd");
-                    
-
-                    Income_statement laporan = new Income_statement
+                    Income_statement2 laporan = new Income_statement2
                     {
                         DataSource = DSLabaRugi
                     };
