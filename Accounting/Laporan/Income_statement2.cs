@@ -56,13 +56,6 @@ namespace Accounting.Laporan
                     return;
                 }
 
-                string isHeader = GetString(dataRow.Row, "ISHEADER");
-                if (isHeader == "G")
-                {
-                    MessageBox.Show("Silahkan klik pada akun detail.", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
                 string userid = LoginInfo.userID;
                 string iddata = CompanyInfo.IDDATA;
                 int pbulan = (int)Parameters["PBULAN"].Value;
@@ -73,7 +66,9 @@ namespace Accounting.Laporan
                 string tipeAcc = GetString(dataRow.Row, "TIPEACC");
                 string posisi = tipeAcc == "PENDAPATAN" || tipeAcc == "PENDAPATAN DILUAR USAHA" ? "K" : "D";
 
-                DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun, pbulan, pbulan, kode, kode, userid, "LABARUGI");
+                // Drill the clicked account and its whole COA subtree (header rows have no direct
+                // postings; the tree is linked by PARENTACC, so a code range cannot reach children).
+                DSGL = LaporanServices.ViewLap_BukuBesar_Tree(iddata, ptahun, pbulan, pbulan, kode);
                 XtraReport laporan = posisi == "D"
                     ? new GeneralLedgerD2 { DataSource = DSGL }
                     : new GeneralLedgerK2 { DataSource = DSGL };

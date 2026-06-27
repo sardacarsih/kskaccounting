@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.06.27.9",
+  "version": "2026.06.28.2",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -313,6 +313,14 @@
       "script": "migrations/V20260628_001__jurnal_closing_v2.sql",
       "rollbackScript": "migrations/R20260628_001__jurnal_closing_v2.sql",
       "checkScript": "migrations/C20260628_001__jurnal_closing_v2_check.sql"
+    },
+    {
+      "id": "20260628_002_lap_neraca_v2",
+      "order": 42,
+      "description": "Add LAP_NERACA_V2 wrapper procedure to ACCT_LAPORAN_V2 package.",
+      "script": "migrations/V20260628_002__lap_neraca_v2.sql",
+      "rollbackScript": "migrations/R20260628_002__lap_neraca_v2.sql",
+      "checkScript": "migrations/C20260628_002__lap_neraca_v2_check.sql"
     }
   ]
 }

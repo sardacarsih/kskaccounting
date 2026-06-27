@@ -527,7 +527,7 @@ namespace Accounting
             // 
             // barButtonItem42
             // 
-            barButtonItem42.Caption = "Pengaturan Laporan RL";
+            barButtonItem42.Caption = "Pengaturan Laporan";
             barButtonItem42.Id = 73;
             barButtonItem42.ImageOptions.Image = Properties.Resources.report_16x16;
             barButtonItem42.ImageOptions.LargeImage = Properties.Resources.report_32x32;
