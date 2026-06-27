@@ -11,29 +11,32 @@ namespace Accounting.DataLayer
     {
         private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
 
-        public Decimal Generate_LabaRugi(string piddata, int pbulan, int ptahun, string userid, string jenisakunting)
+        // Laba Rugi V2: generates and returns the Income Statement rows in a single
+        // round-trip. ACCT_LAPORAN_V2.LAP_LABARUGI_V2 delegates to the proven legacy
+        // generator (identical numbers) and streams the result back as a SYS_REFCURSOR,
+        // so the separate Generate + View calls are no longer needed.
+        // Uses a dedicated per-call connection (not the shared field) for safety.
+        public DataSet ViewLap_LabaRugi_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting)
         {
-            using (OracleCommand cmd = new OracleCommand("ACCT_LAPORAN.LAP_LABARUGI", conn)
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            connection.Open();
+            using OracleCommand cmd = new("ACCT_LAPORAN_V2.LAP_LABARUGI_V2", connection)
             {
-                CommandType = CommandType.StoredProcedure
-            })
-            {
-                if (conn.State != ConnectionState.Open)
-                {                    
-                    conn.Open();
-                }
-                //conn.Open();
-                cmd.Parameters.Add("LabaRugi", OracleDbType.Decimal).Direction = ParameterDirection.ReturnValue;
-                cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-                cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = pbulan;
-                cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = ptahun;
-                cmd.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
-                cmd.Parameters.Add(":jenisakunting", OracleDbType.Varchar2, 20).Value = jenisakunting;
-                cmd.ExecuteNonQuery();
-                Decimal result = Convert.ToDecimal(cmd.Parameters["LabaRugi"].Value.ToString());
-                conn.Close();
-                return result;
-            }
+                CommandType = CommandType.StoredProcedure,
+                BindByName = true,
+                CommandTimeout = 180
+            };
+            cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+            cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = pbulan;
+            cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = ptahun;
+            cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = userid;
+            cmd.Parameters.Add("p_JENISAKUNTING", OracleDbType.Varchar2, 20).Value = jenisakunting;
+            cmd.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using OracleDataAdapter sqlAdapter = new(cmd);
+            DataSet _ds = new();
+            sqlAdapter.Fill(_ds, "LabaRugi");
+            return _ds;
         }
 
         public decimal Generate_Jurnal_Closing(string piddata, int pbulan, int ptahun, string userid, string jenisakunting)
@@ -85,26 +88,6 @@ namespace Accounting.DataLayer
                 return result;
             }
         }
-        public DataSet ViewLap_LabaRugi(string piddata, string userid)
-        {
-            using (OracleCommand _command = new OracleCommand("select * from ACC_TMPLRNR where iddata=:p_IDDATA and usergen=:p_userid", conn)
-            {
-                CommandType = CommandType.Text
-            })
-            {
-                //conn.Open();                
-                _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-                _command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
-                OracleDataAdapter sqlAdapter = new OracleDataAdapter(_command);
-                DataSet _ds = new DataSet();
-                //Get the data in disconnected mode
-                sqlAdapter.Fill(_ds, "LabaRugi");
-                // return dataset result
-                return _ds;
-
-            }
-        }
-
         public DataSet ViewLap_Neraca(string piddata, int p_bulan, int p_tahun, string userid)
         {
             using (OracleCommand _command = new OracleCommand("ACCT_LAPORAN.LAP_NERACA", conn)

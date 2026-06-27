@@ -1,5 +1,4 @@
-﻿using Accounting.BusinessLayer;
-using DevExpress.DataAccess.Sql.DataApi;
+using Accounting.BusinessLayer;
 using DevExpress.XtraReports.UI;
 using System;
 using System.Data;
@@ -7,18 +6,23 @@ using System.Windows.Forms;
 
 namespace Accounting.Laporan
 {
-    public partial class Income_statement : DevExpress.XtraReports.UI.XtraReport
+    // Laba Rugi (Income Statement) V2 report.
+    // Bound at runtime to the DataSet returned by LaporanServices.ViewLap_LabaRugi_V2
+    // (table "LabaRugi", sourced from ACCT_LAPORAN_V2.LAP_LABARUGI_V2 SYS_REFCURSOR).
+    // Drill-down reuses the existing shared sub-report services (GenerateSub_LabaRugi /
+    // ViewSub_LabaRugi + rsub_rl_DetailK/D) and the dynamic GL report.
+    public partial class Income_statement2 : DevExpress.XtraReports.UI.XtraReport
     {
-        public Income_statement()
+        public Income_statement2()
         {
             InitializeComponent();
         }
 
         private DataSet DSGL, DSSubRL;
+
         private void xrLabel10_BeforePrint(object sender, System.ComponentModel.CancelEventArgs e)
         {
             ((XRLabel)sender).Tag = GetCurrentRow();
-            
         }
 
         private void xrLabel10_PreviewClick(object sender, PreviewMouseEventArgs e)
@@ -29,7 +33,7 @@ namespace Accounting.Laporan
 
                 DataRowView dataRow = e.Brick.Value as DataRowView;
                 var userid = LoginInfo.userID;
-                var iddata =CompanyInfo.IDDATA;
+                var iddata = CompanyInfo.IDDATA;
                 var pbulan = (int)this.Parameters["PBULAN"].Value;
                 var p_sampaibulan = (int)this.Parameters["PBULAN"].Value;
                 var ptahun = (int)this.Parameters["PTAHUN"].Value;
@@ -38,17 +42,15 @@ namespace Accounting.Laporan
                 var kode = dataRow.Row["KODEACC"].ToString();
                 var SUB = dataRow.Row["SUB2"].ToString();
 
-                if (e.Brick.Text != "-" && string.IsNullOrEmpty(e.Brick.Text)==false)
+                if (e.Brick.Text != "-" && string.IsNullOrEmpty(e.Brick.Text) == false)
                 {
                     if (dataRow.Row["ISHEADER"].ToString() == "G")
                     {
-                        
                         if (dataRow.Row["TIPEACC"].ToString() == "PENDAPATAN")
                         {
-                            //1st generate 
+                            //1st generate
                             LaporanServices.GenerateSub_LabaRugi(iddata, pbulan, ptahun, kode, userid, "LABARUGI", "K");
                             DSSubRL = LaporanServices.ViewSub_LabaRugi(iddata, userid);
-                            DSSubRL.WriteXmlSchema("SubRL.xsd");
                             rsub_rl_DetailK detailReport = new rsub_rl_DetailK
                             {
                                 DataSource = DSSubRL
@@ -64,10 +66,9 @@ namespace Accounting.Laporan
                         }
                         else
                         {
-                            //1st generate 
+                            //1st generate
                             LaporanServices.GenerateSub_LabaRugi(iddata, pbulan, ptahun, kode, userid, "LABARUGI", "D");
                             DSSubRL = LaporanServices.ViewSub_LabaRugi(iddata, userid);
-                            //DSSubRL.WriteXmlSchema("SubRL.xsd");
                             rsub_rl_DetailD detailReport = new rsub_rl_DetailD
                             {
                                 DataSource = DSSubRL
@@ -81,19 +82,17 @@ namespace Accounting.Laporan
                             detailReport.RequestParameters = true;
                             detailReport.ShowPreviewDialog();
                         }
-                        
                     }
-                    else //if (dataRow.Row["ISHEADER"].ToString() == "D")
+                    else
                     {
                         var darikode = kode;
                         var sampaikode = kode;
                         //get data for report
-                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun,pbulan,p_sampaibulan, darikode, sampaikode, userid, "LABARUGI");
-                        //DSGL.WriteXmlSchema("GeneralLedger.xsd");
+                        DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun, pbulan, p_sampaibulan, darikode, sampaikode, userid, "LABARUGI");
 
                         if (dataRow.Row["TIPEACC"].ToString() != "PENDAPATAN")
                         {
-                            GeneralLedgerD2 laporan = new ()
+                            GeneralLedgerD2 laporan = new()
                             {
                                 DataSource = DSGL
                             };
@@ -106,13 +105,12 @@ namespace Accounting.Laporan
                             laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
                             laporan.Parameters["USERID"].Value = userid;
                             laporan.RequestParameters = true;
-                            ReportPrintTool tool = new (laporan);
+                            ReportPrintTool tool = new(laporan);
                             tool.ShowPreview();
                         }
                         else
                         {
-                           
-                            GeneralLedgerK2 laporan = new ()
+                            GeneralLedgerK2 laporan = new()
                             {
                                 DataSource = DSGL
                             };
@@ -125,12 +123,10 @@ namespace Accounting.Laporan
                             laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
                             laporan.Parameters["USERID"].Value = userid;
                             laporan.RequestParameters = true;
-                            ReportPrintTool tool = new (laporan);
+                            ReportPrintTool tool = new(laporan);
                             tool.ShowPreview();
                         }
-
                     }
-
                 }
             }
             catch (Exception ex)
@@ -141,7 +137,6 @@ namespace Accounting.Laporan
 
         private void xrLabel10_PreviewMouseMove(object sender, PreviewMouseEventArgs e)
         {
-           
         }
     }
 }
