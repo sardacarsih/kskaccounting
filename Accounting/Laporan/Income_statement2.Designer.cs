@@ -43,6 +43,8 @@ namespace Accounting.Laporan
             this.xrLabel11 = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLine1 = new DevExpress.XtraReports.UI.XRLine();
             this.label1 = new DevExpress.XtraReports.UI.XRLabel();
+            this.GroupHeader1 = new DevExpress.XtraReports.UI.GroupHeaderBand();
+            this.xrLabelSectionHeader = new DevExpress.XtraReports.UI.XRLabel();
             this.Detail = new DevExpress.XtraReports.UI.DetailBand();
             this.xrLabel10 = new DevExpress.XtraReports.UI.XRLabel();
             this.tNilai = new DevExpress.XtraReports.UI.XRLabel();
@@ -194,6 +196,34 @@ namespace Accounting.Laporan
             this.label1.Text = "LAPORAN LABA RUGI";
             this.label1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
             //
+            // GroupHeader1
+            //
+            this.GroupHeader1.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
+            this.xrLabelSectionHeader});
+            this.GroupHeader1.GroupFields.AddRange(new DevExpress.XtraReports.UI.GroupField[] {
+            new DevExpress.XtraReports.UI.GroupField("SETSUB", DevExpress.XtraReports.UI.XRColumnSortOrder.None)});
+            this.GroupHeader1.GroupUnion = DevExpress.XtraReports.UI.GroupUnion.WithFirstDetail;
+            this.GroupHeader1.HeightF = 23F;
+            this.GroupHeader1.Level = 1;
+            this.GroupHeader1.Name = "GroupHeader1";
+            this.GroupHeader1.RepeatEveryPage = true;
+            //
+            // xrLabelSectionHeader
+            //
+            this.xrLabelSectionHeader.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[TIPEACC]")});
+            this.xrLabelSectionHeader.Font = new DevExpress.Drawing.DXFont("Segoe UI Semibold", 9.75F);
+            this.xrLabelSectionHeader.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
+            this.xrLabelSectionHeader.Multiline = true;
+            this.xrLabelSectionHeader.Name = "xrLabelSectionHeader";
+            this.xrLabelSectionHeader.Padding = new DevExpress.XtraPrinting.PaddingInfo(6, 2, 0, 0, 100F);
+            this.xrLabelSectionHeader.SizeF = new System.Drawing.SizeF(472.8751F, 23F);
+            this.xrLabelSectionHeader.StyleName = "th";
+            this.xrLabelSectionHeader.StylePriority.UseFont = false;
+            this.xrLabelSectionHeader.StylePriority.UseTextAlignment = false;
+            this.xrLabelSectionHeader.Text = "xrLabelSectionHeader";
+            this.xrLabelSectionHeader.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
+            //
             // Detail
             //
             this.Detail.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
@@ -208,7 +238,7 @@ namespace Accounting.Laporan
             // xrLabel10
             //
             this.xrLabel10.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([TIPEACC]=\'TH\' ,\'th\' ,? )\n"),
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([TIPEACC]=\'TH\' or [ROWKIND]=\'S\' or [ROWKIND]=\'T\' ,\'th\' ,? )\n"),
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "ForeColor", "Iif([BULANINI]<0,\'Red\' ,\'Black\' )\n"),
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Tag", "[KODEACC]"),
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "iif([BULANINI]=0,\'-\',[BULANINI])")});
@@ -231,7 +261,7 @@ namespace Accounting.Laporan
             //
             this.tNilai.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "ForeColor", "Iif([TAHUNINI]<0,\'Red\' ,\'Black\' )\n"),
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([TIPEACC]=\'TH\' ,\'th\' ,? )\n"),
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([TIPEACC]=\'TH\' or [ROWKIND]=\'S\' or [ROWKIND]=\'T\' ,\'th\' ,? )\n"),
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Visible", "Iif([KODEACC]=\'H\' or [KODEACC]=\'TH\',false,?)"),
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "iif([TAHUNINI]\n=0,\'-\',[TAHUNINI]\n)\n")});
             this.tNilai.Font = new DevExpress.Drawing.DXFont("Segoe UI Semibold", 9.75F);
@@ -250,17 +280,18 @@ namespace Accounting.Laporan
             //
             this.xrLabel1.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[sub1]"),
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([TIPEACC]=\'TH\' ,\'th\' ,? )\n")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([TIPEACC]=\'TH\' or [ROWKIND]=\'S\' or [ROWKIND]=\'T\' ,\'th\' ,? )\n")});
             this.xrLabel1.Font = new DevExpress.Drawing.DXFont("Segoe UI Semibold", 9.75F);
             this.xrLabel1.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
             this.xrLabel1.Multiline = true;
             this.xrLabel1.Name = "xrLabel1";
-            this.xrLabel1.Padding = new DevExpress.XtraPrinting.PaddingInfo(6, 2, 0, 0, 100F);
+            this.xrLabel1.Padding = new DevExpress.XtraPrinting.PaddingInfo(24, 2, 0, 0, 100F);
             this.xrLabel1.SizeF = new System.Drawing.SizeF(472.8751F, 23F);
             this.xrLabel1.StylePriority.UseFont = false;
             this.xrLabel1.StylePriority.UseTextAlignment = false;
             this.xrLabel1.Text = "xrLabel1";
             this.xrLabel1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
+            this.xrLabel1.BeforePrint += new DevExpress.XtraReports.UI.BeforePrintEventHandler(this.xrLabel1_BeforePrint);
             //
             // ReportFooter
             //
@@ -387,6 +418,7 @@ namespace Accounting.Laporan
             this.TopMargin,
             this.BottomMargin,
             this.ReportHeader,
+            this.GroupHeader1,
             this.Detail,
             this.ReportFooter});
             this.DataMember = "LabaRugi";
@@ -423,6 +455,8 @@ namespace Accounting.Laporan
         private DevExpress.XtraReports.UI.ReportHeaderBand ReportHeader;
         private DevExpress.XtraReports.UI.XRLine xrLine1;
         private DevExpress.XtraReports.UI.XRLabel label1;
+        private DevExpress.XtraReports.UI.GroupHeaderBand GroupHeader1;
+        private DevExpress.XtraReports.UI.XRLabel xrLabelSectionHeader;
         private DevExpress.XtraReports.UI.DetailBand Detail;
         private DevExpress.XtraReports.UI.XRLabel tNilai;
         private DevExpress.XtraReports.UI.XRLabel xrLabel1;
