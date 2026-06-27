@@ -117,7 +117,7 @@ namespace Accounting.DataLayer
         {
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
-            using OracleCommand cmd = new("ACCT_JURNAL.JURNAL_CLOSING", connection)
+            using OracleCommand cmd = new("ACCT_JURNAL_CLOSING_V2.JURNAL_CLOSING", connection)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -259,6 +259,42 @@ namespace Accounting.DataLayer
             _command.Parameters.Add(":SAMPAIKODE", OracleDbType.Varchar2, 20).Value = SAMPAIKODE;
             _command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_Userid;
             _command.Parameters.Add(":DARILAPORAN", OracleDbType.Varchar2, 20).Value = DARILAPORAN;
+            using OracleDataAdapter sqlAdapter = new(_command);
+            DataSet _ds = new();
+            sqlAdapter.Fill(_ds, "BukuBesar");
+            return _ds;
+        }
+
+        // Hierarchy-aware general ledger for Laba Rugi drill-down: returns acct_jurnal_dtl
+        // transactions for the clicked account AND all its descendant leaf accounts (the COA
+        // tree is linked by PARENTACC, not code prefix, so a code range cannot capture children).
+        // Same column shape as the LABARUGI branch of ACCT_LAPORAN.LAP_DYNAMIC_GL, so the
+        // GeneralLedgerD2/K2 reports (DataMember "BukuBesar") render it unchanged.
+        public DataSet ViewLap_BukuBesar_Tree(string P_IDDATA, int p_tahun, int p_bulan, int p_sampaibulan, string p_kode)
+        {
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            connection.Open();
+            using OracleCommand _command = new(
+                @"SELECT periode, kode, rekening, nojurnal, tanggal, keterangan, debet, kredit
+                    FROM acct_jurnal_dtl
+                   WHERE IDDATA = :p_iddata AND glyear = :p_tahun
+                     AND glmonth BETWEEN :p_bulan AND :p_sampaibulan
+                     AND KODE IN (
+                          SELECT KODEACC FROM ACCT_COA
+                           WHERE IDDATA = :p_iddata AND TAHUN = :p_tahun
+                           START WITH KODEACC = :p_kode
+                           CONNECT BY NOCYCLE PRIOR KODEACC = PARENTACC)
+                   ORDER BY kode, tanggal, nojurnal ASC", connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName = true,
+                CommandTimeout = 180
+            };
+            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = P_IDDATA;
+            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
+            _command.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
+            _command.Parameters.Add(":p_sampaibulan", OracleDbType.Int16).Value = p_sampaibulan;
+            _command.Parameters.Add(":p_kode", OracleDbType.Varchar2, 30).Value = p_kode;
             using OracleDataAdapter sqlAdapter = new(_command);
             DataSet _ds = new();
             sqlAdapter.Fill(_ds, "BukuBesar");
