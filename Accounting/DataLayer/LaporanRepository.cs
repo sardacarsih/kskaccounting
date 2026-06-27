@@ -170,6 +170,61 @@ namespace Accounting.DataLayer
             return _ds;
         }
 
+        public List<NeracaRow> ViewLap_NeracaRows_V2(string piddata, int p_bulan, int p_tahun, string userid)
+        {
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            connection.Open();
+            using OracleCommand _command = new("ACCT_LAPORAN_V2.LAP_NERACA_V2", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                BindByName = true,
+                CommandTimeout = 180
+            };
+            _command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+            _command.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
+            _command.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
+            _command.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = userid;
+            _command.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using OracleDataAdapter sqlAdapter = new(_command);
+            DataSet ds = new();
+            sqlAdapter.Fill(ds, "Neraca");
+
+            DataTable table = GetRequiredTable(ds, "Neraca", NeracaRow.RequiredColumns);
+            List<NeracaRow> rows = new();
+
+            foreach (DataRow row in table.Rows)
+            {
+                rows.Add(NeracaRow.FromDataRow(row));
+            }
+
+            return rows;
+        }
+
+        public DataSet ViewSub_Neraca(string piddata, int p_bulan, int p_tahun, string p_kodeacc, string userid, string posisi)
+        {
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            connection.Open();
+            using OracleCommand _command = new("ACCT_LAPORAN_V2.LAP_NERACA_SUB_V2", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                BindByName = true,
+                CommandTimeout = 180
+            };
+            _command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+            _command.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
+            _command.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
+            _command.Parameters.Add("p_KODEACC", OracleDbType.Varchar2, 30).Value = p_kodeacc;
+            _command.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = userid;
+            _command.Parameters.Add("p_POSISI", OracleDbType.Varchar2, 20).Value = posisi;
+            _command.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using OracleDataAdapter sqlAdapter = new(_command);
+            DataSet ds = new();
+            sqlAdapter.Fill(ds, "Neraca");
+            return ds;
+        }
+
         public DataSet ViewSub_LabaRugi(string piddata, string userid)
         {
             using OracleConnection connection = new(LoginInfo.OracleConnString);
