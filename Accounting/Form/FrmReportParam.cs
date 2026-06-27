@@ -136,6 +136,25 @@ namespace Accounting.Form
             XtraMessageBox.Show(readiness.Message, caption, MessageBoxButtons.OK, icon);
             return false;
         }
+
+        private static bool TryEnsureNeracaReady(string piddata, string periode, int pbulan, int ptahun)
+        {
+            NeracaReadinessResult readiness = NeracaReportService.CheckReadiness(piddata, periode, pbulan, ptahun);
+            if (readiness.IsReady)
+            {
+                return true;
+            }
+
+            MessageBoxIcon icon = readiness.Failure == NeracaReadinessFailure.NotBalanced
+                ? MessageBoxIcon.Warning
+                : MessageBoxIcon.Information;
+            string caption = readiness.Failure == NeracaReadinessFailure.NotBalanced
+                ? "Neraca Belum Balance"
+                : "info";
+
+            XtraMessageBox.Show(readiness.Message, caption, MessageBoxButtons.OK, icon);
+            return false;
+        }
         private void sbexport_Click(object sender, EventArgs e)
         {
             if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanExportReports))
@@ -229,13 +248,13 @@ namespace Accounting.Form
                 }
                 if (radioGroup1.SelectedIndex == 1)
                 {
-                    ////cek record jurnal exist ?
-
-                    //var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
-                    //if (record == 0) { XtraMessageBox.Show("Belum ada transaksi jurnal", "info", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+                    if (!TryEnsureNeracaReady(iddata, periode, pbulan, p_daritahun))
+                    {
+                        return;
+                    }
 
                     //get data for report
-                    DSNeraca = LaporanServices.ViewLap_Neraca(iddata, pbulan, p_daritahun, userid);
+                    DSNeraca = NeracaReportService.LoadReportDataSet(iddata, pbulan, p_daritahun, userid);
                     DataTable dt = new DataTable();
                     dt = DSNeraca.Tables[0];
 
@@ -285,13 +304,13 @@ namespace Accounting.Form
                 }
                 if (radioGroup1.SelectedIndex == 2)
                 {
-                    ////cek record jurnal exist ?
-
-                    //var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
-                    //if (record == 0) { XtraMessageBox.Show("Belum ada transaksi jurnal", "info", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+                    if (!TryEnsureNeracaReady(iddata, periode, pbulan, p_daritahun))
+                    {
+                        return;
+                    }
 
                     //get data for report
-                    DSNeraca = LaporanServices.ViewLap_Neraca(iddata, pbulan, p_daritahun, userid);
+                    DSNeraca = NeracaReportService.LoadReportDataSet(iddata, pbulan, p_daritahun, userid);
                     //DSNeraca.WriteXmlSchema("Neraca.xsd");
 
 
@@ -665,8 +684,12 @@ namespace Accounting.Form
             iddata =CompanyInfo.IDDATA;
             var iskebun = CompanyInfo.JENIS_AKUNTING;
             var userid = LoginInfo.userID;
+            if (!TryEnsureNeracaReady(iddata, periode, pbulan, ptahun))
+            {
+                return;
+            }
             //get data for report
-            DSNeraca = LaporanServices.ViewLap_Neraca(iddata, pbulan, ptahun, userid);
+            DSNeraca = NeracaReportService.LoadReportDataSet(iddata, pbulan, ptahun, userid);
             //DSNeraca.WriteXmlSchema("Neraca.xsd");
 
 
@@ -878,8 +901,13 @@ namespace Accounting.Form
                     //var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
                     //if (record == 0) { XtraMessageBox.Show("Belum ada transaksi jurnal", "info", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
 
+                    if (!TryEnsureNeracaReady(iddata, periode, pbulan, p_daritahun))
+                    {
+                        return;
+                    }
+
                     //get data for report
-                    DSNeraca = LaporanServices.ViewLap_Neraca(iddata, pbulan, p_daritahun, userid);
+                    DSNeraca = NeracaReportService.LoadReportDataSet(iddata, pbulan, p_daritahun, userid);
                     //DSNeraca.WriteXmlSchema("Neraca.xsd");
 
 
@@ -911,13 +939,13 @@ namespace Accounting.Form
                     //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     //    return;
                     //}
-                    ////cek record jurnal exist ?
-
-                    //var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
-                    //if (record == 0) { XtraMessageBox.Show("Belum ada transaksi jurnal", "info", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+                    if (!TryEnsureNeracaReady(iddata, periode, pbulan, p_daritahun))
+                    {
+                        return;
+                    }
 
                     //get data for report
-                    DSNeraca = LaporanServices.ViewLap_Neraca(iddata, pbulan, p_daritahun, userid);
+                    DSNeraca = NeracaReportService.LoadReportDataSet(iddata, pbulan, p_daritahun, userid);
                     //DSNeraca.WriteXmlSchema("Neraca.xsd");
 
 
