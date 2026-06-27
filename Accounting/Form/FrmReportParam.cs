@@ -26,7 +26,6 @@ namespace Accounting.Form
 {
     public partial class FrmReportParam : DevExpress.XtraEditors.XtraForm
     {
-        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
         public FrmReportParam()
         {
             InitializeComponent();
@@ -81,23 +80,18 @@ namespace Accounting.Form
             string p_iddata =CompanyInfo.IDDATA;
             string sql = @"select kodeacc KODE,namaacc PERKIRAAN,POSISI,GRP from acct_coa 
                             where iddata=:iddata and tahun=:ptahun AND ISHEADER = 'D' order by kodeacc asc";
-            using (OracleCommand _command = new(sql, conn)
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            connection.Open();
+            using (OracleCommand _command = new(sql, connection)
             {
                 CommandType = CommandType.Text
             })
             {
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
                 _command.Parameters.Add(":iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
                 _command.Parameters.Add(":ptahun", OracleDbType.Int16).Value = ptahun;
-                OracleDataReader dr;
-                dr = _command.ExecuteReader();
+                using OracleDataReader dr = _command.ExecuteReader();
                 DataTable _dt = new DataTable();
                 _dt.Load(dr);
-                dr.Close();
-                conn.Close();
 
                 this.searchLookUpEdit1.Properties.DataSource = _dt;
                 searchLookUpEdit1.Properties.ValueMember = "KODE";
