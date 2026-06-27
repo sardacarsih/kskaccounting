@@ -11,10 +11,10 @@ namespace Accounting.DataLayer
     public interface ILaporanRepository
     {
         Decimal Balanced_Check(string piddata, int pbulan, int ptahun);
-        Decimal Generate_LabaRugi(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
         Decimal Generate_Jurnal_Closing(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
         int GenerateSub_LabaRugi(string p_IDDATA, int p_bulan, int p_tahun, string p_kodeacc, string userid, string lap, string posisi);
-        DataSet ViewLap_LabaRugi(string piddata,string userid);
+        // Laba Rugi V2: generate + fetch in a single round-trip via SYS_REFCURSOR (package ACCT_LAPORAN_V2).
+        DataSet ViewLap_LabaRugi_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
         DataSet ViewLap_Neraca(string piddata, int p_bulan, int p_tahun, string userid);
         DataSet ViewLap_NeracaHalfYear(string piddata, int p_tahun, string userid, int ishalf);
         DataTable ViewLap_NeracaKonsolidasi(int p_tahun, string p_pt,int p_bulan, string userid);
