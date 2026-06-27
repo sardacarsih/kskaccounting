@@ -1,4 +1,4 @@
-﻿using Accounting.Model;
+using Accounting.Model;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -14,7 +14,10 @@ namespace Accounting.DataLayer
         Decimal Generate_Jurnal_Closing(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
         int GenerateSub_LabaRugi(string p_IDDATA, int p_bulan, int p_tahun, string p_kodeacc, string userid, string lap, string posisi);
         // Laba Rugi V2: generate + fetch in a single round-trip via SYS_REFCURSOR (package ACCT_LAPORAN_V2).
+        DataSet ViewAccountingReport(string piddata, int pbulan, int ptahun, string userid, string reportCode, string jenisakunting);
+        DataSet ViewAccountingReportDrillDown(string piddata, int pbulan, int ptahun, string reportCode, int sectionId, string kodeacc);
         DataSet ViewLap_LabaRugi_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
+        List<LabaRugiRow> ViewLap_LabaRugiRows_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
         DataSet ViewLap_Neraca(string piddata, int p_bulan, int p_tahun, string userid);
         DataSet ViewLap_NeracaHalfYear(string piddata, int p_tahun, string userid, int ishalf);
         DataTable ViewLap_NeracaKonsolidasi(int p_tahun, string p_pt,int p_bulan, string userid);

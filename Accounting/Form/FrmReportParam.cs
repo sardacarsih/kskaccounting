@@ -1,4 +1,4 @@
-﻿using Accounting.BusinessLayer;
+using Accounting.BusinessLayer;
 using Accounting.Laporan;
 using Accounting.Model;
 using DevExpress.ClipboardSource.SpreadsheetML;
@@ -117,30 +117,24 @@ namespace Accounting.Form
         {
             cmbbulan2.SelectedIndex = cmbbulan.SelectedIndex;
         }
-        // Laba Rugi V2 export source: reuses the single-round-trip V2 generator and
-        // projects the three export columns (KETERANGAN, BULANINI, TAHUNINI) from the
-        // returned "LabaRugi" table instead of reading acc_tmplrnr directly.
-        private DataTable ExportLR(string piddata, int pbulan, int ptahun, string puserid, string jenisakunting)
+
+        private static bool TryEnsureLabaRugiReady(string piddata, string periode, int pbulan, int ptahun)
         {
-            DataSet ds = LaporanServices.ViewLap_LabaRugi_V2(piddata, pbulan, ptahun, puserid, jenisakunting);
-            DataTable src = ds.Tables["LabaRugi"];
-
-            DataTable _dt = new();
-            _dt.Columns.Add("KETERANGAN", typeof(string));
-            _dt.Columns.Add("BULANINI", typeof(decimal));
-            _dt.Columns.Add("TAHUNINI", typeof(decimal));
-
-            if (src != null)
+            LabaRugiReadinessResult readiness = LabaRugiReportService.CheckReadiness(piddata, periode, pbulan, ptahun);
+            if (readiness.IsReady)
             {
-                foreach (DataRow r in src.Rows)
-                {
-                    _dt.Rows.Add(
-                        r["SUB1"] == DBNull.Value ? string.Empty : r["SUB1"].ToString(),
-                        r["BULANINI"] == DBNull.Value ? 0m : Convert.ToDecimal(r["BULANINI"]),
-                        r["TAHUNINI"] == DBNull.Value ? 0m : Convert.ToDecimal(r["TAHUNINI"]));
-                }
+                return true;
             }
-            return _dt;
+
+            MessageBoxIcon icon = readiness.Failure == LabaRugiReadinessFailure.NotBalanced
+                ? MessageBoxIcon.Warning
+                : MessageBoxIcon.Information;
+            string caption = readiness.Failure == LabaRugiReadinessFailure.NotBalanced
+                ? "Neraca Belum Balance"
+                : "info";
+
+            XtraMessageBox.Show(readiness.Message, caption, MessageBoxButtons.OK, icon);
+            return false;
         }
         private void sbexport_Click(object sender, EventArgs e)
         {
@@ -184,17 +178,13 @@ namespace Accounting.Form
 
                 if (radioGroup1.SelectedIndex == 0)
                 {
-                    //cek record jurnal exist ?
-                    var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
-                    if (record == 0)
+                    if (!TryEnsureLabaRugiReady(iddata, periode, pbulan, p_daritahun))
                     {
-                        XtraMessageBox.Show("Belum ada transaksi jurnal", "info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
                         return;
                     }
 
                     //generate + get data in a single round-trip (Laba Rugi V2)
-                    DataTable dt = ExportLR(iddata, pbulan, p_daritahun, userid, jenis);
+                    DataTable dt = LabaRugiReportService.LoadExportDataTable(iddata, pbulan, p_daritahun, userid, jenis);
 
                     using ExcelPackage package = new ();
 
@@ -225,7 +215,7 @@ namespace Accounting.Form
 
                         Byte[] bin = package.GetAsByteArray();
                         string tempPath = Path.GetTempPath();
-                        string file = tempPath + "LabaRugi.xlsx";
+                        string file = Path.Combine(tempPath, $"LabaRugi_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
                         File.WriteAllBytes(file, bin);
 
                         //These lines will open it in Excel
@@ -850,16 +840,13 @@ namespace Accounting.Form
                     //    return;
                     //}
 
-                    //cek record jurnal exist ?
-                    var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
-                    if (record == 0) 
-                    { 
-                        XtraMessageBox.Show("Belum ada transaksi jurnal", "info", MessageBoxButtons.OK, MessageBoxIcon.Information);                         
-                        return; 
+                    if (!TryEnsureLabaRugiReady(iddata, periode, pbulan, p_daritahun))
+                    {
+                        return;
                     }
 
                     //generate + get data in a single round-trip (Laba Rugi V2)
-                    DSLabaRugi = LaporanServices.ViewLap_LabaRugi_V2(iddata, pbulan, p_daritahun, userid, CompanyInfo.JENIS_AKUNTING);
+                    DSLabaRugi = LabaRugiReportService.LoadReportDataSet(iddata, pbulan, p_daritahun, userid, CompanyInfo.JENIS_AKUNTING);
 
                     Income_statement2 laporan = new Income_statement2
                     {
