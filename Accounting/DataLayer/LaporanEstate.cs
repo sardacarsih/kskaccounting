@@ -1,17 +1,11 @@
-﻿using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Client;
 using System;
-using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Accounting.DataLayer
 {
     public class LaporanEstate : ILaporanEstate
     {
-        private readonly OracleConnection conn = new( LoginInfo.OracleConnString);
 
         public DataTable Divisi(string p_iddata, int p_tahun)
         {
@@ -25,24 +19,19 @@ namespace Accounting.DataLayer
 
         public DataSet TBM_BYDIVISI_Quarter(string p_iddata, int p_tahun, string p_quarter)
         {
-            using (OracleCommand _command = new OracleCommand("ACCT_LAP_ESTATE.TBM_BYDIVISI_Quarter", conn)
+            using OracleConnection conn = new(LoginInfo.OracleConnString);
+            using OracleCommand _command = new("ACCT_LAP_ESTATE.TBM_BYDIVISI_Quarter", conn)
             {
                 CommandType = CommandType.StoredProcedure
-            })
-            {
-                //conn.Open();                
-                _command.Parameters.Add("Quarter", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-                _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
-                _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-                _command.Parameters.Add(":p_quarter", OracleDbType.Varchar2, 20).Value = p_quarter;
-                OracleDataAdapter sqlAdapter = new OracleDataAdapter(_command);
-                DataSet _ds = new DataSet();
-                //Get the data in disconnected mode
-                sqlAdapter.Fill(_ds, "Quarter");
-                // return dataset result
-                return _ds;
-            }
-        
+            };
+            _command.Parameters.Add("Quarter", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
+            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
+            _command.Parameters.Add(":p_quarter", OracleDbType.Varchar2, 20).Value = p_quarter;
+            using OracleDataAdapter sqlAdapter = new(_command);
+            DataSet _ds = new();
+            sqlAdapter.Fill(_ds, "Quarter");
+            return _ds;
         }
 
         public DataSet TBM_BYDIVISI_Semester(string p_iddata, int p_tahun, string p_semester)
@@ -62,23 +51,19 @@ namespace Accounting.DataLayer
 
         public DataSet TM_BYDIVISI_Quarter(string p_iddata, int p_tahun, string p_quarter)
         {
-            using (OracleCommand _command = new OracleCommand("ACCT_LAP_ESTATE.TM_BYDIVISI_Quarter", conn)
+            using OracleConnection conn = new(LoginInfo.OracleConnString);
+            using OracleCommand _command = new("ACCT_LAP_ESTATE.TM_BYDIVISI_Quarter", conn)
             {
                 CommandType = CommandType.StoredProcedure
-            })
-            {
-                //conn.Open();                
-                _command.Parameters.Add("Quarter", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-                _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
-                _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-                _command.Parameters.Add(":p_quarter", OracleDbType.Varchar2, 20).Value = p_quarter;
-                OracleDataAdapter sqlAdapter = new OracleDataAdapter(_command);
-                DataSet _ds = new DataSet();
-                //Get the data in disconnected mode
-                sqlAdapter.Fill(_ds, "Quarter");
-                // return dataset result
-                return _ds;
-            }
+            };
+            _command.Parameters.Add("Quarter", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
+            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = p_iddata;
+            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
+            _command.Parameters.Add(":p_quarter", OracleDbType.Varchar2, 20).Value = p_quarter;
+            using OracleDataAdapter sqlAdapter = new(_command);
+            DataSet _ds = new();
+            sqlAdapter.Fill(_ds, "Quarter");
+            return _ds;
         }
 
         public DataSet TM_BYDIVISI_Semester(string p_iddata, int p_tahun, string p_semester)
