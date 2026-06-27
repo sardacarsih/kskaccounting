@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.06.27.1",
+  "version": "2026.06.27.9",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -235,12 +235,76 @@
       "checkScript": "migrations/C20260626_005__recalc_v2_period_entrypoint_check.sql"
     },
     {
-      "id": "20260627_001_lap_labarugi_v2",
-      "order": 30,
-      "description": "Add Laba Rugi V2 entrypoint package ACCT_LAPORAN_V2.LAP_LABARUGI_V2 (single-round-trip SYS_REFCURSOR) while keeping legacy ACCT_LAPORAN.LAP_LABARUGI intact.",
-      "script": "migrations/V20260627_001__lap_labarugi_v2.sql",
-      "rollbackScript": "migrations/R20260627_001__lap_labarugi_v2.sql",
-      "checkScript": "migrations/C20260627_001__lap_labarugi_v2_check.sql"
+      "id": "20260627_003_lap_labarugi_v2_table_lock",
+      "order": 32,
+      "description": "Replace Laba Rugi V2 DBMS_LOCK dependency with schema-owned table locking so package compilation does not require a direct DBMS_LOCK grant.",
+      "script": "migrations/V20260627_003__lap_labarugi_v2_table_lock.sql",
+      "rollbackScript": "migrations/R20260627_003__lap_labarugi_v2_table_lock.sql",
+      "checkScript": "migrations/C20260627_003__lap_labarugi_v2_table_lock_check.sql"
+    },
+    {
+      "id": "20260627_004_acct_report_engine_v1",
+      "order": 33,
+      "description": "Add metadata-driven accounting report engine based on ACCT_COA and route Laba Rugi V2 through it.",
+      "script": "migrations/V20260627_004__acct_report_engine_v1.sql",
+      "rollbackScript": "migrations/R20260627_004__acct_report_engine_v1.sql",
+      "checkScript": "migrations/C20260627_004__acct_report_engine_v1_check.sql"
+    },
+    {
+      "id": "20260627_005_acct_report_engine_v1_compile_fix",
+      "order": 34,
+      "description": "Expose ACCT_REPORT_ENGINE_V1.NetAmount so Oracle SQL cursors can compile package body calls.",
+      "script": "migrations/V20260627_005__acct_report_engine_v1_compile_fix.sql",
+      "rollbackScript": "migrations/R20260627_005__acct_report_engine_v1_compile_fix.sql",
+      "checkScript": "migrations/C20260627_005__acct_report_engine_v1_compile_fix_check.sql"
+    },
+    {
+      "id": "20260627_006_acct_report_labarugi_default_roots",
+      "order": 35,
+      "description": "Correct default LABARUGI report root account mappings to match ACCT_COA code format.",
+      "script": "migrations/V20260627_006__acct_report_labarugi_default_roots.sql",
+      "rollbackScript": "migrations/R20260627_006__acct_report_labarugi_default_roots.sql",
+      "checkScript": "migrations/C20260627_006__acct_report_labarugi_default_roots_check.sql"
+    },
+    {
+      "id": "20260627_007_remove_legacy_labarugi_subreport",
+      "order": 36,
+      "description": "Remove legacy Laba Rugi sub-report dependency from ACCT_LAPORAN_V2.",
+      "script": "migrations/V20260627_007__remove_legacy_labarugi_subreport.sql",
+      "rollbackScript": "migrations/R20260627_007__remove_legacy_labarugi_subreport.sql",
+      "checkScript": "migrations/C20260627_007__remove_legacy_labarugi_subreport_check.sql"
+    },
+    {
+      "id": "20260627_008_labarugi_display_level_fix",
+      "order": 37,
+      "description": "Restore Laba Rugi display level filtering and account labels for metadata report engine.",
+      "script": "migrations/V20260627_008__labarugi_display_level_fix.sql",
+      "rollbackScript": "migrations/R20260627_008__labarugi_display_level_fix.sql",
+      "checkScript": "migrations/C20260627_008__labarugi_display_level_fix_check.sql"
+    },
+    {
+      "id": "20260627_009_labarugi_cleanup_orphan_roots",
+      "order": 38,
+      "description": "Deactivate orphan Laba Rugi root mappings that do not match formatted ACCT_COA codes.",
+      "script": "migrations/V20260627_009__labarugi_cleanup_orphan_roots.sql",
+      "rollbackScript": "migrations/R20260627_009__labarugi_cleanup_orphan_roots.sql",
+      "checkScript": "migrations/C20260627_009__labarugi_cleanup_orphan_roots_check.sql"
+    },
+    {
+      "id": "20260627_010_labarugi_engine_expose_posisi",
+      "order": 39,
+      "description": "Expose section NORMAL_POSISI as POSISI in ACCT_REPORT_ENGINE_V1.GET_REPORT for client-side Laba Rugi result lines.",
+      "script": "migrations/V20260627_010__labarugi_engine_expose_posisi.sql",
+      "rollbackScript": "migrations/R20260627_010__labarugi_engine_expose_posisi.sql",
+      "checkScript": "migrations/C20260627_010__labarugi_engine_expose_posisi_check.sql"
+    },
+    {
+      "id": "20260627_011_labarugi_add_full_sections",
+      "order": 40,
+      "description": "Add full Laba Rugi sections (Biaya Bunga, PPh Badan, Lain-lain Anak Perusahaan) and move Biaya TM to the end.",
+      "script": "migrations/V20260627_011__labarugi_add_full_sections.sql",
+      "rollbackScript": "migrations/R20260627_011__labarugi_add_full_sections.sql",
+      "checkScript": "migrations/C20260627_011__labarugi_add_full_sections_check.sql"
     }
   ]
 }

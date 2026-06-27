@@ -1,4 +1,4 @@
-﻿using Accounting.DataLayer;
+using Accounting.DataLayer;
 using Accounting.Model;
 using System;
 using System.Collections.Generic;
@@ -20,10 +20,24 @@ namespace Accounting.BusinessLayer
         {
             return repository.Balanced_Check(piddata, p_bulan, p_tahun);
         }
+        public static DataSet ViewAccountingReport(string piddata, int p_bulan, int p_tahun, string p_Userid, string reportCode, string jenisakunting)
+        {
+            return repository.ViewAccountingReport(piddata, p_bulan, p_tahun, p_Userid, reportCode, jenisakunting);
+        }
+
+        public static DataSet ViewAccountingReportDrillDown(string piddata, int p_bulan, int p_tahun, string reportCode, int sectionId, string p_kodeacc)
+        {
+            return repository.ViewAccountingReportDrillDown(piddata, p_bulan, p_tahun, reportCode, sectionId, p_kodeacc);
+        }
+
         // Laba Rugi V2: single round-trip generate + fetch (package ACCT_LAPORAN_V2).
         public static DataSet ViewLap_LabaRugi_V2(string piddata, int p_bulan, int p_tahun, string p_Userid, string jenisakunting)
         {
             return repository.ViewLap_LabaRugi_V2(piddata, p_bulan, p_tahun, p_Userid, jenisakunting);
+        }
+        public static List<LabaRugiRow> ViewLap_LabaRugiRows_V2(string piddata, int p_bulan, int p_tahun, string p_Userid, string jenisakunting)
+        {
+            return repository.ViewLap_LabaRugiRows_V2(piddata, p_bulan, p_tahun, p_Userid, jenisakunting);
         }
         public static Decimal Generate_Jurnal_Closing(string piddata, int p_bulan, int p_tahun, string p_Userid, string jenisakunting)
         {

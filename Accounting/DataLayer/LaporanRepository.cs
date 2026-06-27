@@ -8,20 +8,18 @@ namespace Accounting.DataLayer
 {
     public class LaporanRepository : ILaporanRepository
     {
+
         // Each method opens and disposes its own connection (per-call), so the
         // repository is stateless and safe to reuse. Avoid a shared connection
         // field: it is not thread-safe and leaks/leaves connections in an
         // inconsistent open/closed state.
-
-        // Laba Rugi V2: generates and returns the Income Statement rows in a single
-        // round-trip. ACCT_LAPORAN_V2.LAP_LABARUGI_V2 delegates to the proven legacy
-        // generator (identical numbers) and streams the result back as a SYS_REFCURSOR,
-        // so the separate Generate + View calls are no longer needed.
-        public DataSet ViewLap_LabaRugi_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting)
+        // Accounting report V1 reads report metadata and ACCT_COA hierarchy in one
+        // round-trip. Laba Rugi V2 remains a compatibility wrapper over this path.
+        public DataSet ViewAccountingReport(string piddata, int pbulan, int ptahun, string userid, string reportCode, string jenisakunting)
         {
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
-            using OracleCommand cmd = new("ACCT_LAPORAN_V2.LAP_LABARUGI_V2", connection)
+            using OracleCommand cmd = new("ACCT_REPORT_ENGINE_V1.GET_REPORT", connection)
             {
                 CommandType = CommandType.StoredProcedure,
                 BindByName = true,
@@ -31,15 +29,90 @@ namespace Accounting.DataLayer
             cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = pbulan;
             cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = ptahun;
             cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = userid;
+            cmd.Parameters.Add("p_REPORT_CODE", OracleDbType.Varchar2, 30).Value = reportCode;
             cmd.Parameters.Add("p_JENISAKUNTING", OracleDbType.Varchar2, 20).Value = jenisakunting;
             cmd.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
             using OracleDataAdapter sqlAdapter = new(cmd);
-            DataSet _ds = new();
-            sqlAdapter.Fill(_ds, "LabaRugi");
-            return _ds;
+            DataSet ds = new();
+            sqlAdapter.Fill(ds, reportCode);
+            return ds;
         }
 
+        public DataSet ViewAccountingReportDrillDown(string piddata, int pbulan, int ptahun, string reportCode, int sectionId, string kodeacc)
+        {
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            connection.Open();
+            using OracleCommand cmd = new("ACCT_REPORT_ENGINE_V1.GET_DRILLDOWN", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                BindByName = true,
+                CommandTimeout = 180
+            };
+            cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+            cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = pbulan;
+            cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = ptahun;
+            cmd.Parameters.Add("p_REPORT_CODE", OracleDbType.Varchar2, 30).Value = reportCode;
+            cmd.Parameters.Add("p_SECTION_ID", OracleDbType.Int32).Value = sectionId;
+            cmd.Parameters.Add("p_KODEACC", OracleDbType.Varchar2, 30).Value = kodeacc;
+            cmd.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using OracleDataAdapter sqlAdapter = new(cmd);
+            DataSet ds = new();
+            sqlAdapter.Fill(ds, "ReportDrillDown");
+            return ds;
+        }
+
+        public DataSet ViewLap_LabaRugi_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting)
+        {
+            DataSet ds = ViewAccountingReport(piddata, pbulan, ptahun, userid, "LABARUGI", jenisakunting);
+            ds.Tables[0].TableName = "LabaRugi";
+            return ds;
+        }
+
+        public List<LabaRugiRow> ViewLap_LabaRugiRows_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting)
+        {
+            DataSet ds = ViewLap_LabaRugi_V2(piddata, pbulan, ptahun, userid, jenisakunting);
+            DataTable table = GetRequiredTable(ds, "LabaRugi", LabaRugiRow.RequiredColumns);
+            List<LabaRugiRow> rows = new();
+
+            foreach (DataRow row in table.Rows)
+            {
+                rows.Add(LabaRugiRow.FromDataRow(row));
+            }
+
+            return rows;
+        }
+
+        private static DataTable GetRequiredTable(DataSet ds, string tableName, IReadOnlyCollection<string> requiredColumns)
+        {
+            if (ds == null)
+            {
+                throw new InvalidOperationException($"Data laporan tidak memiliki tabel {tableName}.");
+            }
+
+            DataTable table = ds.Tables[tableName];
+            if (table == null)
+            {
+                throw new InvalidOperationException($"Data laporan tidak memiliki tabel {tableName}.");
+            }
+
+            List<string> missingColumns = new();
+            foreach (string column in requiredColumns)
+            {
+                if (!table.Columns.Contains(column))
+                {
+                    missingColumns.Add(column);
+                }
+            }
+
+            if (missingColumns.Count > 0)
+            {
+                throw new InvalidOperationException($"Data laporan {tableName} tidak lengkap. Kolom hilang: {string.Join(", ", missingColumns)}.");
+            }
+
+            return table;
+        }
         public decimal Generate_Jurnal_Closing(string piddata, int pbulan, int ptahun, string userid, string jenisakunting)
         {
             using OracleConnection connection = new(LoginInfo.OracleConnString);
