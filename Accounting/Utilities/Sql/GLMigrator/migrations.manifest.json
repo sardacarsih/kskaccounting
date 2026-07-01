@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.06.28.2",
+  "version": "2026.07.01.2",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -321,6 +321,46 @@
       "script": "migrations/V20260628_002__lap_neraca_v2.sql",
       "rollbackScript": "migrations/R20260628_002__lap_neraca_v2.sql",
       "checkScript": "migrations/C20260628_002__lap_neraca_v2_check.sql"
+    },
+    {
+      "id": "20260701_001_recalc_v2_period_entrypoint_repair",
+      "order": 43,
+      "description": "Reapply ACCT_RECALLCULATIONS_V2.ReCalcPeriod so COA import and saldo recalc use the V2 period entrypoint.",
+      "script": "migrations/V20260701_001__recalc_v2_period_entrypoint_repair.sql",
+      "rollbackScript": "migrations/R20260701_001__recalc_v2_period_entrypoint_repair.sql",
+      "checkScript": "migrations/C20260701_001__recalc_v2_period_entrypoint_repair_check.sql"
+    },
+    {
+      "id": "20260701_002_jurnal_closing_v2_recalc_repair",
+      "order": 44,
+      "description": "Repair ACCT_JURNAL_CLOSING_V2 so closing recalculates balances through ACCT_RECALLCULATIONS_V2.ReCalcPeriod instead of legacy ACCT_RECALLCULATIONS.",
+      "script": "migrations/V20260701_002__jurnal_closing_v2_recalc_repair.sql",
+      "rollbackScript": "migrations/R20260701_002__jurnal_closing_v2_recalc_repair.sql",
+      "checkScript": "migrations/C20260701_002__jurnal_closing_v2_recalc_repair_check.sql"
+    },
+    {
+      "id": "20260701_003_closing_year_v2_orchestrator",
+      "order": 45,
+      "description": "Add ACCT_CLOSING_YEAR_V2 server-side orchestrator for Tutup Tahun without relying on legacy ACCT_JURNAL.GetStatusLock.",
+      "script": "migrations/V20260701_003__closing_year_v2_orchestrator.sql",
+      "rollbackScript": "migrations/R20260701_003__closing_year_v2_orchestrator.sql",
+      "checkScript": "migrations/C20260701_003__closing_year_v2_orchestrator_check.sql"
+    },
+    {
+      "id": "20260701_004_closing_year_v2_atomic",
+      "order": 46,
+      "description": "Make Tutup Tahun atomic (single commit) and gate BALANCED_CHECK on the closing-journal flag; JURNAL_CLOSING gains an optional p_commit so the orchestrator can defer its commit.",
+      "script": "migrations/V20260701_004__closing_year_v2_atomic.sql",
+      "rollbackScript": "migrations/R20260701_004__closing_year_v2_atomic.sql",
+      "checkScript": "migrations/C20260701_004__closing_year_v2_atomic_check.sql"
+    },
+    {
+      "id": "20260701_005_jurnal_re_v2",
+      "order": 47,
+      "description": "Add ACCT_JURNAL_RE_V2 reversal-journal recompute via ACCT_RECALLCULATIONS_V2 and repoint ACCT_CLOSING_YEAR_V2 at it, removing the last legacy ACCT_RECALLCULATIONS dependency from the Tutup Tahun chain.",
+      "script": "migrations/V20260701_005__jurnal_re_v2.sql",
+      "rollbackScript": "migrations/R20260701_005__jurnal_re_v2.sql",
+      "checkScript": "migrations/C20260701_005__jurnal_re_v2_check.sql"
     }
   ]
 }

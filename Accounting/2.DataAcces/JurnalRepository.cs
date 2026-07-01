@@ -637,7 +637,10 @@ namespace Accounting.DataLayer
 
         public void JurnalRE(string p_iddata, string p_periode, string p_userid)
         {
-            using (OracleCommand cmd = new OracleCommand("ACCT_JURNAL.JurnalRE", conn)
+            // ACCT_JURNAL_RE_V2.JURNAL_RE recomputes the reversal through ACCT_RECALLCULATIONS_V2 (parity with
+            // the yearly closing orchestrator). The 4th parameter p_commit defaults to 'Y', so the reversal is
+            // committed exactly as the legacy ACCT_JURNAL.JurnalRE path relied on.
+            using (OracleCommand cmd = new OracleCommand("ACCT_JURNAL_RE_V2.JURNAL_RE", conn)
             {
                 CommandType = CommandType.StoredProcedure
             })

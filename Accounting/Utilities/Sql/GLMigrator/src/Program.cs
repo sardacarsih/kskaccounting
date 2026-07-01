@@ -26,6 +26,13 @@ internal static class Program
             EnsureSqlPlusAvailable();
 
             Directory.CreateDirectory(options.LogDirectory);
+
+            EnsureConnection(options);
+            if (options.Mode == MigrationMode.CheckConn)
+            {
+                return 0;
+            }
+
             Manifest manifest = LoadManifest(options);
             EnsureHistoryTable(options);
 
@@ -148,6 +155,41 @@ internal static class Program
         Console.WriteLine("[OK] Verification scripts completed.");
     }
 
+    private static void EnsureConnection(AppOptions options)
+    {
+        Console.WriteLine("[INFO] Checking database connection...");
+
+        const string sql = """
+SET HEADING OFF
+SET FEEDBACK OFF
+SET PAGESIZE 0
+SELECT 'CONN_OK' FROM DUAL;
+EXIT
+""";
+
+        try
+        {
+            SqlExecutionResult result = ExecuteSqlInline(options, sql, "conn_check", options.ConnTimeoutMs);
+            if (!result.Output.Contains("CONN_OK", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Connection probe tidak mengembalikan hasil yang diharapkan. Output: " + result.Output.Trim());
+            }
+
+            Console.WriteLine("[INFO] Database connection OK.");
+        }
+        catch (Exception ex)
+        {
+            int seconds = Math.Max(1, options.ConnTimeoutMs / 1000);
+            throw new InvalidOperationException(
+                $"Tidak bisa connect ke database (atau timeout {seconds}s)." + Environment.NewLine +
+                "        Periksa: config.json (Host/Port/ServiceName/UserId/Password)," + Environment.NewLine +
+                "        sqlnet.ora (set SQLNET.AUTHENTICATION_SERVICES=(NONE) bila ORA-12638)," + Environment.NewLine +
+                "        atau pakai --connection \"USER/PASS@//HOST:PORT/SERVICE\"." + Environment.NewLine +
+                "        Detail: " + ex.Message);
+        }
+    }
+
     private static void EnsureHistoryTable(AppOptions options)
     {
         Console.WriteLine("[INFO] Ensuring GL_MIGRATION_HISTORY exists...");
@@ -234,17 +276,17 @@ EXIT
         ExecuteSqlInline(options, sql, $"unregister_{migrationId}");
     }
 
-    private static SqlExecutionResult ExecuteSqlInline(AppOptions options, string sql, string logPrefix)
+    private static SqlExecutionResult ExecuteSqlInline(AppOptions options, string sql, string logPrefix, int? timeoutMsOverride = null)
     {
-        return ExecuteSqlAsset(options, AssetContent.FromText($"inline/{logPrefix}.sql", sql), logPrefix);
+        return ExecuteSqlAsset(options, AssetContent.FromText($"inline/{logPrefix}.sql", sql), logPrefix, timeoutMsOverride);
     }
 
-    private static SqlExecutionResult ExecuteSqlAsset(AppOptions options, AssetContent asset, string logPrefix)
+    private static SqlExecutionResult ExecuteSqlAsset(AppOptions options, AssetContent asset, string logPrefix, int? timeoutMsOverride = null)
     {
         string tempFilePath = WriteAssetToTempFile(asset);
         try
         {
-            return ExecuteSqlFile(options, tempFilePath, logPrefix);
+            return ExecuteSqlFile(options, tempFilePath, logPrefix, timeoutMsOverride);
         }
         finally
         {
@@ -252,8 +294,9 @@ EXIT
         }
     }
 
-    private static SqlExecutionResult ExecuteSqlFile(AppOptions options, string sqlPath, string logPrefix)
+    private static SqlExecutionResult ExecuteSqlFile(AppOptions options, string sqlPath, string logPrefix, int? timeoutMsOverride = null)
     {
+        int timeoutMs = timeoutMsOverride ?? options.ScriptTimeoutMs;
         if (!File.Exists(sqlPath))
         {
             throw new FileNotFoundException("SQL file not found.", sqlPath);
@@ -280,6 +323,7 @@ EXIT
             ProcessStartInfo psi = new("sqlplus")
             {
                 UseShellExecute = false,
+                RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 CreateNoWindow = true
@@ -291,12 +335,30 @@ EXIT
             using Process process = Process.Start(psi)
                 ?? throw new InvalidOperationException("Failed to start sqlplus process.");
 
-            string stdout = process.StandardOutput.ReadToEnd();
-            string stderr = process.StandardError.ReadToEnd();
-            process.WaitForExit();
+            // Close stdin so sqlplus receives EOF on any unexpected prompt
+            // (e.g. bad credentials -> "Enter user-name:") instead of hanging forever.
+            try { process.StandardInput.Close(); } catch { /* ignore */ }
 
+            Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+
+            bool exited = process.WaitForExit(timeoutMs);
+            if (!exited)
+            {
+                try { process.Kill(entireProcessTree: true); } catch { /* ignore */ }
+            }
+
+            string stdout = TryGetStreamResult(stdoutTask);
+            string stderr = TryGetStreamResult(stderrTask);
             string output = string.IsNullOrWhiteSpace(stderr) ? stdout : stdout + Environment.NewLine + stderr;
             File.WriteAllText(logPath, output, Encoding.ASCII);
+
+            if (!exited)
+            {
+                int seconds = Math.Max(1, timeoutMs / 1000);
+                throw new InvalidOperationException(
+                    $"SQL execution timed out after {seconds}s ({logPrefix}). Proses sqlplus dihentikan paksa. See log: {logPath}");
+            }
 
             if (process.ExitCode != 0)
             {
@@ -408,6 +470,18 @@ EXIT
         }
 
         return sb.ToString();
+    }
+
+    private static string TryGetStreamResult(Task<string> task)
+    {
+        try
+        {
+            return task.GetAwaiter().GetResult();
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private static void TryDeleteFile(string path)
@@ -640,7 +714,8 @@ internal enum MigrationMode
     Up,
     Down,
     Status,
-    Verify
+    Verify,
+    CheckConn
 }
 
 internal sealed class AppOptions
@@ -654,17 +729,21 @@ internal sealed class AppOptions
     public string LogDirectory { get; private init; } = string.Empty;
     public string ConfigPathOverride { get; private init; } = string.Empty;
     public string ServerKeyOverride { get; private init; } = string.Empty;
+    public int ScriptTimeoutMs { get; private init; } = 600000;
+    public int ConnTimeoutMs { get; private init; } = 30000;
     public bool ShowHelp { get; private init; }
 
     public static string HelpText => """
-GLMigrator.exe [--connection <USER/PASS@//HOST:PORT/SERVICE>] [--config <path>] [--server-key KEY] [--mode up|down|status|verify] [--steps N]
+GLMigrator.exe [--connection <USER/PASS@//HOST:PORT/SERVICE>] [--config <path>] [--server-key KEY] [--mode up|down|status|verify|checkconn] [--steps N]
 
 Options:
   --connection   Oracle SQL*Plus connection string. If omitted, the executable reads config.json.
   --config       Optional config.json path. If omitted, the executable probes common config.json locations.
   --server-key   Optional server key override for config.json resolution
-  --mode         up (default), down, status, verify
+  --mode         up (default), down, status, verify, checkconn
   --steps        Number of steps for down mode (default: 1)
+  --timeout      Max milliseconds per SQL script before sqlplus is killed (default: 600000)
+  --conn-timeout Max milliseconds for the startup connection check (default: 30000)
   --root         Optional external root folder to override embedded migrations
   --manifest     Optional custom manifest path to override embedded manifest
   --bootstrap    Optional custom bootstrap sql path to override embedded bootstrap
@@ -728,7 +807,7 @@ Default behavior:
         {
             if (!Enum.TryParse(modeArg, true, out mode))
             {
-                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify.");
+                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn.");
             }
         }
 
@@ -738,6 +817,24 @@ Default behavior:
             if (!int.TryParse(stepsArg, out steps) || steps < 1)
             {
                 throw new ArgumentException("Invalid --steps value. Must be integer >= 1.");
+            }
+        }
+
+        int scriptTimeoutMs = 600000;
+        if (map.TryGetValue("timeout", out string? timeoutArg) && !string.IsNullOrWhiteSpace(timeoutArg))
+        {
+            if (!int.TryParse(timeoutArg, out scriptTimeoutMs) || scriptTimeoutMs < 1000)
+            {
+                throw new ArgumentException("Invalid --timeout value. Must be integer >= 1000 (milliseconds).");
+            }
+        }
+
+        int connTimeoutMs = 30000;
+        if (map.TryGetValue("conn-timeout", out string? connTimeoutArg) && !string.IsNullOrWhiteSpace(connTimeoutArg))
+        {
+            if (!int.TryParse(connTimeoutArg, out connTimeoutMs) || connTimeoutMs < 1000)
+            {
+                throw new ArgumentException("Invalid --conn-timeout value. Must be integer >= 1000 (milliseconds).");
             }
         }
 
@@ -756,6 +853,8 @@ Default behavior:
             LogDirectory = logDir,
             ConfigPathOverride = config,
             ServerKeyOverride = serverKey,
+            ScriptTimeoutMs = scriptTimeoutMs,
+            ConnTimeoutMs = connTimeoutMs,
             ShowHelp = help
         };
     }
