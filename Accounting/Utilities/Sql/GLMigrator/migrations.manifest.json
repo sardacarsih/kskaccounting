@@ -361,6 +361,14 @@
       "script": "migrations/V20260701_005__jurnal_re_v2.sql",
       "rollbackScript": "migrations/R20260701_005__jurnal_re_v2.sql",
       "checkScript": "migrations/C20260701_005__jurnal_re_v2_check.sql"
+    },
+    {
+      "id": "20260701_006_acct_tools_ensure",
+      "order": 48,
+      "description": "Ensure ACCT_TOOLS carries the canonical procedures (notably Analisa_kesalahan_COA) so the closing COA pre-check works on environments with a stale package (e.g. FSKPKS).",
+      "script": "migrations/V20260701_006__acct_tools_ensure.sql",
+      "rollbackScript": "migrations/R20260701_006__acct_tools_ensure.sql",
+      "checkScript": "migrations/C20260701_006__acct_tools_ensure_check.sql"
     }
   ]
 }
