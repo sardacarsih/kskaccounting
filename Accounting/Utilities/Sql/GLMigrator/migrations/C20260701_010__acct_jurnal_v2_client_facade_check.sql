@@ -1,0 +1,17 @@
+SET SERVEROUTPUT ON;
+
+DECLARE
+    invalid_count INTEGER;
+BEGIN
+    SELECT COUNT(1)
+    INTO invalid_count
+    FROM USER_OBJECTS
+    WHERE OBJECT_NAME = 'ACCT_JURNAL_V2'
+      AND OBJECT_TYPE IN ('PACKAGE', 'PACKAGE BODY')
+      AND STATUS <> 'VALID';
+
+    IF invalid_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'ACCT_JURNAL_V2 package is invalid');
+    END IF;
+END;
+/

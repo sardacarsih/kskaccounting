@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.07.01.2",
+  "version": "2026.07.02.1",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -369,6 +369,45 @@
       "script": "migrations/V20260701_006__acct_tools_ensure.sql",
       "rollbackScript": "migrations/R20260701_006__acct_tools_ensure.sql",
       "checkScript": "migrations/C20260701_006__acct_tools_ensure_check.sql"
+    },
+    {
+      "id": "20260701_007_closing_year_v2_balance_check_repair",
+      "order": 49,
+      "description": "Repair ACCT_CLOSING_YEAR_V2 so balance validation no longer depends on ACCT_LAPORAN.BALANCED_CHECK being exposed in legacy package specs.",
+      "script": "migrations/V20260701_007__closing_year_v2_balance_check_repair.sql",
+      "rollbackScript": "migrations/R20260701_007__closing_year_v2_balance_check_repair.sql",
+      "checkScript": "migrations/C20260701_007__closing_year_v2_balance_check_repair_check.sql"
+    },
+    {
+      "id": "20260701_008_closing_year_v2_boundary_hardening",
+      "order": 50,
+      "description": "Reapply the final Closing Year V2 boundary so servers that already recorded the earlier repair still receive the hardened contract without changing legacy packages.",
+      "script": "migrations/V20260701_008__closing_year_v2_boundary_hardening.sql",
+      "rollbackScript": "migrations/R20260701_008__closing_year_v2_boundary_hardening.sql",
+      "checkScript": "migrations/C20260701_008__closing_year_v2_boundary_hardening_check.sql"
+    },
+    {
+      "id": "20260701_009_acct_laporan_v2_client_facade",
+      "order": 51,
+      "description": "Extend ACCT_LAPORAN_V2 as the client-facing report facade, adding Buku Besar V2 without delegating to legacy ACCT_LAPORAN.",
+      "script": "migrations/V20260701_009__acct_laporan_v2_client_facade.sql",
+      "rollbackScript": "migrations/R20260701_009__acct_laporan_v2_client_facade.sql",
+      "checkScript": "migrations/C20260701_009__acct_laporan_v2_client_facade_check.sql"
+    },
+    {
+      "id": "20260701_010_acct_jurnal_v2_client_facade",
+      "order": 52,
+      "description": "Add ACCT_JURNAL_V2 as the client-facing journal facade so client calls no longer depend on legacy ACCT_JURNAL.",
+      "script": "migrations/V20260701_010__acct_jurnal_v2_client_facade.sql",
+      "rollbackScript": "migrations/R20260701_010__acct_jurnal_v2_client_facade.sql",
+      "checkScript": "migrations/C20260701_010__acct_jurnal_v2_client_facade_check.sql"
+    },
+    {
+      "id": "20260702_001_acct_jurnal_v2_remote_compile_repair",
+      "order": 53,
+      "description": "Repair ACCT_JURNAL_V2 compilation on remote schemas with missing audit compatibility columns and fail loudly with USER_ERRORS if invalid.",
+      "script": "migrations/V20260702_001__acct_jurnal_v2_remote_compile_repair.sql",
+      "checkScript": "migrations/C20260702_001__acct_jurnal_v2_remote_compile_repair_check.sql"
     }
   ]
 }
