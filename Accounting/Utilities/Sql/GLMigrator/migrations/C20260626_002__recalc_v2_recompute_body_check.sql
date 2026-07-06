@@ -57,16 +57,28 @@ BEGIN
         ok('Additive ApplyMutasiByMonth removed');
     END IF;
 
-    -- Saldo propagation must still be invoked.
+    -- Saldo propagation is now self-contained in V2.
     SELECT COUNT(1) INTO v_count
       FROM USER_SOURCE
      WHERE NAME = 'ACCT_RECALLCULATIONS_V2'
        AND TYPE = 'PACKAGE BODY'
-       AND UPPER(TEXT) LIKE '%UPDSALDOAKHIR_SD_DES_BYKODE%';
+       AND UPPER(TEXT) LIKE '%PROCEDURE RECOMPUTENODESALDO%';
     IF v_count = 0 THEN
-        fail('Saldo propagation call not found');
+        fail('RecomputeNodeSaldo helper not found');
     ELSE
-        ok('Saldo propagation call found');
+        ok('RecomputeNodeSaldo helper found');
+    END IF;
+
+    -- V2 package body must not depend on the legacy ACCT_RECALLCULATIONS package.
+    SELECT COUNT(1) INTO v_count
+      FROM USER_SOURCE
+     WHERE NAME = 'ACCT_RECALLCULATIONS_V2'
+       AND TYPE = 'PACKAGE BODY'
+       AND UPPER(TEXT) LIKE '%ACCT_RECALLCULATIONS.%';
+    IF v_count > 0 THEN
+        fail('Legacy ACCT_RECALLCULATIONS dependency still present');
+    ELSE
+        ok('No legacy ACCT_RECALLCULATIONS dependency found');
     END IF;
 
     -- No COMMIT inside the package body (caller owns the transaction).

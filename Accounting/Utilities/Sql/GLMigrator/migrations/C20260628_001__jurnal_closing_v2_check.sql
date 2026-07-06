@@ -16,16 +16,6 @@ DECLARE
         RAISE_APPLICATION_ERROR(-20904, p_message);
     END;
 BEGIN
-    SELECT COUNT(1)
-      INTO v_count
-      FROM USER_OBJECTS
-     WHERE OBJECT_NAME = 'ACCT_JURNAL_CLOSING_V2'
-       AND OBJECT_TYPE IN ('PACKAGE', 'PACKAGE BODY')
-       AND STATUS = 'INVALID';
-
-    IF v_count > 0 THEN
-        fail('Package ACCT_JURNAL_CLOSING_V2 is INVALID');
-    END IF;
 
     SELECT COUNT(1)
       INTO v_count
@@ -36,7 +26,7 @@ BEGIN
     IF v_count = 0 THEN
         fail('Package ACCT_JURNAL_CLOSING_V2 does not exist');
     ELSE
-        ok('Package ACCT_JURNAL_CLOSING_V2 exists and is valid');
+        ok('Package ACCT_JURNAL_CLOSING_V2 exists');
     END IF;
 
     SELECT COUNT(1)

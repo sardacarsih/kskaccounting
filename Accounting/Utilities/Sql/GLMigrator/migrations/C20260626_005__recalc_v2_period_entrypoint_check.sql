@@ -54,6 +54,28 @@ BEGIN
     END IF;
 
     SELECT COUNT(1) INTO v_count
+      FROM USER_SOURCE
+     WHERE NAME = 'ACCT_RECALLCULATIONS_V2'
+       AND TYPE = 'PACKAGE BODY'
+       AND UPPER(TEXT) LIKE '%PROCEDURE RECOMPUTENODESALDO%';
+    IF v_count = 0 THEN
+        fail('RecomputeNodeSaldo helper not found');
+    ELSE
+        ok('RecomputeNodeSaldo helper found');
+    END IF;
+
+    SELECT COUNT(1) INTO v_count
+      FROM USER_SOURCE
+     WHERE NAME = 'ACCT_RECALLCULATIONS_V2'
+       AND TYPE = 'PACKAGE BODY'
+       AND UPPER(TEXT) LIKE '%ACCT_RECALLCULATIONS.%';
+    IF v_count > 0 THEN
+        fail('Legacy ACCT_RECALLCULATIONS dependency still present');
+    ELSE
+        ok('No legacy ACCT_RECALLCULATIONS dependency found');
+    END IF;
+
+    SELECT COUNT(1) INTO v_count
       FROM USER_OBJECTS
      WHERE OBJECT_NAME = 'ACCT_RECALLCULATIONS_V2'
        AND OBJECT_TYPE IN ('PACKAGE', 'PACKAGE BODY')
