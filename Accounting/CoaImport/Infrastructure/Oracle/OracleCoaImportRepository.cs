@@ -126,22 +126,33 @@ public sealed class OracleCoaImportRepository : ICoaImportRepository
 
     public void RecalculateSaldo(string idData, int year, string userId)
     {
-        ExecuteOracleAction("menghitung ulang saldo detail setelah import COA", connection =>
+        ExecuteOracleAction("menghitung ulang saldo periode awal setelah import COA", connection =>
         {
-            using OracleCommand command = new("ACCT_RECALLCULATIONS.RecalkulasiSaldoDetail", connection)
-            {
-                CommandType = CommandType.StoredProcedure,
-                BindByName = true,
-                CommandTimeout = 180
-            };
-            command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = idData;
-            command.Parameters.Add("p_bulan", OracleDbType.Int16).Value = 1;
-            command.Parameters.Add("p_tahun", OracleDbType.Int16).Value = year;
-            command.Parameters.Add("p_Userid", OracleDbType.Varchar2, 20).Value = userId;
-            command.ExecuteNonQuery();
+            ExecuteRecalcPeriod(connection, idData, 1, year, BuildInitialPeriod(year), userId);
         });
     }
 
+    internal static void ExecuteRecalcPeriod(
+        OracleConnection connection,
+        string idData,
+        int month,
+        int year,
+        string period,
+        string userId)
+    {
+        using OracleCommand command = new("BEGIN ACCT_RECALLCULATIONS_V2.ReCalcPeriod(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_PERIODE, :p_USERID); END;", connection)
+        {
+            CommandType = CommandType.Text,
+            BindByName = true,
+            CommandTimeout = 180
+        };
+        command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = idData;
+        command.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = month;
+        command.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = year;
+        command.Parameters.Add("p_PERIODE", OracleDbType.Varchar2, 7).Value = period;
+        command.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = userId;
+        command.ExecuteNonQuery();
+    }
     private void ExecuteOracleAction(string operation, Action<OracleConnection> action)
     {
         ExecuteOracleFunc(operation, connection =>
@@ -433,6 +444,10 @@ UPDATE ACCT_COA
         return value?.Trim() ?? string.Empty;
     }
 
+    internal static string BuildInitialPeriod(int year)
+    {
+        return $"01/{year:0000}";
+    }
     private static void TryRollback(OracleTransaction transaction)
     {
         try
@@ -454,6 +469,7 @@ UPDATE ACCT_COA
             942 => "Tabel ACCT_COA tidak ditemukan atau user database tidak memiliki hak akses.",
             1017 => "Login database gagal. Periksa user/password koneksi Oracle.",
             12154 or 12514 or 12541 => "Koneksi ke server Oracle gagal. Periksa host, service name, listener, dan jaringan.",
+            6550 => "Package/procedure recalculation COA versi baru belum tersedia atau belum valid. Jalankan GLMigrator sampai migrasi recalc v2 selesai.",
             _ => "Terjadi error Oracle saat proses import COA."
         };
 

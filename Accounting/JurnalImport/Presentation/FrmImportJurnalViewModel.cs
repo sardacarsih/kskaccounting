@@ -49,7 +49,7 @@ public sealed class FrmImportJurnalViewModel
         StatusText = Sheets.Count > 0 ? "Pilih sheet untuk preview import." : "Workbook tidak memiliki sheet.";
     }
 
-    public void PreviewSheet(string sheetName)
+    public void PreviewSheet(string sheetName, int coaYear)
     {
         SelectedSheet = sheetName;
         Rows = [];
@@ -58,7 +58,7 @@ public sealed class FrmImportJurnalViewModel
 
         try
         {
-            IReadOnlyList<JurnalImportRow> rows = _previewUseCase.Preview(FilePath, sheetName);
+            IReadOnlyList<JurnalImportRow> rows = _previewUseCase.Preview(FilePath, sheetName, _idData, coaYear);
             Rows = new BindingList<JurnalImportRow>(new List<JurnalImportRow>(rows));
             CanImport = Rows.Count > 0;
             StatusText = Rows.Count == 0 ? "Sheet tidak memiliki data jurnal." : $"{Rows.Count:##,###} Record";

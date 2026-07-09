@@ -1,4 +1,3 @@
-using Accounting.BusinessLayer;
 using Accounting.ClosingYear;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
@@ -12,6 +11,7 @@ namespace Accounting.Form
     public partial class FrmClosingYear : DevExpress.XtraEditors.XtraForm
     {
         private readonly SoundPlayer player = new();
+        private readonly ClosingYearWorkflow closingYearWorkflow = new(new ClosingYearWorkflowDependencies());
 
         public FrmClosingYear()
         {
@@ -39,75 +39,92 @@ namespace Accounting.Form
                 watch.Start();
 
                 int tahun = Convert.ToInt32(setahun.Value);
-                string periode = $"12/{tahun:0000}";
-                string bulan = $"{cmbbulan.Text} - {tahun:0000}";
-
-                // Pastikan COA tahun yang ditutup sudah tersedia (sejajar dengan tutup bulan).
-                if (AccountServices.CekCOAExist(CompanyInfo.IDDATA, tahun) == 1)
-                {
-                    XtraMessageBox.Show("Daftar Perkiraan Belum tersedia", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                var errcoaCheck = ToolsServices.Analisa_kesalahan_COA(CompanyInfo.IDDATA, tahun);
-                if (errcoaCheck.Rows.Count > 0)
-                {
-                    COAError errorCoa = new()
-                    {
-                        Myperiode = periode,
-                        ibulan = 12,
-                        itahun = tahun
-                    };
-                    errorCoa.ShowDialog();
-                    return;
-                }
-
                 ClosingYearRequest request = new(
                     CompanyInfo.IDDATA,
                     tahun,
                     LoginInfo.userID,
                     CompanyInfo.JENIS_AKUNTING,
                     checkEditjurnalclosing.Checked);
-                ClosingYearResult result = ClosingYearServices.CloseYear(request);
+                ClosingYearWorkflowResult workflowResult = closingYearWorkflow.Execute(request);
 
-                if (result.Status == ClosingYearStatus.LockedPeriod)
+                if (!HandleWorkflowResult(workflowResult, watch))
                 {
-                    PlaySound("akhir_tahun_kunci.wav");
-                    XtraMessageBox.Show("Proses Closing diBatalkan...!!!\n" + result.Message, "Error Closing", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-
-                if (result.Status == ClosingYearStatus.NotBalanced)
-                {
-                    PlaySound("neraca_error.wav");
-                    BalancedError be = new()
-                    {
-                        Myperiode = periode,
-                        ibulan = 12,
-                        itahun = tahun
-                    };
-                    be.ShowDialog();
-                    return;
-                }
-
-                Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
-
-                watch.Stop();
-                TimeSpan timeSpan = watch.Elapsed;
-                string waktuproses = string.Format("Waktu Proses : {0}h {1}m {2}s {3}ms", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
-
-                PlaySound("akhir_tahun.wav");
-                XtraMessageBox.Show("Proses Tutup Tahun Selesai\n\n" +
-                    "Periode Akuntansi : " + bulan +
-                    "\nLokasi Data : " + CompanyInfo.IDDATA +
-                    "\nLaba / Rugi : " + result.LabaRugi.ToString("#,##0.00") +
-                    "\nCOA Tahun Berikutnya : " + result.CoaAction +
-                    "\n" + waktuproses, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private bool HandleWorkflowResult(ClosingYearWorkflowResult workflowResult, Stopwatch watch)
+        {
+            switch (workflowResult.Status)
+            {
+                case ClosingYearWorkflowStatus.MissingCoa:
+                    XtraMessageBox.Show(workflowResult.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                case ClosingYearWorkflowStatus.CoaValidationErrors:
+                    ShowCoaError(workflowResult);
+                    return false;
+                case ClosingYearWorkflowStatus.LockedPeriod:
+                    PlaySound("akhir_tahun_kunci.wav");
+                    XtraMessageBox.Show("Proses Closing diBatalkan...!!!\n" + workflowResult.Message, "Error Closing", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                case ClosingYearWorkflowStatus.NotBalanced:
+                    PlaySound("neraca_error.wav");
+                    ShowBalancedError(workflowResult);
+                    return false;
+                case ClosingYearWorkflowStatus.Success:
+                    ShowSuccess(workflowResult, watch);
+                    return true;
+                default:
+                    throw new InvalidOperationException($"Status tutup tahun tidak dikenal: {workflowResult.Status}");
+            }
+        }
+
+        private static void ShowCoaError(ClosingYearWorkflowResult workflowResult)
+        {
+            COAError errorCoa = new()
+            {
+                Myperiode = workflowResult.Period,
+                ibulan = workflowResult.Month,
+                itahun = workflowResult.Year
+            };
+            errorCoa.ShowDialog();
+        }
+
+        private static void ShowBalancedError(ClosingYearWorkflowResult workflowResult)
+        {
+            ClosingYearResult result = workflowResult.ClosingResult
+                ?? throw new InvalidOperationException("Hasil tutup tahun kosong.");
+
+            XtraMessageBox.Show(
+                "Neraca belum balance.\n\n" +
+                "Periode Akuntansi : " + workflowResult.Period +
+                "\nSelisih : " + result.Selisih.ToString("#,##0.00"),
+                "Error Closing",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+
+        private void ShowSuccess(ClosingYearWorkflowResult workflowResult, Stopwatch watch)
+        {
+            ClosingYearResult result = workflowResult.ClosingResult
+                ?? throw new InvalidOperationException("Hasil tutup tahun kosong.");
+
+            watch.Stop();
+            TimeSpan timeSpan = watch.Elapsed;
+            string waktuproses = string.Format("Waktu Proses : {0}h {1}m {2}s {3}ms", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
+
+            PlaySound("akhir_tahun.wav");
+            XtraMessageBox.Show("Proses Tutup Tahun Selesai\n\n" +
+                "Periode Akuntansi : " + workflowResult.MonthDisplay +
+                "\nLokasi Data : " + CompanyInfo.IDDATA +
+                "\nLaba / Rugi : " + result.LabaRugi.ToString("#,##0.00") +
+                "\nCOA Tahun Berikutnya : " + result.CoaAction +
+                "\n" + waktuproses, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void PlaySound(string fileName)

@@ -3,7 +3,6 @@ namespace Accounting.Services
     public enum NeracaReadinessFailure
     {
         None,
-        MissingJournal,
         NotBalanced
     }
 
@@ -18,18 +17,16 @@ namespace Accounting.Services
         }
 
         public bool IsReady { get; }
+
         public NeracaReadinessFailure Failure { get; }
+
         public string Message { get; }
+
         public decimal Selisih { get; }
 
         public static NeracaReadinessResult Ready()
         {
             return new NeracaReadinessResult(true, NeracaReadinessFailure.None, string.Empty, 0m);
-        }
-
-        public static NeracaReadinessResult MissingJournal()
-        {
-            return new NeracaReadinessResult(false, NeracaReadinessFailure.MissingJournal, "Belum ada transaksi jurnal", 0m);
         }
 
         public static NeracaReadinessResult NotBalanced(string periode, decimal selisih)

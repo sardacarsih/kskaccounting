@@ -1,4 +1,4 @@
-﻿using Accounting.BusinessLayer;
+using Accounting.BusinessLayer;
 using DevExpress.DataAccess.Sql.DataApi;
 using DevExpress.XtraReports.UI;
 using System;
@@ -48,11 +48,8 @@ namespace Accounting.Laporan
                 {
                     if (kategori == "AKTIVA")
                     {
-                        //1st generate 
-                        LaporanServices.GenerateSub_LabaRugi(iddata, pbulan, ptahun, kode, userid, "NERACA", "D");
-                        //MessageBox.Show("this is g");
-                        //2nd view data
-                        DSSubRL = LaporanServices.ViewSub_LabaRugi(iddata, userid);
+                        DSSubRL = LaporanServices.ViewSub_Neraca(iddata, pbulan, ptahun, kode, userid, "D");
+                        DSSubRL.Tables[0].TableName = "SubLabaRugi";
                         //DSSubRL.WriteXmlSchema("SubRL.xsd");
 
                         rsub_rl_DetailD detailReport = new rsub_rl_DetailD
@@ -70,11 +67,8 @@ namespace Accounting.Laporan
                     }
                     else
                     {
-                        //1st generate 
-                        LaporanServices.GenerateSub_LabaRugi(iddata, pbulan, ptahun, kode, userid, "NERACA", "K");
-                        //MessageBox.Show("this is g");
-                        //2nd view data
-                        DSSubRL = LaporanServices.ViewSub_LabaRugi(iddata, userid);
+                        DSSubRL = LaporanServices.ViewSub_Neraca(iddata, pbulan, ptahun, kode, userid, "K");
+                        DSSubRL.Tables[0].TableName = "SubLabaRugi";
                         //DSSubRL.WriteXmlSchema("SubRL.xsd");
 
                         rsub_rl_DetailK detailReport = new rsub_rl_DetailK();

@@ -17,9 +17,13 @@ namespace Accounting.DataLayer
         // round-trip. Laba Rugi V2 remains a compatibility wrapper over this path.
         public DataSet ViewAccountingReport(string piddata, int pbulan, int ptahun, string userid, string reportCode, string jenisakunting)
         {
+            string procedureName = reportCode == "NERACA"
+                ? "ACCT_LAPORAN_V2.LAP_NERACA_V2"
+                : "ACCT_LAPORAN_V2.LAP_LABARUGI_V2";
+
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
-            using OracleCommand cmd = new("ACCT_REPORT_ENGINE_V1.GET_REPORT", connection)
+            using OracleCommand cmd = new(procedureName, connection)
             {
                 CommandType = CommandType.StoredProcedure,
                 BindByName = true,
@@ -29,8 +33,10 @@ namespace Accounting.DataLayer
             cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = pbulan;
             cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = ptahun;
             cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = userid;
-            cmd.Parameters.Add("p_REPORT_CODE", OracleDbType.Varchar2, 30).Value = reportCode;
-            cmd.Parameters.Add("p_JENISAKUNTING", OracleDbType.Varchar2, 20).Value = jenisakunting;
+            if (reportCode != "NERACA")
+            {
+                cmd.Parameters.Add("p_JENISAKUNTING", OracleDbType.Varchar2, 20).Value = jenisakunting;
+            }
             cmd.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
             using OracleDataAdapter sqlAdapter = new(cmd);
@@ -41,9 +47,13 @@ namespace Accounting.DataLayer
 
         public DataSet ViewAccountingReportDrillDown(string piddata, int pbulan, int ptahun, string reportCode, int sectionId, string kodeacc)
         {
+            string procedureName = reportCode == "NERACA"
+                ? "ACCT_LAPORAN_V2.LAP_NERACA_SUB_V2"
+                : "ACCT_LAPORAN_V2.LAP_LABARUGI_SUB_V2";
+
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
-            using OracleCommand cmd = new("ACCT_REPORT_ENGINE_V1.GET_DRILLDOWN", connection)
+            using OracleCommand cmd = new(procedureName, connection)
             {
                 CommandType = CommandType.StoredProcedure,
                 BindByName = true,
@@ -52,9 +62,13 @@ namespace Accounting.DataLayer
             cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
             cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = pbulan;
             cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = ptahun;
-            cmd.Parameters.Add("p_REPORT_CODE", OracleDbType.Varchar2, 30).Value = reportCode;
-            cmd.Parameters.Add("p_SECTION_ID", OracleDbType.Int32).Value = sectionId;
             cmd.Parameters.Add("p_KODEACC", OracleDbType.Varchar2, 30).Value = kodeacc;
+            cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;
+            if (reportCode != "NERACA")
+            {
+                cmd.Parameters.Add("p_LAP", OracleDbType.Varchar2, 20).Value = reportCode;
+            }
+            cmd.Parameters.Add("p_POSISI", OracleDbType.Varchar2, 20).Value = DBNull.Value;
             cmd.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
             using OracleDataAdapter sqlAdapter = new(cmd);
@@ -131,43 +145,16 @@ namespace Accounting.DataLayer
             return Convert.ToDecimal(cmd.Parameters["LabaRugi"].Value.ToString());
         }
 
+        [Obsolete("Use ViewAccountingReportDrillDown or ViewSub_Neraca so report drill-downs do not depend on legacy temp generators.")]
         public int GenerateSub_LabaRugi(string p_IDDATA, int p_bulan, int p_tahun, string p_kodeacc, string userid, string lap, string posisi)
         {
-            using OracleConnection connection = new(LoginInfo.OracleConnString);
-            connection.Open();
-            using OracleCommand cmd = new("ACCT_LAPORAN.ACC_GENREP_LRNR_SUB", connection)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-            cmd.Parameters.Add("SubLabaRugi", OracleDbType.Int32).Direction = ParameterDirection.ReturnValue;
-            cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = p_IDDATA;
-            cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-            cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-            cmd.Parameters.Add(":p_kodeacc", OracleDbType.Varchar2, 30).Value = p_kodeacc;
-            cmd.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
-            cmd.Parameters.Add(":lap", OracleDbType.Varchar2, 20).Value = lap;
-            cmd.Parameters.Add(":posisi", OracleDbType.Varchar2, 20).Value = posisi;
-            cmd.ExecuteNonQuery();
-            return Convert.ToInt32(cmd.Parameters["SubLabaRugi"].Value.ToString());
+            return 0;
         }
 
         public DataSet ViewLap_Neraca(string piddata, int p_bulan, int p_tahun, string userid)
         {
-            using OracleConnection connection = new(LoginInfo.OracleConnString);
-            connection.Open();
-            using OracleCommand _command = new("ACCT_LAPORAN.LAP_NERACA", connection)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-            _command.Parameters.Add("Neraca", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-            _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-            _command.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-            _command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
-            using OracleDataAdapter sqlAdapter = new(_command);
-            DataSet _ds = new();
-            sqlAdapter.Fill(_ds, "Neraca");
-            return _ds;
+            List<NeracaRow> rows = ViewLap_NeracaRows_V2(piddata, p_bulan, p_tahun, userid);
+            return Accounting.Services.NeracaReportDataAdapter.CreateReportDataSet(rows);
         }
 
         public List<NeracaRow> ViewLap_NeracaRows_V2(string piddata, int p_bulan, int p_tahun, string userid)
@@ -260,71 +247,94 @@ namespace Accounting.DataLayer
 
         public DataSet ViewLap_NeracaHalfYear(string piddata, int p_tahun, string userid, int ishalf)
         {
-            using OracleConnection connection = new(LoginInfo.OracleConnString);
-            connection.Open();
-            using OracleCommand _command = new("ACCT_LAPORAN.LAP_NERACA_HALFYEAR", connection)
+            int bulan = ishalf == 1 ? 6 : 12;
+            return ViewLap_Neraca(piddata, bulan, p_tahun, userid);
+        }
+        public DataTable ViewLap_NeracaKonsolidasi(int p_tahun, string p_pt, int p_bulan, string userid)
+        {
+            DataTable locations = LoadConsolidationLocations(p_pt);
+            DataTable result = CreateNeracaKonsolidasiTable(locations);
+            Dictionary<string, DataRow> rowsByKey = new();
+
+            foreach (DataRow location in locations.Rows)
             {
-                CommandType = CommandType.StoredProcedure
-            };
-            _command.Parameters.Add("Neraca", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-            _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-            _command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
-            _command.Parameters.Add(":ishalf", OracleDbType.Int16).Value = ishalf;
-            using OracleDataAdapter sqlAdapter = new(_command);
-            DataSet _ds = new();
-            sqlAdapter.Fill(_ds, "Neraca");
-            return _ds;
+                string locationId = Convert.ToString(location["IDDATA"]);
+                if (string.IsNullOrWhiteSpace(locationId))
+                {
+                    continue;
+                }
+
+                foreach (NeracaRow neracaRow in ViewLap_NeracaRows_V2(locationId, p_bulan, p_tahun, userid))
+                {
+                    string key = neracaRow.Kode + "|" + neracaRow.Kat + "|" + neracaRow.Cat2 + "|" + neracaRow.Akun;
+                    if (!rowsByKey.TryGetValue(key, out DataRow row))
+                    {
+                        row = result.NewRow();
+                        row["KODE"] = neracaRow.Akun;
+                        row["KATEGORI"] = neracaRow.Kat;
+                        row["KELOMPOK"] = neracaRow.Cat2;
+                        row["REKENING"] = neracaRow.Tipe;
+                        result.Rows.Add(row);
+                        rowsByKey.Add(key, row);
+                    }
+
+                    row[locationId] = Convert.ToDouble(neracaRow.BulanIni);
+                }
+            }
+
+            return result;
         }
 
-        public DataTable ViewLap_NeracaKonsolidasi(int p_tahun, string p_pt, int p_bulan, string userid)
+        private static DataTable LoadConsolidationLocations(string idPt)
         {
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
-            using OracleCommand _command = new("ACCT_LAPORAN.LAP_NERACA_KONSOLIDASI", connection)
+            using OracleCommand command = new(
+                @"SELECT IDDATA, WILAYAH
+                    FROM MASTER_PT_DTL
+                   WHERE IDPT = :p_idpt
+                   ORDER BY IDDATA", connection)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.Text,
+                BindByName = true
             };
-            _command.Parameters.Add("Neraca", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-            _command.Parameters.Add(":p_pt", OracleDbType.Varchar2, 20).Value = p_pt;
-            _command.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-            _command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = userid;
-            using OracleDataReader dr = _command.ExecuteReader();
-            DataTable _dt = new();
-            _dt.Load(dr);
-            return _dt;
+            command.Parameters.Add("p_idpt", OracleDbType.Varchar2, 20).Value = idPt;
+            using OracleDataAdapter adapter = new(command);
+            DataTable table = new();
+            adapter.Fill(table);
+            return table;
+        }
+
+        private static DataTable CreateNeracaKonsolidasiTable(DataTable locations)
+        {
+            DataTable table = new();
+            table.Columns.Add("KODE", typeof(string));
+            table.Columns.Add("KATEGORI", typeof(string));
+            table.Columns.Add("KELOMPOK", typeof(string));
+            table.Columns.Add("REKENING", typeof(string));
+
+            foreach (DataRow location in locations.Rows)
+            {
+                string locationId = Convert.ToString(location["IDDATA"]);
+                if (!string.IsNullOrWhiteSpace(locationId) && !table.Columns.Contains(locationId))
+                {
+                    table.Columns.Add(locationId, typeof(double));
+                }
+            }
+
+            return table;
         }
 
         public DataSet ViewLap_BukuBesar(string P_IDDATA, int p_tahun, int p_bulan, int p_sampaibulan, string DARIKODE, string SAMPAIKODE
             , string p_Userid, string DARILAPORAN)
         {
-            using OracleConnection connection = new(LoginInfo.OracleConnString);
-            connection.Open();
-            using OracleCommand _command = new("ACCT_LAPORAN.LAP_DYNAMIC_GL", connection)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-            _command.Parameters.Add("BukuBesar", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-            _command.Parameters.Add(":P_IDDATA", OracleDbType.Varchar2, 20).Value = P_IDDATA;
-            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-            _command.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-            _command.Parameters.Add(":p_sampaibulan", OracleDbType.Int16).Value = p_sampaibulan;
-            _command.Parameters.Add(":DARIKODE", OracleDbType.Varchar2, 20).Value = DARIKODE;
-            _command.Parameters.Add(":SAMPAIKODE", OracleDbType.Varchar2, 20).Value = SAMPAIKODE;
-            _command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_Userid;
-            _command.Parameters.Add(":DARILAPORAN", OracleDbType.Varchar2, 20).Value = DARILAPORAN;
-            using OracleDataAdapter sqlAdapter = new(_command);
-            DataSet _ds = new();
-            sqlAdapter.Fill(_ds, "BukuBesar");
-            return _ds;
+            return ViewLap_BukuBesarDirect(P_IDDATA, p_tahun, p_tahun, p_bulan, p_sampaibulan, DARIKODE, SAMPAIKODE);
         }
-
         // Hierarchy-aware general ledger for Laba Rugi drill-down: returns acct_jurnal_dtl
         // transactions for the clicked account AND all its descendant leaf accounts (the COA
         // tree is linked by PARENTACC, not code prefix, so a code range cannot capture children).
-        // Same column shape as the LABARUGI branch of ACCT_LAPORAN.LAP_DYNAMIC_GL, so the
-        // GeneralLedgerD2/K2 reports (DataMember "BukuBesar") render it unchanged.
+        // Same column shape as the Laba Rugi general-ledger branch, so the
+        // GeneralLedgerD2/K2 reports render it unchanged.
         public DataSet ViewLap_BukuBesar_Tree(string P_IDDATA, int p_tahun, int p_bulan, int p_sampaibulan, string p_kode)
         {
             using OracleConnection connection = new(LoginInfo.OracleConnString);
@@ -359,60 +369,93 @@ namespace Accounting.DataLayer
         public DataSet ViewLap_BukuBesarMultiTahun(string P_IDDATA, int p_tahundari, int p_tahunsampai, int p_bulan, int p_sampaibulan, string DARIKODE, string SAMPAIKODE
             , string p_Userid, string DARILAPORAN)
         {
-            using OracleConnection connection = new(LoginInfo.OracleConnString);
-            connection.Open();
-            using OracleCommand _command = new("ACCT_LAPORAN.LAP_DYNAMIC_GL_Multi_YEAR", connection)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-            _command.Parameters.Add("BukuBesar", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-            _command.Parameters.Add(":P_IDDATA", OracleDbType.Varchar2, 20).Value = P_IDDATA;
-            _command.Parameters.Add(":p_tahundari", OracleDbType.Int16).Value = p_tahundari;
-            _command.Parameters.Add(":p_tahunsampai", OracleDbType.Int16).Value = p_tahunsampai;
-            _command.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-            _command.Parameters.Add(":p_sampaibulan", OracleDbType.Int16).Value = p_sampaibulan;
-            _command.Parameters.Add(":DARIKODE", OracleDbType.Varchar2, 20).Value = DARIKODE;
-            _command.Parameters.Add(":SAMPAIKODE", OracleDbType.Varchar2, 20).Value = SAMPAIKODE;
-            _command.Parameters.Add(":p_userid", OracleDbType.Varchar2, 20).Value = p_Userid;
-            _command.Parameters.Add(":DARILAPORAN", OracleDbType.Varchar2, 20).Value = DARILAPORAN;
-            using OracleDataAdapter sqlAdapter = new(_command);
-            DataSet _ds = new();
-            sqlAdapter.Fill(_ds, "BukuBesar");
-            return _ds;
+            return ViewLap_BukuBesarDirect(P_IDDATA, p_tahundari, p_tahunsampai, p_bulan, p_sampaibulan, DARIKODE, SAMPAIKODE);
         }
 
-        public DataSet ViewLap_NeracaLajur(string piddata, int p_bulan, int p_tahun)
+        private static DataSet ViewLap_BukuBesarDirect(string iddata, int tahunDari, int tahunSampai, int bulanDari, int bulanSampai, string dariKode, string sampaiKode)
         {
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
-            using OracleCommand _command = new("ACCT_LAPORAN.LAP_NERACA_LAJUR", connection)
+            using OracleCommand command = new("ACCT_LAPORAN_V2.LAP_BUKUBESAR_V2", connection)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.StoredProcedure,
+                BindByName = true,
+                CommandTimeout = 180
             };
-            _command.Parameters.Add("Neraca", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-            _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-            _command.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-            using OracleDataAdapter sqlAdapter = new(_command);
-            DataSet _ds = new();
-            sqlAdapter.Fill(_ds, "Neraca");
-            return _ds;
+            command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = iddata;
+            command.Parameters.Add("p_TAHUNDARI", OracleDbType.Int16).Value = tahunDari;
+            command.Parameters.Add("p_TAHUNSAMPAI", OracleDbType.Int16).Value = tahunSampai;
+            command.Parameters.Add("p_BULANDARI", OracleDbType.Int16).Value = bulanDari;
+            command.Parameters.Add("p_BULANSAMPAI", OracleDbType.Int16).Value = bulanSampai;
+            command.Parameters.Add("p_DARIKODE", OracleDbType.Varchar2, 30).Value = dariKode;
+            command.Parameters.Add("p_SAMPAIKODE", OracleDbType.Varchar2, 30).Value = sampaiKode;
+            command.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using OracleDataAdapter sqlAdapter = new(command);
+            DataSet ds = new();
+            sqlAdapter.Fill(ds, "BukuBesar");
+            return ds;
+        }
+        public DataSet ViewLap_NeracaLajur(string piddata, int p_bulan, int p_tahun)
+        {
+            return ViewLap_Neraca(piddata, p_bulan, p_tahun, LoginInfo.userID);
         }
 
         public decimal Balanced_Check(string piddata, int pbulan, int ptahun)
         {
+            const string sql = @"
+                SELECT ROUND(
+                    NVL(SUM(CASE :p_bulan
+                        WHEN 1 THEN ""1D""
+                        WHEN 2 THEN ""2D""
+                        WHEN 3 THEN ""3D""
+                        WHEN 4 THEN ""4D""
+                        WHEN 5 THEN ""5D""
+                        WHEN 6 THEN ""6D""
+                        WHEN 7 THEN ""7D""
+                        WHEN 8 THEN ""8D""
+                        WHEN 9 THEN ""9D""
+                        WHEN 10 THEN ""10D""
+                        WHEN 11 THEN ""11D""
+                        WHEN 12 THEN ""12D""
+                        ELSE 0
+                    END), 0) -
+                    NVL(SUM(CASE :p_bulan
+                        WHEN 1 THEN ""1K""
+                        WHEN 2 THEN ""2K""
+                        WHEN 3 THEN ""3K""
+                        WHEN 4 THEN ""4K""
+                        WHEN 5 THEN ""5K""
+                        WHEN 6 THEN ""6K""
+                        WHEN 7 THEN ""7K""
+                        WHEN 8 THEN ""8K""
+                        WHEN 9 THEN ""9K""
+                        WHEN 10 THEN ""10K""
+                        WHEN 11 THEN ""11K""
+                        WHEN 12 THEN ""12K""
+                        ELSE 0
+                    END), 0),
+                    2) SELISIH
+                  FROM ACCT_COA
+                 WHERE IDDATA = :p_iddata
+                   AND TAHUN = :p_tahun
+                   AND LVL = 1";
+
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
-            using OracleCommand cmd = new("ACCT_LAPORAN.BALANCED_CHECK", connection)
+            using OracleCommand command = new(sql, connection)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.Text,
+                BindByName = true
             };
-            cmd.Parameters.Add("Selisih", OracleDbType.Decimal).Direction = ParameterDirection.ReturnValue;
-            cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-            cmd.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = pbulan;
-            cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = ptahun;
-            cmd.ExecuteNonQuery();
-            return Convert.ToDecimal(cmd.Parameters["Selisih"].Value.ToString());
+            command.Parameters.Add("p_bulan", OracleDbType.Int16).Value = pbulan;
+            command.Parameters.Add("p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
+            command.Parameters.Add("p_tahun", OracleDbType.Int16).Value = ptahun;
+            object result = command.ExecuteScalar();
+
+            return result == DBNull.Value || result == null
+                ? 0m
+                : Convert.ToDecimal(result);
         }
 
         public List<AccountSummary> NeracaSaldoTahun(string piddata, int p_tahun)
