@@ -14,15 +14,15 @@ namespace Accounting.DataLayer
         int CekPeriodeExist(string piddata, int pbulan,int ptahun);
         int CekCountKode(string piddata,int ptahun,string pinduk, string pGD);
         int CekCOAExist(string iddata, int ptahun);
+        bool CodeExists(string piddata, int ptahun, string kodeAcc);
+        bool HasTransactions(string piddata, int ptahun, string kodeAcc);
         DataTable CekParentNotExist();
         DataTable CekParentNotExist2();
         DataTable CekParentNotExist3(string iddata, int ptahun);
         DataTable CekSalahInduk();
-        int ImportCOA(string iddata, int ptahun);
         int GetMaxPeriode(string piddata);
         int GetMinPeriode(string piddata);
         string GetNamaPeriode(string piddata);
-        DataTable GetCOAWithoutSaldo(string piddata);
         DataTable GetTipeAkun(string dariform);
         DataTable GetParentAccount(string piddata, int p_tahun,string ptipe);
         int RekalkulasiByNoJurnal(string piddata, int p_bulan, int p_tahun, string p_NoJurnal,string p_Periode,string p_Userid);
@@ -40,7 +40,6 @@ namespace Accounting.DataLayer
         void ReclassLabaRugi(string piddata, int p_tahun, string p_userid);
         void InsertCOA(string piddata, int p_tahun, string pgrp, string pinduk, char pgd, string pkode,int plvl, char pposisi
                 ,string pnama,decimal psawal);
-        int ImportCOAbyMerge(string piddata, int p_tahun);
 
         IQueryable<COADaftarPerkiraanSaldoDTO> GetPerkiraanSaldo_Dapper(string p_iddata, int p_tahun, int p_bulan);
         DataTable GetPerkiraanSaldo_ADO(string p_iddata, int p_tahun, int p_bulan);
@@ -51,6 +50,7 @@ namespace Accounting.DataLayer
         DataTable GetIndukAkun(string kategori, string kelompok);
         void UpdateCOA(string coaId, string kodeAcc, string grp, string parentAcc, string namaAcc, char isAktif, string lvl);
         void DeleteCOA(string coaId);
+        CoaCascadeDeleteResult DeleteCoaCascade(string piddata, int tahun, string coaId);
         void UpdateCOATmpIdData(string iddata, int tahun, string userid);
         void TruncateCOATmp();
     }

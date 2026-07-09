@@ -13,12 +13,6 @@ namespace Accounting.Services
         {
             try
             {
-                int record = JurnalServices.CekRecordJurnalExist(idData, periode);
-                if (record == 0)
-                {
-                    return NeracaReadinessResult.MissingJournal();
-                }
-
                 decimal selisih = LaporanServices.Balanced_Check(idData, bulan, tahun);
                 if (selisih != 0m)
                 {

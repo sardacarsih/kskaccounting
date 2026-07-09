@@ -14,6 +14,7 @@ public interface IJurnalImportDataStore
     IReadOnlyList<JurnalImportValidationIssue> FindRowsWithNullKode(JurnalImportScope scope);
     IReadOnlyList<JurnalImportValidationIssue> FindExistingJournalNumbers(JurnalImportScope scope);
     IReadOnlyList<JurnalImportValidationIssue> FindMissingAccounts(JurnalImportScope scope);
+    IReadOnlyDictionary<string, string> GetAccountNames(string idData, int coaYear);
     int ImportPartial(JurnalImportScope scope, IReadOnlyList<JurnalImportRow> rows, IProgress<JurnalImportProgress>? progress);
     JurnalImportRecalcQueueResult QueueRecalculation(JurnalImportScope scope);
 }

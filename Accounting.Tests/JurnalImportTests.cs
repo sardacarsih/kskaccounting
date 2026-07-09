@@ -37,12 +37,78 @@ public sealed class JurnalImportTests
                     Periode = "05/2026"
                 }
             ]);
-        PreviewJurnalImportUseCase preview = new(reader);
+        PreviewJurnalImportUseCase preview = new(reader, new FakeDataStore());
 
         JurnalImportValidationException ex = Assert.Throws<JurnalImportValidationException>(
-            () => preview.Preview("jurnal.xlsx", "Sheet1"));
+            () => preview.Preview("jurnal.xlsx", "Sheet1", "IDDATA", 2026));
 
         Assert.Equal("NEGATIVE_AMOUNT", ex.Issues[0].Code);
+    }
+
+    [Fact]
+    public void Preview_WhenKodeMatchesCoa_FillsRekeningFromAccountName()
+    {
+        FakeWorkbookReader reader = new(
+            [
+                new JurnalImportRow
+                {
+                    NoJurnal = "JRN-001",
+                    Tanggal = new DateTime(2026, 5, 10),
+                    Baris = 1,
+                    Kode = "10.01",
+                    Rekening = "-",
+                    Debet = 100m,
+                    Kredit = 0m,
+                    Keterangan = "Test",
+                    Posted = "True",
+                    Periode = "05/2026"
+                }
+            ]);
+        FakeDataStore dataStore = new()
+        {
+            AccountNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["10.01"] = "Kas"
+            }
+        };
+        PreviewJurnalImportUseCase preview = new(reader, dataStore);
+
+        IReadOnlyList<JurnalImportRow> rows = preview.Preview("jurnal.xlsx", "Sheet1", "IDDATA", 2026);
+
+        Assert.Equal("Kas", rows[0].Rekening);
+    }
+
+    [Fact]
+    public void Preview_WhenKodeNotInCoa_MarksRekeningAsNotFound()
+    {
+        FakeWorkbookReader reader = new(
+            [
+                new JurnalImportRow
+                {
+                    NoJurnal = "JRN-001",
+                    Tanggal = new DateTime(2026, 5, 10),
+                    Baris = 1,
+                    Kode = "99.99",
+                    Rekening = "-",
+                    Debet = 100m,
+                    Kredit = 0m,
+                    Keterangan = "Test",
+                    Posted = "True",
+                    Periode = "05/2026"
+                }
+            ]);
+        FakeDataStore dataStore = new()
+        {
+            AccountNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["10.01"] = "Kas"
+            }
+        };
+        PreviewJurnalImportUseCase preview = new(reader, dataStore);
+
+        IReadOnlyList<JurnalImportRow> rows = preview.Preview("jurnal.xlsx", "Sheet1", "IDDATA", 2026);
+
+        Assert.Equal("*** Kode Tidak Terdaftar ***", rows[0].Rekening);
     }
 
     [Fact]
@@ -317,6 +383,7 @@ public sealed class JurnalImportTests
         public JurnalImportRecalcQueueResult QueueResult { get; init; } = JurnalImportRecalcQueueResult.Create([101L, 102L], ["10.01", "20.01"], 2);
         public JurnalImportScope? ImportScope { get; private set; }
         public IReadOnlyList<JurnalImportRow>? ImportRows { get; private set; }
+        public IReadOnlyDictionary<string, string> AccountNames { get; init; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public string GetLockStatus(string idData, string period)
         {
@@ -361,6 +428,12 @@ public sealed class JurnalImportTests
         {
             Calls.Add("FindMissingAccounts");
             return MissingAccountIssues;
+        }
+
+        public IReadOnlyDictionary<string, string> GetAccountNames(string idData, int coaYear)
+        {
+            Calls.Add("GetAccountNames");
+            return AccountNames;
         }
 
         public int ImportPartial(JurnalImportScope scope, IReadOnlyList<JurnalImportRow> rows, IProgress<JurnalImportProgress>? progress)

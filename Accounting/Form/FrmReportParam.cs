@@ -145,15 +145,8 @@ namespace Accounting.Form
                 return true;
             }
 
-            MessageBoxIcon icon = readiness.Failure == NeracaReadinessFailure.NotBalanced
-                ? MessageBoxIcon.Warning
-                : MessageBoxIcon.Information;
-            string caption = readiness.Failure == NeracaReadinessFailure.NotBalanced
-                ? "Neraca Belum Balance"
-                : "info";
-
-            XtraMessageBox.Show(readiness.Message, caption, MessageBoxButtons.OK, icon);
-            return false;
+            XtraMessageBox.Show(readiness.Message, "Neraca Belum Balance", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return true;
         }
         private void sbexport_Click(object sender, EventArgs e)
         {

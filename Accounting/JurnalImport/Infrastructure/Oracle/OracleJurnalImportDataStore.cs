@@ -87,6 +87,14 @@ public sealed class OracleJurnalImportDataStore : IJurnalImportDataStore
             .ToList();
     }
 
+    public IReadOnlyDictionary<string, string> GetAccountNames(string idData, int coaYear)
+    {
+        return JurnalServices.KodeUntukJurnal(idData, coaYear)
+            .Where(coa => !string.IsNullOrWhiteSpace(coa.KODE))
+            .GroupBy(coa => coa.KODE.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().PERKIRAAN, StringComparer.OrdinalIgnoreCase);
+    }
+
     public int ImportPartial(JurnalImportScope scope, IReadOnlyList<JurnalImportRow> rows, IProgress<JurnalImportProgress>? progress)
     {
         CaptureReplacePeriodSnapshot(scope);

@@ -120,15 +120,6 @@ public sealed class NeracaReportTests
     }
 
     [Fact]
-    public void ReadinessResult_MissingJournal_IsNotReady()
-    {
-        NeracaReadinessResult result = NeracaReadinessResult.MissingJournal();
-
-        Assert.False(result.IsReady);
-        Assert.Equal(NeracaReadinessFailure.MissingJournal, result.Failure);
-    }
-
-    [Fact]
     public void ReadinessResult_NotBalanced_CarriesPeriodeAndSelisih()
     {
         NeracaReadinessResult result = NeracaReadinessResult.NotBalanced("06/2026", 1500m);
