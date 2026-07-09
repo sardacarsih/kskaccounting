@@ -50,6 +50,15 @@ internal static class Program
                 case MigrationMode.Verify:
                     RunVerify(options, manifest);
                     break;
+                case MigrationMode.ReconcileHistory:
+                    ReconcileHistory(options, manifest);
+                    break;
+                case MigrationMode.RebaselineChecksum:
+                    RebaselineChecksum(options, manifest);
+                    break;
+                case MigrationMode.ShowCompileErrors:
+                    ShowCompileErrors(options);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unsupported mode: {options.Mode}");
             }
@@ -142,17 +151,173 @@ internal static class Program
     {
         foreach (MigrationItem migration in manifest.Migrations.OrderBy(m => m.Order))
         {
-            if (string.IsNullOrWhiteSpace(migration.CheckScript))
-            {
-                continue;
-            }
-
-            AssetContent check = ResolveAsset(options, migration.CheckScript!);
-            Console.WriteLine($"[VERIFY] {migration.Id} -> {migration.CheckScript}");
-            ExecuteSqlAsset(options, check, $"verify_{migration.Id}");
+            ExecuteMigrationCheckIfPresent(options, migration, $"verify_{migration.Id}");
         }
 
         Console.WriteLine("[OK] Verification scripts completed.");
+    }
+
+    private static void ExecuteMigrationCheckIfPresent(AppOptions options, MigrationItem migration, string logPrefix)
+    {
+        if (string.IsNullOrWhiteSpace(migration.CheckScript))
+        {
+            return;
+        }
+
+        AssetContent check = ResolveAsset(options, migration.CheckScript!);
+        Console.WriteLine($"[VERIFY] {migration.Id} -> {migration.CheckScript}");
+        ExecuteSqlAsset(options, check, logPrefix);
+    }
+
+    private static void ReconcileHistory(AppOptions options, Manifest manifest)
+    {
+        Dictionary<string, AppliedMigration> applied = GetAppliedMigrations(options);
+        int baselinedCount = 0;
+
+        foreach (MigrationItem migration in manifest.Migrations.OrderBy(m => m.Order))
+        {
+            AssetContent script = ResolveAsset(options, migration.Script);
+            string checksum = ComputeSha256(script.Content);
+
+            if (applied.TryGetValue(migration.Id, out AppliedMigration? existing))
+            {
+                if (!string.Equals(existing.Checksum, checksum, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        $"Checksum mismatch for '{migration.Id}'. Applied={existing.Checksum}, Current={checksum}");
+                }
+
+                Console.WriteLine($"[SKIP] {migration.Id} already applied at {existing.AppliedAt}");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(migration.CheckScript))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot reconcile '{migration.Id}' because it has no check script. Use normal --mode up on a clean database.");
+            }
+
+            AssetContent check = ResolveAsset(options, migration.CheckScript!);
+            Console.WriteLine($"[CHECK] {migration.Id} -> {migration.CheckScript}");
+
+            try
+            {
+                ExecuteSqlAsset(options, check, $"reconcile_{migration.Id}");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot baseline '{migration.Id}' because its check script failed. " +
+                    "Stop here and do not run --mode up until the database state is fixed. Detail: " + ex.Message, ex);
+            }
+
+            RegisterMigration(options, migration, checksum, 0);
+            applied[migration.Id] = new AppliedMigration(checksum, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            baselinedCount++;
+            Console.WriteLine($"[BASELINE] {migration.Id}");
+        }
+
+        Console.WriteLine($"[OK] Reconciled migration history. Baselined={baselinedCount}.");
+    }
+
+    private static void RebaselineChecksum(AppOptions options, Manifest manifest)
+    {
+        if (string.IsNullOrWhiteSpace(options.MigrationId))
+        {
+            throw new InvalidOperationException(
+                "--mode rebaselinechecksum requires --migration-id <id>.");
+        }
+
+        MigrationItem? migration = manifest.Migrations
+            .FirstOrDefault(m => string.Equals(m.Id, options.MigrationId, StringComparison.OrdinalIgnoreCase));
+        if (migration is null)
+        {
+            throw new InvalidOperationException($"Migration '{options.MigrationId}' not found in manifest.");
+        }
+
+        Dictionary<string, AppliedMigration> applied = GetAppliedMigrations(options);
+        if (!applied.TryGetValue(migration.Id, out AppliedMigration? existing))
+        {
+            throw new InvalidOperationException(
+                $"'{migration.Id}' is not recorded as applied. Use --mode up or --mode reconcilehistory instead.");
+        }
+
+        AssetContent script = ResolveAsset(options, migration.Script);
+        string currentChecksum = ComputeSha256(script.Content);
+
+        if (string.Equals(existing.Checksum, currentChecksum, StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine($"[SKIP] '{migration.Id}' recorded checksum already matches the current script.");
+            return;
+        }
+
+        if (options.Reexecute)
+        {
+            Console.WriteLine($"[REEXECUTE] {migration.Id} -> {migration.Script}");
+            ExecuteSqlAsset(options, script, $"reexecute_{migration.Id}");
+            ExecuteMigrationCheckIfPresent(options, migration, $"recheck_{migration.Id}");
+
+            Console.WriteLine(
+                $"[REBASELINE] {migration.Id}: {existing.Checksum} -> {currentChecksum} " +
+                "(current script re-executed against this server before rebaselining)");
+        }
+        else
+        {
+            Console.WriteLine(
+                $"[REBASELINE] {migration.Id}: {existing.Checksum} -> {currentChecksum} " +
+                "(script content changed after this migration was applied; no SQL is re-executed)");
+        }
+
+        UpdateMigrationChecksum(options, migration.Id, currentChecksum);
+        Console.WriteLine($"[OK] Rebaselined checksum for '{migration.Id}'.");
+    }
+
+    private static void ShowCompileErrors(AppOptions options)
+    {
+        string[] names = string.IsNullOrWhiteSpace(options.ObjectName)
+            ? ["ACCT_REPORT_ENGINE_V1", "ACCT_LAPORAN_V2"]
+            : options.ObjectName.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        string nameList = string.Join(",", names.Select(n => $"'{EscapeSqlLiteral(n.ToUpperInvariant())}'"));
+
+        const string columns = "NAME || '|' || TYPE || '|' || LINE || '|' || POSITION || '|' || TEXT";
+        string sql = $"""
+SET SERVEROUTPUT ON
+SET HEADING OFF
+SET FEEDBACK OFF
+SET PAGESIZE 0
+SET LINESIZE 32767
+SET TRIMSPOOL ON
+BEGIN
+    FOR obj IN (
+        SELECT OBJECT_NAME, OBJECT_TYPE
+          FROM USER_OBJECTS
+         WHERE OBJECT_NAME IN ({nameList})
+           AND OBJECT_TYPE IN ('PACKAGE', 'PACKAGE BODY')
+           AND STATUS = 'INVALID'
+    ) LOOP
+        BEGIN
+            IF obj.OBJECT_TYPE = 'PACKAGE' THEN
+                EXECUTE IMMEDIATE 'ALTER PACKAGE ' || obj.OBJECT_NAME || ' COMPILE';
+            ELSE
+                EXECUTE IMMEDIATE 'ALTER PACKAGE ' || obj.OBJECT_NAME || ' COMPILE BODY';
+            END IF;
+        EXCEPTION
+            WHEN OTHERS THEN
+                NULL;
+        END;
+    END LOOP;
+END;
+/
+SELECT {columns}
+  FROM USER_ERRORS
+ WHERE NAME IN ({nameList})
+ ORDER BY NAME, SEQUENCE;
+EXIT
+""";
+
+        SqlExecutionResult result = ExecuteSqlInline(options, sql, "show_compile_errors");
+        Console.WriteLine(result.Output.Trim());
     }
 
     private static void EnsureConnection(AppOptions options)
@@ -262,6 +427,21 @@ EXIT
 """;
 
         ExecuteSqlInline(options, sql, $"register_{migration.Id}");
+    }
+
+    private static void UpdateMigrationChecksum(AppOptions options, string migrationId, string newChecksum)
+    {
+        string escapedId = EscapeSqlLiteral(migrationId);
+        string escapedChecksum = EscapeSqlLiteral(newChecksum);
+        string sql = $"""
+UPDATE GL_MIGRATION_HISTORY
+   SET CHECKSUM_SHA256 = '{escapedChecksum}'
+ WHERE MIGRATION_ID = '{escapedId}';
+COMMIT;
+EXIT
+""";
+
+        ExecuteSqlInline(options, sql, $"rebaseline_{migrationId}");
     }
 
     private static void RemoveMigrationHistory(AppOptions options, string migrationId)
@@ -715,7 +895,10 @@ internal enum MigrationMode
     Down,
     Status,
     Verify,
-    CheckConn
+    CheckConn,
+    ReconcileHistory,
+    RebaselineChecksum,
+    ShowCompileErrors
 }
 
 internal sealed class AppOptions
@@ -729,18 +912,29 @@ internal sealed class AppOptions
     public string LogDirectory { get; private init; } = string.Empty;
     public string ConfigPathOverride { get; private init; } = string.Empty;
     public string ServerKeyOverride { get; private init; } = string.Empty;
+    public string MigrationId { get; private init; } = string.Empty;
+    public bool Reexecute { get; private init; }
+    public string ObjectName { get; private init; } = string.Empty;
     public int ScriptTimeoutMs { get; private init; } = 600000;
     public int ConnTimeoutMs { get; private init; } = 30000;
     public bool ShowHelp { get; private init; }
 
     public static string HelpText => """
-GLMigrator.exe [--connection <USER/PASS@//HOST:PORT/SERVICE>] [--config <path>] [--server-key KEY] [--mode up|down|status|verify|checkconn] [--steps N]
+GLMigrator.exe [--connection <USER/PASS@//HOST:PORT/SERVICE>] [--config <path>] [--server-key KEY] [--mode up|down|status|verify|checkconn|reconcilehistory|rebaselinechecksum] [--steps N] [--migration-id ID]
 
 Options:
   --connection   Oracle SQL*Plus connection string. If omitted, the executable reads config.json.
   --config       Optional config.json path. If omitted, the executable probes common config.json locations.
   --server-key   Optional server key override for config.json resolution
-  --mode         up (default), down, status, verify, checkconn
+  --mode         up (default), down, status, verify, checkconn, reconcilehistory, rebaselinechecksum
+  --migration-id Required for --mode rebaselinechecksum: the manifest id whose recorded checksum should be
+                  updated to match the current script content (no SQL is re-executed unless --reexecute is
+                  also given; use only when the script content change is a confirmed no-op on this server).
+  --reexecute    With --mode rebaselinechecksum: re-run the migration's current script (and check script)
+                  against this server before updating the checksum. Use when the script gained real new
+                  logic since it was applied here, not just a refactor. Scripts must be idempotent.
+  --object-name  With --mode showcompileerrors: comma-separated PL/SQL object name(s) to inspect via
+                  USER_ERRORS. Defaults to ACCT_REPORT_ENGINE_V1,ACCT_LAPORAN_V2.
   --steps        Number of steps for down mode (default: 1)
   --timeout      Max milliseconds per SQL script before sqlplus is killed (default: 600000)
   --conn-timeout Max milliseconds for the startup connection check (default: 30000)
@@ -807,9 +1001,19 @@ Default behavior:
         {
             if (!Enum.TryParse(modeArg, true, out mode))
             {
-                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn.");
+                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors.");
             }
         }
+
+        string migrationId = map.TryGetValue("migration-id", out string? migrationIdArg) && !string.IsNullOrWhiteSpace(migrationIdArg)
+            ? migrationIdArg.Trim()
+            : string.Empty;
+
+        bool reexecute = map.ContainsKey("reexecute");
+
+        string objectName = map.TryGetValue("object-name", out string? objectNameArg) && !string.IsNullOrWhiteSpace(objectNameArg)
+            ? objectNameArg.Trim()
+            : string.Empty;
 
         int steps = 1;
         if (map.TryGetValue("steps", out string? stepsArg) && !string.IsNullOrWhiteSpace(stepsArg))
@@ -853,6 +1057,9 @@ Default behavior:
             LogDirectory = logDir,
             ConfigPathOverride = config,
             ServerKeyOverride = serverKey,
+            MigrationId = migrationId,
+            Reexecute = reexecute,
+            ObjectName = objectName,
             ScriptTimeoutMs = scriptTimeoutMs,
             ConnTimeoutMs = connTimeoutMs,
             ShowHelp = help

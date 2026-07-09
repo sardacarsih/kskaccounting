@@ -454,7 +454,9 @@ namespace Accounting.DataLayer
                    II.""Name"" AS ITEM_NAME,
                    IU.""Name"" AS UNIT_NAME,
                    IUSI.""Quantity"" AS QUANTITY,
-                   ROUND(NVL(IUSI.""Quantity"", 0) * NVL(IUSI.""UnitValue"", 0), 2) AS AMOUNT
+                   ROUND(NVL(IUSI.""Quantity"", 0) * NVL(IUSI.""UnitValue"", 0), 2) AS AMOUNT,
+                   IUSI.""Notes"" AS NOTES,
+                   IUS.""IsAgronomy"" AS IS_AGRONOMY
             FROM ""InvUsages"" IUS
             JOIN ""InvUsageItems"" IUSI ON IUSI.""UsageId"" = IUS.""Id""
             LEFT JOIN ""InvItems"" II ON II.""Id"" = IUSI.""ItemId""
@@ -507,8 +509,16 @@ namespace Accounting.DataLayer
                    CAST(LK.DEBIT_ACCOUNT_NAME AS NVARCHAR2(200)) AS REKENING,
                    LK.AMOUNT AS DEBET,
                    ROUND(0, 2) AS KREDIT,
-                   TO_NCHAR(LK.NOJURNAL) || N', ' || TO_NCHAR(LK.ITEM_NAME) || N' = '
-                       || TO_NCHAR(LK.QUANTITY) || N' ' || TO_NCHAR(LK.UNIT_NAME) AS KETERANGAN,
+                   CASE
+                       WHEN LK.IS_AGRONOMY = 1 THEN CAST(LK.NOTES AS NVARCHAR2(200))
+                       ELSE CAST(
+                           CASE WHEN LK.NOTES IS NULL THEN N''
+                                ELSE TO_NCHAR(LK.NOTES) || N', '
+                           END
+                           || TO_NCHAR(LK.ITEM_NAME) || N' = '
+                           || TO_NCHAR(LK.QUANTITY) || N' ' || TO_NCHAR(LK.UNIT_NAME)
+                           AS NVARCHAR2(200))
+                   END AS KETERANGAN,
                    3 AS SORT_ORDER
             FROM LK_BASE LK
             UNION ALL

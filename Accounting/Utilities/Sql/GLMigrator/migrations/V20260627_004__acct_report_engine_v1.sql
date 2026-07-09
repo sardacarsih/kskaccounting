@@ -437,23 +437,16 @@ CREATE OR REPLACE PACKAGE BODY ACCT_LAPORAN_V2 AS
         p_CURSOR  OUT SYS_REFCURSOR
     )
     IS
-        v_ignore NUMBER;
     BEGIN
-        v_ignore := ACCT_LAPORAN.ACC_GENREP_LRNR_SUB(
+        ACCT_REPORT_ENGINE_V1.GET_DRILLDOWN(
             p_IDDATA,
             p_BULAN,
             p_TAHUN,
+            'LABARUGI',
+            NULL,
             p_KODEACC,
-            p_USERID,
-            p_LAP,
-            p_POSISI
+            p_CURSOR
         );
-
-        OPEN p_CURSOR FOR
-            SELECT *
-              FROM ACC_SUB_REPORT
-             WHERE IDDATA = p_IDDATA
-               AND GENUSER = p_USERID;
     END LAP_LABARUGI_SUB_V2;
 END ACCT_LAPORAN_V2;]';
 
