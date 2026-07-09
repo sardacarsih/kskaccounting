@@ -1,12 +1,14 @@
 using Accounting._1.Interface;
 using Accounting.Model;
 using Accounting.Services;
+using Oracle.ManagedDataAccess.Client;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -366,13 +368,47 @@ namespace Accounting.BusinessLayer
             }
             catch (Exception ex)
             {
-                if (ex.Message.Contains("ORA-00001"))
+                Log.Error(
+                    ex,
+                    "JurnalInputOperationService.Save failed is_edit={IsEdit} old_jurnal_id={OldJurnalId} nomor={Nomor} periode={Periode}",
+                    request.IsEdit,
+                    request.OldJurnalId,
+                    request.Nomor,
+                    request.Periode);
+
+                OracleException oracleException = FindOracleException(ex);
+                if (oracleException != null && oracleException.Number == OracleUniqueConstraintErrorNumber)
                 {
-                    return JurnalSaveResult.Fail("Duplikasi Data", JurnalInputFocusTarget.None, JurnalSaveErrorCodes.DuplicateData);
+                    string constraintName = ExtractConstraintName(oracleException.Message);
+                    string message = string.IsNullOrEmpty(constraintName)
+                        ? "Duplikasi Data"
+                        : $"Duplikasi Data ({constraintName})";
+                    return JurnalSaveResult.Fail(message, JurnalInputFocusTarget.None, JurnalSaveErrorCodes.DuplicateData);
                 }
 
                 return JurnalSaveResult.Fail(ex.Message, JurnalInputFocusTarget.None, JurnalSaveErrorCodes.Unknown);
             }
+        }
+
+        private const int OracleUniqueConstraintErrorNumber = 1;
+
+        private static OracleException FindOracleException(Exception exception)
+        {
+            for (Exception current = exception; current != null; current = current.InnerException)
+            {
+                if (current is OracleException oracleException)
+                {
+                    return oracleException;
+                }
+            }
+
+            return null;
+        }
+
+        private static string ExtractConstraintName(string oracleMessage)
+        {
+            Match match = Regex.Match(oracleMessage ?? string.Empty, @"unique constraint \(([^)]+)\)", RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value : string.Empty;
         }
 
         public JurnalDeleteResult Delete(JurnalDeleteRequest request)

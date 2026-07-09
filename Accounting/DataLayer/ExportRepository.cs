@@ -1,4 +1,4 @@
-﻿using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -33,7 +33,7 @@ namespace Accounting.DataLayer
         {
             using OracleConnection conn = new(LoginInfo.OracleConnString);
             conn.Open();
-            using OracleCommand _command = new("ACCT_JURNAL.ExportJurnal", conn)
+            using OracleCommand _command = new("ACCT_JURNAL_V2.ExportJurnal", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };

@@ -1165,17 +1165,23 @@ public sealed class OracleFixedAssetLifecycleRepository : IFixedAssetLifecycleRe
         string period,
         CancellationToken cancellationToken)
     {
-        await using OracleCommand cmd = new("ACCT_JURNAL.GetStatusLock", conn)
+        const string sql = """
+            SELECT NVL(MAX(ISLOCKED), 'N')
+            FROM ACCT_PERIODE
+            WHERE IDDATA = :p_IDDATA
+              AND PERIODE = :p_periode
+            """;
+
+        await using OracleCommand cmd = new(sql, conn)
         {
             Transaction = trx,
-            CommandType = CommandType.StoredProcedure,
+            CommandType = CommandType.Text,
             BindByName = true
         };
-        cmd.Parameters.Add("LockStatus", OracleDbType.Varchar2, 20).Direction = ParameterDirection.ReturnValue;
         cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = idData;
         cmd.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = period;
-        await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        string result = Convert.ToString(cmd.Parameters["LockStatus"].Value) ?? "N";
+        object? scalar = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        string result = Convert.ToString(scalar) ?? "N";
         return string.Equals(result.Trim(), "Y", StringComparison.OrdinalIgnoreCase);
     }
 

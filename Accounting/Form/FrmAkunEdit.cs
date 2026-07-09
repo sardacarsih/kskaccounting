@@ -1,5 +1,6 @@
 ﻿
 using Accounting.BusinessLayer;
+using Accounting.DataLayer;
 using Accounting.Form;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
@@ -42,8 +43,7 @@ namespace Accounting
             setahun.Properties.MinValue = Acct.TahunMin;
             setahun.Properties.MaxValue = Acct.TahunMax;
             setahun.Value = Acct.TahunMax;
-            lbliddata.Text =CompanyInfo.IDDATA;
-            Load_TipeAkun();           
+            Load_TipeAkun();
             Edit_COA();
 
 
@@ -85,11 +85,11 @@ namespace Accounting
             txtnamaakun.Text = EditCOA.PERKIRAAN;
             if (EditCOA.AKTIF == 'T')
             {
-                checkEditnonaktif.Checked = true;
+                checkEditnonaktif.IsOn = true;
             }
             else
             {
-                checkEditnonaktif.Checked = false;
+                checkEditnonaktif.IsOn = false;
             }
             txtnoakundetail.Text = EditCOA.KODE;
         }
@@ -265,9 +265,16 @@ namespace Accounting
                 }
 
                 char status='-';
-                if (checkEditnonaktif.Checked == true)
+                if (checkEditnonaktif.IsOn == true)
                 {
                     status ='T';
+                }
+
+                if (CoaGuard.IsCodeChanging(EditCOA.KODE, txtnoakundetail.Text) &&
+                    AccountServices.HasTransactions(CompanyInfo.IDDATA, EditCOA.TAHUN, EditCOA.KODE))
+                {
+                    XtraMessageBox.Show("Kode Perkiraan tidak dapat diubah, karena telah memiliki transaksi", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
 
                 AccountServices.UpdateCOA(

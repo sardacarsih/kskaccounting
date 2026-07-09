@@ -1,4 +1,4 @@
-﻿using DevExpress.Utils;
+using DevExpress.Utils;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid.Views.Grid.ViewInfo;
@@ -56,7 +56,7 @@ namespace Accounting.Form
             }
             else
             {
-                using (OracleCommand _command = new OracleCommand("ACCT_JURNAL.CekDoubleClosing", conn)
+                using (OracleCommand _command = new OracleCommand("ACCT_JURNAL_V2.CekDoubleClosing", conn)
                 {
                     CommandType = CommandType.StoredProcedure
                 })
@@ -103,7 +103,7 @@ namespace Accounting.Form
          }
         private DataTable Cekjurnal()
         {
-            using (OracleCommand _command = new OracleCommand("ACCT_JURNAL.CekGlobalJurnalNotBalanced", conn)
+            using (OracleCommand _command = new OracleCommand("ACCT_JURNAL_V2.CekGlobalJurnalNotBalanced", conn)
             {
                 CommandType = CommandType.StoredProcedure
             })

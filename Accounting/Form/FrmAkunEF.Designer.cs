@@ -164,7 +164,7 @@ namespace Accounting.Form
             this.sbubah.Appearance.Options.UseFont = true;
             this.sbubah.ImageOptions.Image = global::Accounting.Properties.Resources.updatefield_16x16;
             this.sbubah.Location = new System.Drawing.Point(343, 9);
-            this.sbubah.Margin = new System.Windows.Forms.Padding(1208, 1338, 1208, 1338);
+            this.sbubah.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.sbubah.Name = "sbubah";
             this.sbubah.Size = new System.Drawing.Size(69, 31);
             this.sbubah.TabIndex = 1;
@@ -177,7 +177,7 @@ namespace Accounting.Form
             this.sbhapus.Appearance.Options.UseFont = true;
             this.sbhapus.ImageOptions.Image = global::Accounting.Properties.Resources.removepivotfield_16x16;
             this.sbhapus.Location = new System.Drawing.Point(420, 9);
-            this.sbhapus.Margin = new System.Windows.Forms.Padding(1208, 1338, 1208, 1338);
+            this.sbhapus.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.sbhapus.Name = "sbhapus";
             this.sbhapus.Size = new System.Drawing.Size(69, 31);
             this.sbhapus.TabIndex = 2;
@@ -190,7 +190,7 @@ namespace Accounting.Form
             this.sbexport.Appearance.Options.UseFont = true;
             this.sbexport.ImageOptions.Image = global::Accounting.Properties.Resources.exporttoxlsx_16x16;
             this.sbexport.Location = new System.Drawing.Point(501, 9);
-            this.sbexport.Margin = new System.Windows.Forms.Padding(1208, 1338, 1208, 1338);
+            this.sbexport.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.sbexport.Name = "sbexport";
             this.sbexport.Size = new System.Drawing.Size(69, 31);
             this.sbexport.TabIndex = 2;
@@ -420,7 +420,7 @@ namespace Accounting.Form
             this.gridControl1.EmbeddedNavigator.Margin = new System.Windows.Forms.Padding(987, 445, 987, 445);
             this.gridControl1.Location = new System.Drawing.Point(2, 2);
             this.gridControl1.MainView = this.gridView1;
-            this.gridControl1.Margin = new System.Windows.Forms.Padding(1846, 1893, 1846, 1893);
+            this.gridControl1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.gridControl1.Name = "gridControl1";
             this.gridControl1.Size = new System.Drawing.Size(1380, 554);
             this.gridControl1.TabIndex = 3;
@@ -670,7 +670,7 @@ namespace Accounting.Form
             this.sbexpadvanced.Appearance.Options.UseFont = true;
             this.sbexpadvanced.ImageOptions.Image = global::Accounting.Properties.Resources.exporttoxlsx_16x16;
             this.sbexpadvanced.Location = new System.Drawing.Point(577, 9);
-            this.sbexpadvanced.Margin = new System.Windows.Forms.Padding(1208, 1338, 1208, 1338);
+            this.sbexpadvanced.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.sbexpadvanced.Name = "sbexpadvanced";
             this.sbexpadvanced.Size = new System.Drawing.Size(124, 31);
             this.sbexpadvanced.TabIndex = 2;

@@ -1,5 +1,6 @@
 using Accounting.CoaImport.Application;
 using Accounting.CoaImport.Domain;
+using Accounting.CoaImport.Infrastructure.Oracle;
 using Accounting.CoaImport.Presentation;
 
 namespace Accounting.Tests;

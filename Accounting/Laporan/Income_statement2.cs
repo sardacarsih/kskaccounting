@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace Accounting.Laporan
 {
-    // Laba Rugi V2 report bound to ACCT_REPORT_ENGINE_V1 via LaporanServices.ViewLap_LabaRugi_V2.
+    // Laba Rugi V2 report bound through ACCT_LAPORAN_V2 via LaporanServices.ViewLap_LabaRugi_V2.
     public partial class Income_statement2 : DevExpress.XtraReports.UI.XtraReport
     {
         private static readonly string[] BulanIndonesia =

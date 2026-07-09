@@ -43,7 +43,7 @@ namespace Accounting.DataLayer
         
         public DataTable GetJurnalHeader(string piddata, string periode)
         {
-            using OracleCommand _command = new("ACCT_JURNAL.GetJurnalList", conn)
+            using OracleCommand _command = new("ACCT_JURNAL_V2.GetJurnalList", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -65,7 +65,7 @@ namespace Accounting.DataLayer
 
         public DataTable GetJurnalDetails(string piddata, string periode)
         {
-            using OracleCommand _command = new("ACCT_JURNAL.GetJurnalDetails", conn)
+            using OracleCommand _command = new("ACCT_JURNAL_V2.GetJurnalDetails", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -87,7 +87,7 @@ namespace Accounting.DataLayer
 
         public DataTable GetJurnalDetailsV2(string piddata, string periode)
         {
-            using OracleCommand _command = new("ACCT_JURNAL.GetJurnalDetailsV2", conn)
+            using OracleCommand _command = new("ACCT_JURNAL_V2.GetJurnalDetailsV2", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -108,27 +108,32 @@ namespace Accounting.DataLayer
         }
         public string GetLockStatus(string piddata, string periode)
         {
-            using OracleCommand cmd = new("ACCT_JURNAL.GetStatusLock", conn)
+            const string sql = @"
+                SELECT NVL(MAX(ISLOCKED), 'N')
+                FROM ACCT_PERIODE
+                WHERE IDDATA = :p_IDDATA
+                  AND PERIODE = :p_periode";
+
+            using OracleCommand cmd = new(sql, conn)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.Text,
+                BindByName = true
             };
             if (conn.State != ConnectionState.Open)
             {
                 conn.Open();
             }
-            cmd.Parameters.Add("LockStatus", OracleDbType.Varchar2, 20).Direction = ParameterDirection.ReturnValue;
             cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
             cmd.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
-            cmd.ExecuteReader();
 
-            string result = cmd.Parameters["LockStatus"].Value.ToString();
+            string result = Convert.ToString(cmd.ExecuteScalar()) ?? "N";
             conn.Close();
-            return result;
+            return string.IsNullOrWhiteSpace(result) ? "N" : result.Trim();
         }
 
         public void HapusJurnal(string p_nomorHID)
         {
-            using OracleCommand cmd = new("ACCT_JURNAL.HapusJurnal", conn)
+            using OracleCommand cmd = new("ACCT_JURNAL_V2.HapusJurnal", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -144,7 +149,7 @@ namespace Accounting.DataLayer
             try
             {
 
-                using OracleCommand cmd = new("ACCT_JURNAL.ImportJurnalGlobal", conn)
+                using OracleCommand cmd = new("ACCT_JURNAL_V2.ImportJurnalGlobal", conn)
                 {
                     CommandType = CommandType.StoredProcedure
                 };
@@ -175,7 +180,7 @@ namespace Accounting.DataLayer
             try
             {
 
-                using OracleCommand cmd = new("ACCT_JURNAL.ImportJurnalParsial", conn)
+                using OracleCommand cmd = new("ACCT_JURNAL_V2.ImportJurnalParsial", conn)
                 {
                     CommandType = CommandType.StoredProcedure
                 };
@@ -262,7 +267,7 @@ namespace Accounting.DataLayer
 
         public DataTable CekAkunMaster(int ptahun)
         {
-            using (OracleCommand _command = new OracleCommand("ACCT_JURNAL.CekAkunMaster", conn)
+            using (OracleCommand _command = new OracleCommand("ACCT_JURNAL_V2.CekAkunMaster", conn)
             {
                 CommandType = CommandType.StoredProcedure
             })
@@ -324,7 +329,7 @@ namespace Accounting.DataLayer
 
         public DataTable CekDuplikasiJurnal()
         {
-            using OracleCommand _command = new("ACCT_JURNAL.CekDuplikasiJurnal", conn)
+            using OracleCommand _command = new("ACCT_JURNAL_V2.CekDuplikasiJurnal", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -345,7 +350,7 @@ namespace Accounting.DataLayer
 
         public DataTable CekNoJurnalExist()
         {
-            using OracleCommand _command = new("ACCT_JURNAL.CekNoJurnalExist", conn)
+            using OracleCommand _command = new("ACCT_JURNAL_V2.CekNoJurnalExist", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -404,7 +409,7 @@ namespace Accounting.DataLayer
 
         public int CekRecordJurnalExist(string piddata, string periode)
         {
-            using OracleCommand cmd = new("ACCT_JURNAL.CekRecordJurnalExist", conn)
+            using OracleCommand cmd = new("ACCT_JURNAL_V2.CekRecordJurnalExist", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -476,7 +481,7 @@ namespace Accounting.DataLayer
         public bool CekNoJurnalExist_input(string piddata, string nojurnal, string periode)
         {
             bool result = false;
-            using OracleCommand cmd = new("ACCT_JURNAL.CekNoJurnalExist_input", conn)
+            using OracleCommand cmd = new("ACCT_JURNAL_V2.CekNoJurnalExist_input", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -523,7 +528,7 @@ namespace Accounting.DataLayer
         }
         public DataTable EditJurnalDT(string p_nomorHID)
         {
-            using OracleCommand _command = new("ACCT_JURNAL.GetJurnalListEdit", conn)
+            using OracleCommand _command = new("ACCT_JURNAL_V2.GetJurnalListEdit", conn)
             {
                 CommandType = CommandType.StoredProcedure
             };
@@ -567,7 +572,7 @@ namespace Accounting.DataLayer
 
         public int CekPeriodeExist(string piddata, string p_periode)
         {
-            using (OracleCommand cmd = new OracleCommand("ACCT_JURNAL.CekPeriodeExist", conn)
+            using (OracleCommand cmd = new OracleCommand("ACCT_JURNAL_V2.CekPeriodeExist", conn)
             {
                 CommandType = CommandType.StoredProcedure
             })
@@ -589,7 +594,7 @@ namespace Accounting.DataLayer
 
         public DataSet GetNotaDebet(string piddata, string pperiode, string pkodeacc)
         {
-            using (OracleCommand _command = new OracleCommand("ACCT_JURNAL.NOTADEBET", conn)
+            using (OracleCommand _command = new OracleCommand("ACCT_JURNAL_V2.NOTADEBET", conn)
             {
                 CommandType = CommandType.StoredProcedure
             })
@@ -613,7 +618,7 @@ namespace Accounting.DataLayer
 
         public DataSet GetNotaKredit(string piddata, string pperiode, string pkodeacc)
         {
-            using (OracleCommand _command = new OracleCommand("ACCT_JURNAL.NOTAKREDIT", conn)
+            using (OracleCommand _command = new OracleCommand("ACCT_JURNAL_V2.NOTAKREDIT", conn)
             {
                 CommandType = CommandType.StoredProcedure
             })
@@ -639,7 +644,7 @@ namespace Accounting.DataLayer
         {
             // ACCT_JURNAL_RE_V2.JURNAL_RE recomputes the reversal through ACCT_RECALLCULATIONS_V2 (parity with
             // the yearly closing orchestrator). The 4th parameter p_commit defaults to 'Y', so the reversal is
-            // committed exactly as the legacy ACCT_JURNAL.JurnalRE path relied on.
+            // committed exactly as the ACCT_JURNAL_RE_V2 path relied on.
             using (OracleCommand cmd = new OracleCommand("ACCT_JURNAL_RE_V2.JURNAL_RE", conn)
             {
                 CommandType = CommandType.StoredProcedure
@@ -811,10 +816,14 @@ namespace Accounting.DataLayer
             // dan kode tipe pendek seperti "KK" agar tidak hilang.
             AppendKeywordFilter("NOJURNAL", "p_nojurnal", p_nojurnal, sql, dynamicParams);
 
-            if (!string.IsNullOrEmpty(p_tanggal))
+            // Tanggal datang sebagai teks dd/MM/yyyy dari DateEdit; parse eksplisit InvariantCulture
+            // agar tidak tergantung culture OS (mis. en-US menolak "29/06/2026").
+            if (!string.IsNullOrEmpty(p_tanggal)
+                && DateTime.TryParseExact(p_tanggal, "dd/MM/yyyy",
+                       CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime tglFilter))
             {
                 sql.Append(" AND TANGGAL=:p_tanggal");
-                dynamicParams.Add("p_tanggal", Convert.ToDateTime(p_tanggal), DbType.Date);
+                dynamicParams.Add("p_tanggal", tglFilter, DbType.Date);
             }
 
             if (!string.IsNullOrEmpty(p_kode))
@@ -864,10 +873,14 @@ namespace Accounting.DataLayer
             // dan kode tipe pendek seperti "KK" agar tidak hilang.
             AppendKeywordFilter("NOJURNAL", "p_nojurnal", p_nojurnal, sql, dynamicParams);
 
-            if (!string.IsNullOrEmpty(p_tanggal))
+            // Tanggal datang sebagai teks dd/MM/yyyy dari DateEdit; parse eksplisit InvariantCulture
+            // agar tidak tergantung culture OS (mis. en-US menolak "29/06/2026").
+            if (!string.IsNullOrEmpty(p_tanggal)
+                && DateTime.TryParseExact(p_tanggal, "dd/MM/yyyy",
+                       CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime tglFilter))
             {
                 sql.Append(" AND TANGGAL=:p_tanggal");
-                dynamicParams.Add("p_tanggal", Convert.ToDateTime(p_tanggal), DbType.Date);
+                dynamicParams.Add("p_tanggal", tglFilter, DbType.Date);
             }
 
             if (!string.IsNullOrEmpty(p_kode))
@@ -915,7 +928,7 @@ namespace Accounting.DataLayer
             string sql = @" INSERT INTO ACCT_JURNAL_DTL (BARIS,KODE,REKENING,DEBET,KREDIT,KETERANGAN,POSTED,IDDATA,SUMBER,USERID,DID,REFFID,HIDREFF,NOJURNAL,TANGGAL, PERIODE,GLYEAR,GLMONTH) VALUES
                             (:BARIS,:KODE,:REKENING,:DEBET,:KREDIT,:KETERANGAN,:POSTED,:IDDATA,:SUMBER,:USERID,:DID,:REFFID,:HIDREFF,:NOJURNAL,:TANGGAL, :PERIODE,:GLYEAR,:GLMONTH)";
             
-            //var result=conn.Execute("ACCT_JURNAL.NewJurnalDetail", parameters, commandType: CommandType.StoredProcedure);
+            //var result=conn.Execute("ACCT_JURNAL_V2.NewJurnalDetail", parameters, commandType: CommandType.StoredProcedure);
             conn.Execute(sql, inputJurnalDetail);
             return true;
         }
@@ -1199,6 +1212,22 @@ namespace Accounting.DataLayer
                       FROM ACCT_JURNAL_DTL
                       WHERE REFFID=:reffid",
                     new { reffid = oldJurnalId }, transaction).ToList();
+
+                // The MERGE below keys on (REFFID, BARIS). A duplicate BARIS would update both
+                // target rows to the same DID and violate ACCT_JURNAL_DTL_PK.
+                List<int> duplicateBaris = oldDetails
+                    .GroupBy(detail => detail.Baris)
+                    .Where(group => group.Count() > 1)
+                    .Select(group => group.Key)
+                    .OrderBy(baris => baris)
+                    .ToList();
+                if (duplicateBaris.Count > 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Detail jurnal ini ganda pada baris {string.Join(", ", duplicateBaris)}. "
+                        + "Jurnal tidak dapat diupdate sebelum data gandanya dibereskan. Hubungi administrator.");
+                }
+
                 var oldDetailMap = oldDetails.ToDictionary(d => d.Baris);
 
                 var headerUpdateQuery = @"UPDATE ACCT_JURNAL_HDR
@@ -1663,6 +1692,19 @@ namespace Accounting.DataLayer
             int glMonth = int.Parse(jurnalHeader.PERIODE[..2]);
             int glYear = int.Parse(jurnalHeader.PERIODE.Substring(3, 4));
 
+            // (REFFID, BARIS) is the merge key on update; a duplicate BARIS would make the
+            // MERGE source ambiguous (ORA-30926) instead of failing here with a usable message.
+            List<int> duplicateBaris = jurnalDetail
+                .GroupBy(detail => detail.BARIS)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToList();
+            if (duplicateBaris.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Baris jurnal {jurnalHeader.NOJURNAL} duplikat: {string.Join(", ", duplicateBaris)}");
+            }
+
             foreach (JurnalDetailAdd detailData in jurnalDetail)
             {
                 detailData.NoJurnal = jurnalHeader.NOJURNAL;
@@ -1769,7 +1811,6 @@ namespace Accounting.DataLayer
             {
                 StageDetailRows(connection, transaction, sessionToken, jurnalDetail);
                 stageElapsedMs = stopwatch.ElapsedMilliseconds;
-                string reffIdToken = reffId.ToString("0", CultureInfo.InvariantCulture);
                 decimal reffIdNumber = Convert.ToDecimal(reffId, CultureInfo.InvariantCulture);
 
                 if (isUpdate)
@@ -1780,8 +1821,9 @@ namespace Accounting.DataLayer
                             FROM ACCT_JURNAL_DTL_STAGE_TMP
                             WHERE SESSION_TOKEN = :sessionToken
                         ) source
-                        ON (target.DID = source.DID)
+                        ON (target.REFFID = :reffid AND target.BARIS = source.BARIS)
                         WHEN MATCHED THEN UPDATE SET
+                            DID = source.DID,
                             NOJURNAL = :nojurnal,
                             TANGGAL = :tanggal,
                             KODE = source.KODE,
@@ -1827,7 +1869,7 @@ namespace Accounting.DataLayer
                                 SELECT 1
                                 FROM ACCT_JURNAL_DTL_STAGE_TMP stage
                                 WHERE stage.SESSION_TOKEN = :sessionToken
-                                  AND stage.DID = target.DID
+                                  AND stage.BARIS = target.BARIS
                             )",
                         new { reffid = reffIdNumber, sessionToken },
                         transaction);
@@ -1851,7 +1893,7 @@ namespace Accounting.DataLayer
                      POSTED, PERIODE, IDDATA, USERID, SUMBER, DID, GLYEAR, GLMONTH, HIDREFF, REFFID, CREATED_DATE)
                     SELECT
                         :nojurnal, :tanggal, stage.BARIS, stage.KODE, stage.REKENING, stage.DEBET, stage.KREDIT, stage.KETERANGAN,
-                        :posted, :periode, :idData, :userId, :sumber, :reffidToken || TO_CHAR(stage.BARIS), :glYear, :glMonth, :hidReff, :reffid, SYSTIMESTAMP
+                        :posted, :periode, :idData, :userId, :sumber, stage.DID, :glYear, :glMonth, :hidReff, :reffid, SYSTIMESTAMP
                     FROM ACCT_JURNAL_DTL_STAGE_TMP stage
                     WHERE stage.SESSION_TOKEN = :sessionToken";
 
@@ -1868,7 +1910,6 @@ namespace Accounting.DataLayer
                 insertParameters.Add("glMonth", jurnalDetail.FirstOrDefault()?.GLMONTH ?? int.Parse(jurnalHeader.PERIODE[..2]));
                 insertParameters.Add("hidReff", jurnalHeader.HID);
                 insertParameters.Add("reffid", reffIdNumber, DbType.Decimal);
-                insertParameters.Add("reffidToken", reffIdToken);
 
                 connection.Execute(insertSql, insertParameters, transaction);
                 writeElapsedMs = stopwatch.ElapsedMilliseconds - stageElapsedMs;
@@ -1968,8 +2009,9 @@ namespace Accounting.DataLayer
                               :USERID as USERID, :SUMBER as SUMBER, :GLYEAR as GLYEAR,
                               :GLMONTH as GLMONTH, :HIDREFF as HIDREFF, :REFFID as REFFID
                        FROM DUAL) source
-                ON (target.DID = source.DID)
+                ON (target.REFFID = source.REFFID AND target.BARIS = source.BARIS)
                 WHEN MATCHED THEN UPDATE SET
+                    DID=source.DID,
                     NOJURNAL=source.NOJURNAL, TANGGAL=source.TANGGAL,
                     KODE=source.KODE, REKENING=source.REKENING,
                     DEBET=source.DEBET, KREDIT=source.KREDIT,

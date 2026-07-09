@@ -219,8 +219,9 @@ namespace Accounting.Form
                 {
                     string[] bulanbi = { "Bulan", "Januari", "Pebruari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" };
 
-                    pbulan = DateTime.Parse(deJurnal.Text).Month;
-                    ptahun = DateTime.Parse(deJurnal.Text).Year;
+                    DateTime tglJurnal = deJurnal.DateTime;   // DevExpress DateEdit underlying DateTime; avoids culture-dependent text parsing
+                    pbulan = tglJurnal.Month;
+                    ptahun = tglJurnal.Year;
                     Load_PeriodeList(CompanyInfo.IDDATA, ptahun.ToString());
 
                     periodetujuan = FormatPeriod(pbulan, ptahun);

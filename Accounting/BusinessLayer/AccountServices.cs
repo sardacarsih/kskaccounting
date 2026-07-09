@@ -62,9 +62,14 @@ namespace Accounting.BusinessLayer
             return repository.CekCOAExist(piddata,  p_tahun);
         }
 
-        public static int ImportCOA(string piddata, int p_tahun)
+        public static bool CodeExists(string piddata, int p_tahun, string kodeAcc)
         {
-            return repository.ImportCOA(piddata, p_tahun);
+            return repository.CodeExists(piddata, p_tahun, kodeAcc);
+        }
+
+        public static bool HasTransactions(string piddata, int p_tahun, string kodeAcc)
+        {
+            return repository.HasTransactions(piddata, p_tahun, kodeAcc);
         }
 
         public static string GetNamaPeriode(string piddata)
@@ -135,10 +140,6 @@ namespace Accounting.BusinessLayer
             repository.InsertCOA( piddata,  p_tahun,  pgrp,  pinduk,pgd,  pkode,  plvl,pposisi,  pnama,  psawal);
         }
 
-        internal static int ImportCOAbyMerge(string piddata, int p_tahun)
-        {
-            return repository.ImportCOAbyMerge(piddata, p_tahun);
-        }
         public static void UpdateLevelAccount(string piddata, int p_tahun)
         {
             repository.UpdateLevelAccount( piddata, p_tahun);
@@ -178,6 +179,11 @@ namespace Accounting.BusinessLayer
         public static void DeleteCOA(string coaId)
         {
             repository.DeleteCOA(coaId);
+        }
+
+        public static CoaCascadeDeleteResult DeleteCoaCascade(string piddata, int tahun, string coaId)
+        {
+            return repository.DeleteCoaCascade(piddata, tahun, coaId);
         }
         public static void UpdateCOATmpIdData(string iddata, int tahun, string userid)
         {
