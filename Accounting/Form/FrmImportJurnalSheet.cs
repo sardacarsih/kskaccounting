@@ -20,6 +20,7 @@ namespace Accounting.Form
         public FrmImportJurnalSheet()
         {
             InitializeComponent();
+            DoubleBuffered = true;
         }
 
         private void FrmImportJurnalSheet_Load(object sender, EventArgs e)
@@ -54,6 +55,7 @@ namespace Accounting.Form
             {
                 gridControl1.DataSource = null;
                 cboSheet.Text = string.Empty;
+                JurnalImportFormLayout.SetPath(txtPath, filePathToolTip, string.Empty);
                 using OpenFileDialog ofd = new() { Filter = "Excel Workbook|*.xlsx| Excel 97-2003 Workbook|*.xls" };
                 if (ofd.ShowDialog() != DialogResult.OK)
                 {
@@ -61,7 +63,7 @@ namespace Accounting.Form
                 }
 
                 viewModel.LoadWorkbook(ofd.FileName);
-                txtPath.Text = ofd.FileName;
+                JurnalImportFormLayout.SetPath(txtPath, filePathToolTip, ofd.FileName);
                 cboSheet.Properties.Items.Clear();
                 cboSheet.Properties.Items.AddRange(viewModel.Sheets.ToList());
                 if (viewModel.Sheets.Count > 0)
@@ -85,11 +87,19 @@ namespace Accounting.Form
 
             try
             {
-                viewModel.PreviewSheet(cboSheet.SelectedItem.ToString() ?? string.Empty);
-                gridControl1.DataSource = viewModel.Rows;
-                SBImport.Enabled = viewModel.CanImport;
-                lblrecord.Text = viewModel.StatusText;
-                ConfigureGrid();
+                gridView1.BeginUpdate();
+                try
+                {
+                    viewModel.PreviewSheet(cboSheet.SelectedItem.ToString() ?? string.Empty, Convert.ToInt32(setahun.Value));
+                    gridControl1.DataSource = viewModel.Rows;
+                    SBImport.Enabled = viewModel.CanImport;
+                    lblrecord.Text = viewModel.StatusText;
+                    ConfigureGrid();
+                }
+                finally
+                {
+                    gridView1.EndUpdate();
+                }
 
                 if (viewModel.LastIssues.Count > 0)
                 {

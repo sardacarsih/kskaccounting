@@ -59,6 +59,15 @@ internal static class Program
                 case MigrationMode.ShowCompileErrors:
                     ShowCompileErrors(options);
                     break;
+                case MigrationMode.ReconcileCoa:
+                    ReconcileCoa(options);
+                    break;
+                case MigrationMode.ShowSource:
+                    ShowSource(options);
+                    break;
+                case MigrationMode.RepairMissingCoa:
+                    RepairMissingCoa(options);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unsupported mode: {options.Mode}");
             }
@@ -318,6 +327,505 @@ EXIT
 
         SqlExecutionResult result = ExecuteSqlInline(options, sql, "show_compile_errors");
         Console.WriteLine(result.Output.Trim());
+    }
+
+    private static void ReconcileCoa(AppOptions options)
+    {
+        List<string> missing = [];
+        if (string.IsNullOrWhiteSpace(options.IdData)) missing.Add("--iddata");
+        if (string.IsNullOrWhiteSpace(options.Periode)) missing.Add("--periode");
+        if (options.Tahun is null) missing.Add("--tahun");
+        if (options.Bulan is null) missing.Add("--bulan");
+
+        if (missing.Count > 0)
+        {
+            throw new ArgumentException(
+                $"--mode reconcilecoa requires {string.Join(", ", missing)}. Example: --iddata FSLFKM --periode 01/2026 --tahun 2026 --bulan 1");
+        }
+
+        string idData = EscapeSqlLiteral(options.IdData);
+        string periode = EscapeSqlLiteral(options.Periode);
+        int tahun = options.Tahun!.Value;
+        int bulan = options.Bulan!.Value;
+
+        string sql = $"""
+SET SERVEROUTPUT ON
+SET HEADING ON
+SET FEEDBACK OFF
+SET LINESIZE 32767
+SET TRIMSPOOL ON
+COLUMN KODEACC FORMAT A30;
+COLUMN NAMAACC FORMAT A60;
+COLUMN COA_DEBET FORMAT 999999999999990.99;
+COLUMN SRC_DEBET FORMAT 999999999999990.99;
+COLUMN DIFF_DEBET FORMAT 999999999999990.99;
+COLUMN COA_KREDIT FORMAT 999999999999990.99;
+COLUMN SRC_KREDIT FORMAT 999999999999990.99;
+COLUMN DIFF_KREDIT FORMAT 999999999999990.99;
+WITH coa_values AS (
+    SELECT c.IDDATA,
+           c.TAHUN,
+           c.KODEACC,
+           c.NAMAACC,
+           NVL(c."{bulan}D", 0) AS COA_DEBET,
+           NVL(c."{bulan}K", 0) AS COA_KREDIT
+      FROM ACCT_COA c
+     WHERE c.IDDATA = '{idData}'
+       AND c.TAHUN = {tahun}
+), coa_scope AS (
+    SELECT c.KODEACC,
+           c.PARENTACC
+      FROM ACCT_COA c
+     WHERE c.IDDATA = '{idData}'
+       AND c.TAHUN = {tahun}
+), posted_accounts AS (
+    SELECT d.KODE AS KODEACC,
+           SUM(NVL(d.DEBET, 0)) AS DEBET,
+           SUM(NVL(d.KREDIT, 0)) AS KREDIT
+      FROM ACCT_JURNAL_DTL d
+     WHERE d.IDDATA = '{idData}'
+       AND d.PERIODE = '{periode}'
+       AND d.KODE IS NOT NULL
+     GROUP BY d.KODE
+), account_ancestors AS (
+    SELECT CONNECT_BY_ROOT cs.KODEACC AS POSTED_KODEACC,
+           cs.KODEACC AS KODEACC
+      FROM coa_scope cs
+     START WITH cs.KODEACC IN (SELECT KODEACC FROM posted_accounts)
+     CONNECT BY NOCYCLE cs.KODEACC = PRIOR cs.PARENTACC
+), source_values AS (
+    SELECT aa.KODEACC,
+           SUM(pa.DEBET) AS SRC_DEBET,
+           SUM(pa.KREDIT) AS SRC_KREDIT
+      FROM account_ancestors aa
+      JOIN posted_accounts pa ON pa.KODEACC = aa.POSTED_KODEACC
+     GROUP BY aa.KODEACC
+)
+SELECT c.KODEACC,
+       c.NAMAACC,
+       c.COA_DEBET,
+       NVL(s.SRC_DEBET, 0) AS SRC_DEBET,
+       c.COA_DEBET - NVL(s.SRC_DEBET, 0) AS DIFF_DEBET,
+       c.COA_KREDIT,
+       NVL(s.SRC_KREDIT, 0) AS SRC_KREDIT,
+       c.COA_KREDIT - NVL(s.SRC_KREDIT, 0) AS DIFF_KREDIT
+  FROM coa_values c
+  LEFT JOIN source_values s ON s.KODEACC = c.KODEACC
+ WHERE ABS(c.COA_DEBET - NVL(s.SRC_DEBET, 0)) > 0.005
+    OR ABS(c.COA_KREDIT - NVL(s.SRC_KREDIT, 0)) > 0.005
+ ORDER BY c.KODEACC;
+
+COLUMN NOJURNAL FORMAT A30;
+COLUMN TOTAL_DEBET FORMAT 999999999999990.99;
+COLUMN TOTAL_KREDIT FORMAT 999999999999990.99;
+COLUMN JURNAL_DIFF FORMAT 999999999999990.99;
+SELECT d.REFFID,
+       d.NOJURNAL,
+       SUM(NVL(d.DEBET, 0)) AS TOTAL_DEBET,
+       SUM(NVL(d.KREDIT, 0)) AS TOTAL_KREDIT,
+       SUM(NVL(d.DEBET, 0)) - SUM(NVL(d.KREDIT, 0)) AS JURNAL_DIFF
+  FROM ACCT_JURNAL_DTL d
+ WHERE d.IDDATA = '{idData}'
+   AND d.PERIODE = '{periode}'
+ GROUP BY d.REFFID, d.NOJURNAL
+HAVING ABS(SUM(NVL(d.DEBET, 0)) - SUM(NVL(d.KREDIT, 0))) > 0.005
+ ORDER BY ABS(SUM(NVL(d.DEBET, 0)) - SUM(NVL(d.KREDIT, 0))) DESC;
+
+SELECT SUM(NVL(d.DEBET, 0)) AS TOTAL_DEBET,
+       SUM(NVL(d.KREDIT, 0)) AS TOTAL_KREDIT,
+       SUM(NVL(d.DEBET, 0)) - SUM(NVL(d.KREDIT, 0)) AS GRAND_DIFF
+  FROM ACCT_JURNAL_DTL d
+ WHERE d.IDDATA = '{idData}'
+   AND d.PERIODE = '{periode}';
+
+COLUMN LVL FORMAT 999;
+COLUMN ROW_COUNT FORMAT 999;
+SELECT c.KODEACC,
+       c.NAMAACC,
+       c.LVL,
+       COUNT(*) AS ROW_COUNT,
+       NVL(c."{bulan}D", 0) AS COA_DEBET,
+       NVL(c."{bulan}K", 0) AS COA_KREDIT
+  FROM ACCT_COA c
+ WHERE c.IDDATA = '{idData}'
+   AND c.TAHUN = {tahun}
+ GROUP BY c.KODEACC, c.NAMAACC, c.LVL, c."{bulan}D", c."{bulan}K"
+HAVING COUNT(*) > 1
+ ORDER BY c.KODEACC;
+
+SELECT c.LVL,
+       COUNT(*) AS ROW_COUNT,
+       SUM(NVL(c."{bulan}D", 0)) AS SUM_DEBET,
+       SUM(NVL(c."{bulan}K", 0)) AS SUM_KREDIT,
+       SUM(NVL(c."{bulan}D", 0)) - SUM(NVL(c."{bulan}K", 0)) AS LVL_DIFF
+  FROM ACCT_COA c
+ WHERE c.IDDATA = '{idData}'
+   AND c.TAHUN = {tahun}
+ GROUP BY c.LVL
+ ORDER BY c.LVL;
+
+COLUMN PARENTACC FORMAT A30;
+SELECT c.KODEACC,
+       c.NAMAACC,
+       c.PARENTACC,
+       NVL(c."{bulan}D", 0) AS COA_DEBET,
+       NVL(c."{bulan}K", 0) AS COA_KREDIT,
+       NVL(c."{bulan}D", 0) - NVL(c."{bulan}K", 0) AS NET_DIFF
+  FROM ACCT_COA c
+ WHERE c.IDDATA = '{idData}'
+   AND c.TAHUN = {tahun}
+   AND c.LVL = 1
+ ORDER BY ABS(NVL(c."{bulan}D", 0) - NVL(c."{bulan}K", 0)) DESC;
+
+COLUMN NAMAACC_PRIORYEAR FORMAT A40;
+COLUMN POSTED_DEBET FORMAT 999999999999990.99;
+COLUMN POSTED_KREDIT FORMAT 999999999999990.99;
+COLUMN POSTED_DIFF FORMAT 999999999999990.99;
+SELECT d.KODE,
+       (SELECT MAX(p.NAMAACC) FROM ACCT_COA p WHERE p.IDDATA = '{idData}' AND p.KODEACC = d.KODE AND p.TAHUN = {tahun} - 1) AS NAMAACC_PRIORYEAR,
+       SUM(NVL(d.DEBET, 0)) AS POSTED_DEBET,
+       SUM(NVL(d.KREDIT, 0)) AS POSTED_KREDIT,
+       SUM(NVL(d.DEBET, 0)) - SUM(NVL(d.KREDIT, 0)) AS POSTED_DIFF
+  FROM ACCT_JURNAL_DTL d
+ WHERE d.IDDATA = '{idData}'
+   AND d.PERIODE = '{periode}'
+   AND d.KODE IS NOT NULL
+   AND NOT EXISTS (
+       SELECT 1 FROM ACCT_COA c
+        WHERE c.IDDATA = d.IDDATA
+          AND c.TAHUN = {tahun}
+          AND c.KODEACC = d.KODE
+   )
+ GROUP BY d.KODE
+ ORDER BY ABS(SUM(NVL(d.DEBET, 0)) - SUM(NVL(d.KREDIT, 0))) DESC
+ FETCH FIRST 15 ROWS ONLY;
+
+SELECT COUNT(*) AS MISSING_ACCOUNT_COUNT,
+       SUM(NVL(d.DEBET, 0)) AS SUM_DEBET,
+       SUM(NVL(d.KREDIT, 0)) AS SUM_KREDIT,
+       SUM(NVL(d.DEBET, 0)) - SUM(NVL(d.KREDIT, 0)) AS SUM_DIFF
+  FROM (
+       SELECT d.KODE, SUM(NVL(d.DEBET,0)) AS DEBET, SUM(NVL(d.KREDIT,0)) AS KREDIT
+         FROM ACCT_JURNAL_DTL d
+        WHERE d.IDDATA = '{idData}'
+          AND d.PERIODE = '{periode}'
+          AND d.KODE IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM ACCT_COA c
+               WHERE c.IDDATA = d.IDDATA
+                 AND c.TAHUN = {tahun}
+                 AND c.KODEACC = d.KODE
+          )
+        GROUP BY d.KODE
+  ) d;
+
+COLUMN MISSING_PARENT FORMAT A30;
+SELECT DISTINCT p2025.PARENTACC AS MISSING_PARENT
+  FROM ACCT_COA p2025
+ WHERE p2025.IDDATA = '{idData}'
+   AND p2025.TAHUN = {tahun} - 1
+   AND p2025.PARENTACC IS NOT NULL
+   AND EXISTS (
+       SELECT 1 FROM ACCT_COA c2026
+        WHERE c2026.IDDATA = p2025.IDDATA AND c2026.TAHUN = {tahun} AND c2026.KODEACC = p2025.KODEACC
+   )
+   AND NOT EXISTS (
+       SELECT 1 FROM ACCT_COA parent2026
+        WHERE parent2026.IDDATA = p2025.IDDATA AND parent2026.TAHUN = {tahun} AND parent2026.KODEACC = p2025.PARENTACC
+   );
+
+COLUMN ISHEADER FORMAT A10;
+SELECT p.ISHEADER,
+       COUNT(*) AS ACCOUNT_COUNT
+  FROM ACCT_COA p
+ WHERE p.IDDATA = '{idData}'
+   AND p.TAHUN = {tahun} - 1
+   AND p.KODEACC IN (
+       SELECT DISTINCT d.KODE
+         FROM ACCT_JURNAL_DTL d
+        WHERE d.IDDATA = '{idData}'
+          AND d.PERIODE = '{periode}'
+          AND d.KODE IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM ACCT_COA c
+               WHERE c.IDDATA = d.IDDATA
+                 AND c.TAHUN = {tahun}
+                 AND c.KODEACC = d.KODE
+          )
+   )
+ GROUP BY p.ISHEADER;
+
+COLUMN PERIODE FORMAT A10;
+SELECT d.PERIODE,
+       COUNT(DISTINCT d.KODE) AS DISTINCT_ACCOUNTS,
+       SUM(NVL(d.DEBET, 0)) AS PERIODE_DEBET,
+       SUM(NVL(d.KREDIT, 0)) AS PERIODE_KREDIT
+  FROM ACCT_JURNAL_DTL d
+ WHERE d.IDDATA = '{idData}'
+   AND d.PERIODE LIKE '%/{tahun}'
+   AND d.KODE IS NOT NULL
+   AND NOT EXISTS (
+       SELECT 1 FROM ACCT_COA c
+        WHERE c.IDDATA = d.IDDATA
+          AND c.TAHUN = {tahun}
+          AND c.KODEACC = d.KODE
+   )
+ GROUP BY d.PERIODE
+ ORDER BY d.PERIODE;
+EXIT
+""";
+
+        SqlExecutionResult result = ExecuteSqlInline(options, sql, "reconcile_coa");
+        Console.WriteLine(result.Output.Trim());
+    }
+
+    private static void ShowSource(AppOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.ObjectName))
+        {
+            throw new ArgumentException("--mode showsource requires --object-name PACKAGE_NAME (optionally PACKAGE_NAME.PROCEDURE_NAME to filter by TEXT).");
+        }
+
+        string objectName = options.ObjectName.Trim().ToUpperInvariant();
+        string packageName = objectName;
+        string procedureFilter = string.Empty;
+        int dotIndex = objectName.IndexOf('.');
+        if (dotIndex > 0)
+        {
+            packageName = objectName[..dotIndex];
+            procedureFilter = objectName[(dotIndex + 1)..];
+        }
+
+        string escapedPackage = EscapeSqlLiteral(packageName);
+
+        string sql = $"""
+SET HEADING OFF
+SET FEEDBACK OFF
+SET PAGESIZE 0
+SET LINESIZE 32767
+SET TRIMSPOOL ON
+SELECT LINE || ': ' || TEXT
+  FROM USER_SOURCE
+ WHERE NAME = '{escapedPackage}'
+   AND TYPE = 'PACKAGE BODY'
+ ORDER BY LINE;
+EXIT
+""";
+
+        SqlExecutionResult result = ExecuteSqlInline(options, sql, "show_source");
+        string output = result.Output.Trim();
+
+        if (!string.IsNullOrWhiteSpace(procedureFilter))
+        {
+            string[] lines = output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            List<string> matching = [];
+            bool inside = false;
+            foreach (string line in lines)
+            {
+                string upper = line.ToUpperInvariant();
+                bool startsProcOrFunc = upper.Contains($"PROCEDURE {procedureFilter}") || upper.Contains($"FUNCTION {procedureFilter}");
+                if (startsProcOrFunc)
+                {
+                    inside = true;
+                }
+                else if (inside && (upper.Contains("PROCEDURE ") || upper.Contains("FUNCTION ")) && !startsProcOrFunc)
+                {
+                    inside = false;
+                }
+
+                if (inside)
+                {
+                    matching.Add(line);
+                }
+            }
+
+            output = matching.Count > 0 ? string.Join(Environment.NewLine, matching) : output;
+        }
+
+        Console.WriteLine(output);
+    }
+
+    private static void RepairMissingCoa(AppOptions options)
+    {
+        List<string> missing = [];
+        if (string.IsNullOrWhiteSpace(options.IdData)) missing.Add("--iddata");
+        if (options.Tahun is null) missing.Add("--tahun");
+        if (string.IsNullOrWhiteSpace(options.BulanList)) missing.Add("--bulan-list");
+        if (string.IsNullOrWhiteSpace(options.UserId)) missing.Add("--userid");
+
+        if (missing.Count > 0)
+        {
+            throw new ArgumentException(
+                $"--mode repairmissingcoa requires {string.Join(", ", missing)}. Example: --iddata FSLFKM --tahun 2026 --bulan-list 1,2,3,4 --userid ADMIN [--apply]");
+        }
+
+        string idData = EscapeSqlLiteral(options.IdData);
+        int tahun = options.Tahun!.Value;
+        string userId = EscapeSqlLiteral(options.UserId);
+
+        int[] bulanValues = options.BulanList
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(b =>
+            {
+                if (!int.TryParse(b, out int v) || v is < 1 or > 12)
+                {
+                    throw new ArgumentException($"Invalid month '{b}' in --bulan-list. Each value must be an integer 1-12.");
+                }
+                return v;
+            })
+            .ToArray();
+
+        string previewSql = $"""
+SET HEADING ON
+SET FEEDBACK OFF
+SET LINESIZE 32767
+SET TRIMSPOOL ON
+COLUMN KODEACC FORMAT A20;
+COLUMN NAMAACC FORMAT A50;
+COLUMN GRP FORMAT A5;
+COLUMN ISHEADER FORMAT A5;
+COLUMN SALDOAWAL FORMAT 999999999999990.99;
+WITH needed_leaf AS (
+    SELECT DISTINCT d.KODE AS KODEACC
+      FROM ACCT_JURNAL_DTL d
+     WHERE d.IDDATA = '{idData}'
+       AND d.PERIODE LIKE '%/{tahun}'
+       AND d.KODE IS NOT NULL
+), prior_year AS (
+    SELECT p.KODEACC, p.PARENTACC, p.NAMAACC, p.GRP, p.ISHEADER, p."12S" AS SALDOAKHIR
+      FROM ACCT_COA p
+     WHERE p.IDDATA = '{idData}'
+       AND p.TAHUN = {tahun} - 1
+), needed_closure AS (
+    SELECT KODEACC FROM needed_leaf
+    UNION
+    SELECT py.KODEACC
+      FROM prior_year py
+     START WITH py.KODEACC IN (SELECT KODEACC FROM needed_leaf)
+     CONNECT BY NOCYCLE py.KODEACC = PRIOR py.PARENTACC
+)
+SELECT py.KODEACC,
+       py.NAMAACC,
+       py.GRP,
+       py.ISHEADER,
+       CASE WHEN py.GRP IN ('11','12','13','14','15','16','17','18','19','20') THEN 0 ELSE NVL(py.SALDOAKHIR, 0) END AS SALDOAWAL
+  FROM prior_year py
+ WHERE py.KODEACC IN (SELECT KODEACC FROM needed_closure)
+   AND NOT EXISTS (
+       SELECT 1 FROM ACCT_COA c WHERE c.IDDATA = '{idData}' AND c.TAHUN = {tahun} AND c.KODEACC = py.KODEACC
+   )
+ ORDER BY py.KODEACC;
+EXIT
+""";
+
+        Console.WriteLine(options.Apply
+            ? "[INFO] Preview of accounts about to be inserted into ACCT_COA (before --apply changes anything):"
+            : "[DRY RUN] Accounts that WOULD be inserted into ACCT_COA (pass --apply to execute):");
+        SqlExecutionResult previewResult = ExecuteSqlInline(options, previewSql, "repair_missing_coa_preview");
+        Console.WriteLine(previewResult.Output.Trim());
+
+        if (!options.Apply)
+        {
+            Console.WriteLine();
+            Console.WriteLine("[DRY RUN] No changes were made. Re-run with --apply to insert the rows above and recalc: " +
+                               string.Join(",", bulanValues));
+            return;
+        }
+
+        string insertSql = $"""
+SET SERVEROUTPUT ON
+SET FEEDBACK ON
+SET LINESIZE 32767
+INSERT INTO ACCT_COA (ACCTCOAID, IDDATA, TAHUN, KODEACC, PARENTACC, ISHEADER, NAMAACC, POSISI, GRP, LVL, ISAKTIF, SALDOAWAL, BLOK, DIVISI, TAHUNTANAM)
+WITH needed_leaf AS (
+    SELECT DISTINCT d.KODE AS KODEACC
+      FROM ACCT_JURNAL_DTL d
+     WHERE d.IDDATA = '{idData}'
+       AND d.PERIODE LIKE '%/{tahun}'
+       AND d.KODE IS NOT NULL
+), prior_year AS (
+    SELECT p.KODEACC, p.PARENTACC, p.ISHEADER, p.NAMAACC, p.POSISI, p.GRP, p.LVL, p.ISAKTIF, p."12S" AS SALDOAKHIR, p.BLOK, p.DIVISI, p.TAHUNTANAM
+      FROM ACCT_COA p
+     WHERE p.IDDATA = '{idData}'
+       AND p.TAHUN = {tahun} - 1
+), needed_closure AS (
+    SELECT KODEACC FROM needed_leaf
+    UNION
+    SELECT py.KODEACC
+      FROM prior_year py
+     START WITH py.KODEACC IN (SELECT KODEACC FROM needed_leaf)
+     CONNECT BY NOCYCLE py.KODEACC = PRIOR py.PARENTACC
+)
+SELECT '{idData}' || {tahun} || py.KODEACC,
+       '{idData}',
+       {tahun},
+       py.KODEACC,
+       py.PARENTACC,
+       py.ISHEADER,
+       py.NAMAACC,
+       py.POSISI,
+       py.GRP,
+       py.LVL,
+       py.ISAKTIF,
+       CASE WHEN py.GRP IN ('11','12','13','14','15','16','17','18','19','20') THEN 0 ELSE NVL(py.SALDOAKHIR, 0) END,
+       py.BLOK,
+       py.DIVISI,
+       py.TAHUNTANAM
+  FROM prior_year py
+ WHERE py.KODEACC IN (SELECT KODEACC FROM needed_closure)
+   AND NOT EXISTS (
+       SELECT 1 FROM ACCT_COA c WHERE c.IDDATA = '{idData}' AND c.TAHUN = {tahun} AND c.KODEACC = py.KODEACC
+   );
+COMMIT;
+EXIT
+""";
+
+        Console.WriteLine();
+        Console.WriteLine("[APPLY] Inserting missing ACCT_COA rows...");
+        SqlExecutionResult insertResult = ExecuteSqlInline(options, insertSql, "repair_missing_coa_insert");
+        Console.WriteLine(insertResult.Output.Trim());
+
+        string recalcBlock = string.Join(Environment.NewLine, bulanValues.Select(b =>
+            $"    ACCT_RECALLCULATIONS_V2.ReCalcPeriod('{idData}', {b}, {tahun}, '{b:00}/{tahun}', '{userId}');"));
+
+        string recalcSql = $"""
+SET SERVEROUTPUT ON
+SET FEEDBACK OFF
+BEGIN
+{recalcBlock}
+END;
+/
+EXIT
+""";
+
+        Console.WriteLine();
+        Console.WriteLine("[APPLY] Recalculating periods: " + string.Join(",", bulanValues.Select(b => $"{b:00}/{tahun}")));
+        SqlExecutionResult recalcResult = ExecuteSqlInline(options, recalcSql, "repair_missing_coa_recalc");
+        Console.WriteLine(recalcResult.Output.Trim());
+
+        // Per-period verification: reuse the LVL=1 Balanced_Check formula for each recalculated month.
+        string verifyUnion = string.Join(Environment.NewLine + "UNION ALL" + Environment.NewLine, bulanValues.Select(b => $"""
+SELECT '{b:00}/{tahun}' AS PERIODE,
+       ROUND(NVL(SUM(NVL(c."{b}D", 0)), 0) - NVL(SUM(NVL(c."{b}K", 0)), 0), 2) AS SELISIH
+  FROM ACCT_COA c
+ WHERE c.IDDATA = '{idData}' AND c.TAHUN = {tahun} AND c.LVL = 1
+"""));
+
+        string finalVerifySql = $"""
+SET HEADING ON
+SET FEEDBACK OFF
+SET LINESIZE 32767
+COLUMN PERIODE FORMAT A10;
+COLUMN SELISIH FORMAT 999999999999990.99;
+{verifyUnion}
+ORDER BY 1;
+EXIT
+""";
+
+        Console.WriteLine();
+        Console.WriteLine("[VERIFY] Balanced_Check-equivalent selisih per recalculated period (should all be 0):");
+        SqlExecutionResult verifyResult = ExecuteSqlInline(options, finalVerifySql, "repair_missing_coa_verify");
+        Console.WriteLine(verifyResult.Output.Trim());
     }
 
     private static void EnsureConnection(AppOptions options)
@@ -898,7 +1406,10 @@ internal enum MigrationMode
     CheckConn,
     ReconcileHistory,
     RebaselineChecksum,
-    ShowCompileErrors
+    ShowCompileErrors,
+    ReconcileCoa,
+    ShowSource,
+    RepairMissingCoa
 }
 
 internal sealed class AppOptions
@@ -915,18 +1426,26 @@ internal sealed class AppOptions
     public string MigrationId { get; private init; } = string.Empty;
     public bool Reexecute { get; private init; }
     public string ObjectName { get; private init; } = string.Empty;
+    public string IdData { get; private init; } = string.Empty;
+    public string Periode { get; private init; } = string.Empty;
+    public int? Tahun { get; private init; }
+    public int? Bulan { get; private init; }
+    public string BulanList { get; private init; } = string.Empty;
+    public string UserId { get; private init; } = string.Empty;
+    public bool Apply { get; private init; }
     public int ScriptTimeoutMs { get; private init; } = 600000;
     public int ConnTimeoutMs { get; private init; } = 30000;
     public bool ShowHelp { get; private init; }
 
     public static string HelpText => """
-GLMigrator.exe [--connection <USER/PASS@//HOST:PORT/SERVICE>] [--config <path>] [--server-key KEY] [--mode up|down|status|verify|checkconn|reconcilehistory|rebaselinechecksum] [--steps N] [--migration-id ID]
+GLMigrator.exe [--connection <USER/PASS@//HOST:PORT/SERVICE>] [--config <path>] [--server-key KEY] [--mode up|down|status|verify|checkconn|reconcilehistory|rebaselinechecksum|showcompileerrors|reconcilecoa] [--steps N] [--migration-id ID]
 
 Options:
   --connection   Oracle SQL*Plus connection string. If omitted, the executable reads config.json.
   --config       Optional config.json path. If omitted, the executable probes common config.json locations.
   --server-key   Optional server key override for config.json resolution
-  --mode         up (default), down, status, verify, checkconn, reconcilehistory, rebaselinechecksum
+  --mode         up (default), down, status, verify, checkconn, reconcilehistory, rebaselinechecksum,
+                  showcompileerrors, reconcilecoa
   --migration-id Required for --mode rebaselinechecksum: the manifest id whose recorded checksum should be
                   updated to match the current script content (no SQL is re-executed unless --reexecute is
                   also given; use only when the script content change is a confirmed no-op on this server).
@@ -935,6 +1454,17 @@ Options:
                   logic since it was applied here, not just a refactor. Scripts must be idempotent.
   --object-name  With --mode showcompileerrors: comma-separated PL/SQL object name(s) to inspect via
                   USER_ERRORS. Defaults to ACCT_REPORT_ENGINE_V1,ACCT_LAPORAN_V2.
+  --iddata       Required for --mode reconcilecoa: IDDATA company code.
+  --periode      Required for --mode reconcilecoa: periode string as stored on ACCT_JURNAL_DTL (e.g. 01/2026).
+  --tahun        Required for --mode reconcilecoa: fiscal year (e.g. 2026).
+  --bulan        Required for --mode reconcilecoa: month number 1-12.
+  --object-name  With --mode showsource: PACKAGE_NAME or PACKAGE_NAME.PROCEDURE_NAME to print USER_SOURCE
+                  for (package body). Without a procedure suffix, prints the whole package body.
+  --bulan-list   Required for --mode repairmissingcoa: comma-separated month numbers to recalc after
+                  inserting missing ACCT_COA rows (e.g. 1,2,3,4).
+  --userid       Required for --mode repairmissingcoa: USERID to pass to ACCT_RECALLCULATIONS_V2.ReCalcPeriod.
+  --apply        With --mode repairmissingcoa: actually INSERT/COMMIT and run the recalc. Without it, the
+                  mode only prints what would be inserted (dry run, no writes).
   --steps        Number of steps for down mode (default: 1)
   --timeout      Max milliseconds per SQL script before sqlplus is killed (default: 600000)
   --conn-timeout Max milliseconds for the startup connection check (default: 30000)
@@ -1001,7 +1531,7 @@ Default behavior:
         {
             if (!Enum.TryParse(modeArg, true, out mode))
             {
-                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors.");
+                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors, reconcilecoa, showsource, repairmissingcoa.");
             }
         }
 
@@ -1014,6 +1544,46 @@ Default behavior:
         string objectName = map.TryGetValue("object-name", out string? objectNameArg) && !string.IsNullOrWhiteSpace(objectNameArg)
             ? objectNameArg.Trim()
             : string.Empty;
+
+        string idData = map.TryGetValue("iddata", out string? idDataArg) && !string.IsNullOrWhiteSpace(idDataArg)
+            ? idDataArg.Trim()
+            : string.Empty;
+
+        string periode = map.TryGetValue("periode", out string? periodeArg) && !string.IsNullOrWhiteSpace(periodeArg)
+            ? periodeArg.Trim()
+            : string.Empty;
+
+        int? tahun = null;
+        if (map.TryGetValue("tahun", out string? tahunArg) && !string.IsNullOrWhiteSpace(tahunArg))
+        {
+            if (!int.TryParse(tahunArg, out int tahunValue) || tahunValue < 1)
+            {
+                throw new ArgumentException("Invalid --tahun value. Must be a positive integer year.");
+            }
+
+            tahun = tahunValue;
+        }
+
+        int? bulan = null;
+        if (map.TryGetValue("bulan", out string? bulanArg) && !string.IsNullOrWhiteSpace(bulanArg))
+        {
+            if (!int.TryParse(bulanArg, out int bulanValue) || bulanValue is < 1 or > 12)
+            {
+                throw new ArgumentException("Invalid --bulan value. Must be an integer between 1 and 12.");
+            }
+
+            bulan = bulanValue;
+        }
+
+        string bulanList = map.TryGetValue("bulan-list", out string? bulanListArg) && !string.IsNullOrWhiteSpace(bulanListArg)
+            ? bulanListArg.Trim()
+            : string.Empty;
+
+        string userId = map.TryGetValue("userid", out string? userIdArg) && !string.IsNullOrWhiteSpace(userIdArg)
+            ? userIdArg.Trim()
+            : string.Empty;
+
+        bool apply = map.ContainsKey("apply");
 
         int steps = 1;
         if (map.TryGetValue("steps", out string? stepsArg) && !string.IsNullOrWhiteSpace(stepsArg))
@@ -1060,6 +1630,13 @@ Default behavior:
             MigrationId = migrationId,
             Reexecute = reexecute,
             ObjectName = objectName,
+            IdData = idData,
+            Periode = periode,
+            Tahun = tahun,
+            Bulan = bulan,
+            BulanList = bulanList,
+            UserId = userId,
+            Apply = apply,
             ScriptTimeoutMs = scriptTimeoutMs,
             ConnTimeoutMs = connTimeoutMs,
             ShowHelp = help

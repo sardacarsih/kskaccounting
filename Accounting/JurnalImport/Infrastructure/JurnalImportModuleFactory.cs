@@ -12,7 +12,7 @@ public static class JurnalImportModuleFactory
         ExcelJurnalImportWorkbookReader reader = new();
         OracleJurnalImportDataStore dataStore = new();
         return new FrmImportJurnalViewModel(
-            new PreviewJurnalImportUseCase(reader),
+            new PreviewJurnalImportUseCase(reader, dataStore),
             new ExecuteJurnalImportUseCase(dataStore),
             idData,
             userId);

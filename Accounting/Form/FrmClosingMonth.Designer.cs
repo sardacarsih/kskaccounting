@@ -215,6 +215,20 @@ namespace Accounting.Form
             ((System.ComponentModel.ISupportInitialize)(this.setahun.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.cmbbulan.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.checkEditjurnalclosing.Properties)).EndInit();
+            ClosingFormLayout.ApplyMonth(
+                this,
+                this.labelControl1,
+                this.labelControl7,
+                this.lblnamapt,
+                this.labelControl4,
+                this.lbldata,
+                this.labelControl5,
+                this.lblwilayah,
+                this.labelControl3,
+                this.cmbbulan,
+                this.setahun,
+                this.checkEditjurnalclosing,
+                this.simpleButton1);
             this.ResumeLayout(false);
             this.PerformLayout();
 

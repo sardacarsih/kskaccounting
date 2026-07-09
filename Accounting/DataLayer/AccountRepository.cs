@@ -18,35 +18,6 @@ namespace Accounting.DataLayer
     {
         private readonly OracleConnection conn = new(ConnectionManager.GetOracleConnection());
         private const int RecalcCommandTimeoutSeconds = 180;
-        public DataTable GetCOA(string piddata, int pbulan, int ptahun)
-        {
-            using OracleCommand _command = new("ACCOUNTING.COA2", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-            if (conn.State != ConnectionState.Open)
-            {
-                conn.Open();
-            }
-            _command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-            _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-            _command.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = pbulan;
-            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = ptahun;
-            //OracleDataAdapter sqlAdapter = new OracleDataAdapter(_command);
-            //DataSet _ds = new DataSet();
-            //_ds.Clear();
-            ////Get the data in disconnected mode
-            //sqlAdapter.Fill(_ds);
-            //// return dataset result
-            //return _ds;
-            OracleDataReader dr;
-            dr = _command.ExecuteReader();
-            DataTable _dt = new DataTable();
-            _dt.Load(dr);
-            dr.Close();
-            conn.Close();
-            return _dt;
-        }
 
         public DataSet PeriodeAkuntansi(string piddata,  int ptahun)
         {
@@ -72,29 +43,6 @@ namespace Accounting.DataLayer
 
             }
         }
-        public DataTable GetCOAWithoutSaldo(string piddata)
-        {
-             using (OracleCommand _command = new OracleCommand("ACCOUNTING.COA", conn)
-                {
-                    CommandType = CommandType.StoredProcedure
-                })
-                {
-                if (conn.State != ConnectionState.Open)
-                {
-                    conn.Open();
-                }
-                _command.Parameters.Add("CUR", OracleDbType.RefCursor).Direction = ParameterDirection.ReturnValue;
-                    _command.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-                    OracleDataReader dr;
-                    dr = _command.ExecuteReader();
-                    DataTable _dt = new DataTable();
-                    _dt.Load(dr);
-                    dr.Close();
-                    conn.Close();
-                    return _dt;
-                }           
-        }
-
         public DataTable GetParentAccount(string piddata, int p_tahun,string ptipe)
         {
                using (OracleCommand _command = new OracleCommand("ACCOUNTING.PARENT_AKUN", conn)
@@ -259,46 +207,35 @@ namespace Accounting.DataLayer
 
         public void RekalkulasiSaldo(string piddata, int p_bulan, int p_tahun, string p_Userid)
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
-            using (OracleCommand cmd = new OracleCommand("BEGIN ACCT_RECALLCULATIONS.RecalkulasiSaldoDetail(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_USERID); END;", connection)
-            {
-                CommandType = CommandType.Text
-            })
-            {
-                connection.Open();
-                cmd.BindByName = true;
-                cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
-                cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-                cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
-                cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
-                cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = p_Userid;
-                
-                cmd.ExecuteNonQuery();
-                Log.Information("PERF AccountRepository.RekalkulasiSaldo elapsed_ms={ElapsedMs} periode={Periode}", stopwatch.ElapsedMilliseconds, $"{p_bulan:00}/{p_tahun}");
-            }
+            ExecuteRecalcPeriod(piddata, p_bulan, p_tahun, p_Userid, nameof(RekalkulasiSaldo));
         }
+
         public void RekalkulasiSaldoV2(string piddata, int p_bulan, int p_tahun, string p_Userid)
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
-            using (OracleCommand cmd = new OracleCommand("BEGIN ACCT_RECALLCULATIONS.RecalkulasiSaldoDetailV2(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_USERID); END;", connection)
-            {
-                CommandType = CommandType.Text
-            })
-            {
-                connection.Open();
-                cmd.BindByName = true;
-                cmd.CommandTimeout = RecalcCommandTimeoutSeconds;
-                cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-                cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
-                cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
-                cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = p_Userid;
-
-                cmd.ExecuteNonQuery();
-                Log.Information("PERF AccountRepository.RekalkulasiSaldoV2 elapsed_ms={ElapsedMs} periode={Periode}", stopwatch.ElapsedMilliseconds, $"{p_bulan:00}/{p_tahun}");
-            }
+            ExecuteRecalcPeriod(piddata, p_bulan, p_tahun, p_Userid, nameof(RekalkulasiSaldoV2));
         }
+
+        private static void ExecuteRecalcPeriod(string piddata, int p_bulan, int p_tahun, string p_Userid, string caller)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            string periode = $"{p_bulan:00}/{p_tahun:0000}";
+            using OracleConnection connection = new(ConnectionManager.GetOracleConnection());
+            connection.Open();
+            using OracleCommand cmd = new("BEGIN ACCT_RECALLCULATIONS_V2.ReCalcPeriod(:p_IDDATA, :p_BULAN, :p_TAHUN, :p_PERIODE, :p_USERID); END;", connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName = true,
+                CommandTimeout = RecalcCommandTimeoutSeconds
+            };
+            cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+            cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
+            cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
+            cmd.Parameters.Add("p_PERIODE", OracleDbType.Varchar2, 7).Value = periode;
+            cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = p_Userid;
+            cmd.ExecuteNonQuery();
+            Log.Information("PERF AccountRepository.{Caller} elapsed_ms={ElapsedMs} periode={Periode} entrypoint={Entrypoint}", caller, stopwatch.ElapsedMilliseconds, periode, "recalc_v2_period");
+        }
+
         public void CreateNextPeriode(string piddata, int p_bulan, int p_tahun)
         {
             using (OracleCommand cmd = new OracleCommand("ACCOUNTING.CreateNextPeriode", conn)
@@ -373,37 +310,6 @@ namespace Accounting.DataLayer
                 int result = Convert.ToInt32(cmd.Parameters["ExistPeriode"].Value.ToString());
                 conn.Close();
                 return result;
-            }
-        }
-
-        public int ImportCOA(string iddata, int ptahun)
-        {
-            try
-            {
-
-                using (OracleCommand cmd = new OracleCommand("ACCOUNTING.ImportCOA", conn)
-                {
-                    CommandType = CommandType.StoredProcedure
-                })
-                {
-                    if (conn.State != ConnectionState.Open)
-                    {
-                        conn.Open();
-                    }
-                    cmd.Parameters.Add("ISSUKSES", OracleDbType.Int16).Direction = ParameterDirection.ReturnValue;
-                    cmd.Parameters.Add(":iddata", OracleDbType.Varchar2, 20).Value = iddata;
-                    cmd.Parameters.Add(":ptahun", OracleDbType.Varchar2, 7).Value = ptahun;
-                    cmd.ExecuteReader();
-
-                    int result = Convert.ToInt16(cmd.Parameters["ISSUKSES"].Value.ToString());
-                    conn.Close();
-                    return result;
-                }
-            }
-            catch (Exception)
-            {
-                conn.Close();
-                throw ;
             }
         }
 
@@ -589,37 +495,6 @@ namespace Accounting.DataLayer
                 return _dt;
             }
         }
-        public int ImportCOAbyMerge(string piddata, int p_tahun)
-        {
-            try
-            {
-
-                using (OracleCommand cmd = new("ACCOUNTING.ImportCOAbyMerge", conn)
-                {
-                    CommandType = CommandType.StoredProcedure
-                })
-                {
-                    if (conn.State != ConnectionState.Open)
-                    {
-                        conn.Open();
-                    }
-                    cmd.Parameters.Add("ISSUKSES", OracleDbType.Int16).Direction = ParameterDirection.ReturnValue;
-                    cmd.Parameters.Add(":iddata", OracleDbType.Varchar2, 20).Value = piddata;
-                    cmd.Parameters.Add(":ptahun", OracleDbType.Varchar2, 7).Value = p_tahun;
-                    cmd.ExecuteReader();
-
-                    int result = Convert.ToInt16(cmd.Parameters["ISSUKSES"].Value.ToString());
-                    conn.Close();
-                    return result;
-                }
-            }
-            catch (Exception)
-            {
-                conn.Close();
-                throw;
-            }
-        }
-
         public int MaxTahunCOA(string piddata)
         {
             using (OracleCommand cmd = new OracleCommand("ACCOUNTING.MAXTAHUNCOA", conn)
@@ -1006,6 +881,100 @@ namespace Accounting.DataLayer
             localConn.Open();
             cmd.Parameters.Add(":p_id", OracleDbType.Varchar2, 40).Value = coaId;
             cmd.ExecuteNonQuery();
+        }
+
+        public bool CodeExists(string piddata, int ptahun, string kodeAcc)
+        {
+            const string sql = "SELECT COUNT(1) FROM ACCT_COA WHERE IDDATA=:p_iddata AND TAHUN=:p_tahun AND KODEACC=:p_kode";
+            using var localConn = new OracleConnection(LoginInfo.OracleConnString);
+            using var cmd = new OracleCommand(sql, localConn) { CommandType = CommandType.Text };
+            localConn.Open();
+            cmd.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
+            cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = ptahun;
+            cmd.Parameters.Add(":p_kode", OracleDbType.Varchar2, 30).Value = kodeAcc;
+            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+        }
+
+        public bool HasTransactions(string piddata, int ptahun, string kodeAcc)
+        {
+            using var localConn = new OracleConnection(LoginInfo.OracleConnString);
+            localConn.Open();
+            return HasTransactionsOnConnection(localConn, null, piddata, ptahun, kodeAcc);
+        }
+
+        public CoaCascadeDeleteResult DeleteCoaCascade(string piddata, int tahun, string coaId)
+        {
+            const string descendantsSql = @"
+                SELECT ACCTCOAID, KODEACC
+                FROM ACCT_COA
+                WHERE IDDATA = :p_iddata AND TAHUN = :p_tahun
+                START WITH ACCTCOAID = :p_coaId
+                CONNECT BY PRIOR KODEACC = PARENTACC
+                    AND IDDATA = :p_iddata AND TAHUN = :p_tahun";
+
+            using var connection = new OracleConnection(LoginInfo.OracleConnString);
+            connection.Open();
+
+            var members = new List<(string CoaId, string KodeAcc)>();
+            using (var cmd = new OracleCommand(descendantsSql, connection) { CommandType = CommandType.Text })
+            {
+                cmd.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
+                cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = tahun;
+                cmd.Parameters.Add(":p_coaId", OracleDbType.Varchar2, 40).Value = coaId;
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    members.Add((reader.GetString(0), reader.GetString(1)));
+                }
+            }
+
+            var blocked = new List<string>();
+            foreach (var member in members)
+            {
+                if (HasTransactionsOnConnection(connection, null, piddata, tahun, member.KodeAcc))
+                {
+                    blocked.Add(member.KodeAcc);
+                }
+            }
+
+            if (blocked.Count > 0)
+            {
+                return new CoaCascadeDeleteResult { Success = false, BlockedKodeAcc = blocked };
+            }
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                int deleted = 0;
+                foreach (var member in members)
+                {
+                    using var delCmd = new OracleCommand("DELETE FROM ACCT_COA WHERE ACCTCOAID=:p_id", connection)
+                    { CommandType = CommandType.Text, Transaction = transaction };
+                    delCmd.Parameters.Add(":p_id", OracleDbType.Varchar2, 40).Value = member.CoaId;
+                    deleted += delCmd.ExecuteNonQuery();
+                }
+                transaction.Commit();
+                return new CoaCascadeDeleteResult { Success = true, DeletedCount = deleted };
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        private static bool HasTransactionsOnConnection(OracleConnection connection, OracleTransaction transaction, string piddata, int ptahun, string kodeAcc)
+        {
+            const string sql = "SELECT COUNT(1) FROM ACCT_JURNAL_DTL WHERE IDDATA=:p_iddata AND GLYEAR=:p_tahun AND REKENING=:p_kode";
+            using var cmd = new OracleCommand(sql, connection) { CommandType = CommandType.Text };
+            if (transaction != null)
+            {
+                cmd.Transaction = transaction;
+            }
+            cmd.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = piddata;
+            cmd.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = ptahun;
+            cmd.Parameters.Add(":p_kode", OracleDbType.Varchar2, 30).Value = kodeAcc;
+            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
         }
 
         public void UpdateCOATmpIdData(string iddata, int tahun, string userid)

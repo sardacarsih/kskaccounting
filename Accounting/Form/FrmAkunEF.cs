@@ -1,4 +1,4 @@
-﻿using Accounting.BusinessLayer;
+using Accounting.BusinessLayer;
 using Accounting.Laporan;
 using Accounting.Model;
 using DevExpress.Data.Linq;
@@ -28,13 +28,10 @@ namespace Accounting.Form
 {
     public partial class FrmAkunEF : DevExpress.XtraEditors.XtraForm
     {
-        private const int ToolbarControlHeight = 34;
-
         int pbulan, p_sampaibulan, ptahun, x;
         private readonly Timer recalcStatusTimer = new() { Interval = 3000 };
         private readonly SimpleButton refreshManualButton = new();
-        private readonly FlowLayoutPanel toolbarFlow = new();
-        private bool isApplyingToolbarLayout;
+        private CoaHeaderHandle headerLayout;
         private long? monitoredRecalcJobId;
         private DateTime monitoredRecalcJobStartUtc;
         private bool isStatusCheckInProgress;
@@ -107,7 +104,6 @@ namespace Accounting.Form
             refreshManualButton.Text = "Refresh";
             refreshManualButton.Appearance.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             refreshManualButton.Appearance.Options.UseFont = true;
-            refreshManualButton.Size = new System.Drawing.Size(96, 34);
             if (imageCollection1.Images.Count > 1)
             {
                 refreshManualButton.ImageOptions.Image = imageCollection1.Images[1];
@@ -118,116 +114,34 @@ namespace Accounting.Form
         private void ConfigureResponsiveLayout()
         {
             FormBorderStyle = FormBorderStyle.Sizable;
-            MinimumSize = new Size(1120, 680);
             panelControl1.Dock = DockStyle.Fill;
             gridControl1.Dock = DockStyle.Fill;
-            toolbarFlow.Dock = DockStyle.Fill;
-            toolbarFlow.FlowDirection = FlowDirection.LeftToRight;
-            toolbarFlow.WrapContents = true;
-            toolbarFlow.AutoScroll = false;
-            toolbarFlow.Padding = new Padding(8, 8, 8, 8);
-            toolbarFlow.Margin = Padding.Empty;
-            toolbarFlow.AutoSize = false;
 
-            sidePanel1.Controls.Clear();
-            sidePanel1.Controls.Add(toolbarFlow);
-
-            ConfigureToolbarLabel(labelControl3);
-            ConfigureToolbarControl(cmbbulan, 132, ToolbarControlHeight);
-            ConfigureToolbarControl(setahun, 96, ToolbarControlHeight);
-            ConfigureToolbarButton(sbadd, 92);
-            ConfigureToolbarButton(sbubah, 92);
-            ConfigureToolbarButton(sbhapus, 92);
-            ConfigureToolbarButton(sbexport, 96);
-            ConfigureToolbarButton(sbexpadvanced, 132);
-            ConfigureToolbarButton(refreshManualButton, 108);
-
-            ConfigureToolbarCheck(AkunNeraca);
-            ConfigureToolbarCheck(AkunLabaRugi);
-            ConfigureToolbarCheck(cetbm);
-            ConfigureToolbarCheck(cetm);
-            ConfigureToolbarCheck(CEMUTASI);
-            ConfigureToolbarCheck(NilaiSaldo);
-            ConfigureToolbarCheck(cegroup);
-            ConfigureToolbarCheck(cedetail);
-            ConfigureToolbarLabel(labelControl1);
-            ConfigureToolbarControl(lookUpEdit1, 188, ToolbarControlHeight);
-
-            toolbarFlow.Controls.AddRange(new Control[]
-            {
-                refreshManualButton,
+            headerLayout = CoaHeaderLayout.Apply(
+                this,
+                sidePanel1,
                 labelControl3, cmbbulan, setahun,
-                sbadd, sbubah, sbhapus, sbexport, sbexpadvanced,
-                AkunNeraca, AkunLabaRugi, cetbm, cetm, CEMUTASI, NilaiSaldo, cegroup, cedetail,
-                labelControl1, lookUpEdit1
-            });
-            toolbarFlow.SetFlowBreak(sbexpadvanced, true);
-
-            Resize += (_, _) => ApplyResponsiveToolbarLayout();
-            sidePanel1.SizeChanged += (_, _) => ApplyResponsiveToolbarLayout();
-            ApplyResponsiveToolbarLayout();
+                sbadd, sbubah, sbhapus, sbexport, sbexpadvanced, refreshManualButton,
+                AkunNeraca, AkunLabaRugi, cetbm, cetm,
+                CEMUTASI, NilaiSaldo, cegroup, cedetail,
+                labelControl1, lookUpEdit1);
         }
 
-        private static void ConfigureToolbarControl(Control control, int width, int height, bool autoSize = false)
+        protected override void OnLoad(EventArgs e)
         {
-            control.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            control.Margin = new Padding(4);
-            control.AutoSize = autoSize;
-            if (!autoSize)
-            {
-                control.Size = new Size(width, height);
-            }
+            base.OnLoad(e);
+            headerLayout?.Relayout();
         }
 
-        private static void ConfigureToolbarLabel(LabelControl label)
+        protected override void OnDpiChangedAfterParent(EventArgs e)
         {
-            label.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            label.Margin = new Padding(6, 8, 2, 2);
-            label.AutoSizeMode = LabelAutoSizeMode.Vertical;
-        }
-
-        private static void ConfigureToolbarCheck(CheckEdit check)
-        {
-            check.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            check.Margin = new Padding(2, 6, 6, 2);
-            check.AutoSize = true;
-            check.Properties.AutoWidth = true;
-            check.MinimumSize = new Size(0, ToolbarControlHeight);
-        }
-
-        private static void ConfigureToolbarButton(SimpleButton button, int minWidth)
-        {
-            int measured = TextRenderer.MeasureText(button.Text ?? string.Empty, button.Font).Width;
-            int iconPadding = button.ImageOptions?.Image != null ? 42 : 24;
-            int width = Math.Max(minWidth, measured + iconPadding);
-            button.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            button.Margin = new Padding(2, 2, 6, 2);
-            button.Size = new Size(width, ToolbarControlHeight);
-        }
-
-        private void ApplyResponsiveToolbarLayout()
-        {
-            if (sidePanel1.IsDisposed || isApplyingToolbarLayout)
-            {
-                return;
-            }
-
-            int targetWidth = Math.Max(640, sidePanel1.ClientSize.Width - 16);
-            isApplyingToolbarLayout = true;
-            try
-            {
-                Size preferred = toolbarFlow.GetPreferredSize(new Size(targetWidth, 0));
-                int desiredHeight = Math.Max(60, preferred.Height + 8);
-                sidePanel1.Height = desiredHeight;
-            }
-            finally
-            {
-                isApplyingToolbarLayout = false;
-            }
+            base.OnDpiChangedAfterParent(e);
+            headerLayout?.Relayout();
         }
 
         private void FrmAkunEF_FormClosed(object? sender, FormClosedEventArgs e)
         {
+            headerLayout?.Dispose();
             recalcStatusTimer.Stop();
             recalcStatusTimer.Tick -= RecalcStatusTimer_Tick;
             JurnalRekalkulasiNotifier.JobQueued -= OnJurnalRekalkulasiJobQueued;
@@ -710,18 +624,31 @@ namespace Accounting.Form
                 var NAMA = gridView1.GetRowCellValue(rowhandle, "NAMAACC").ToString();
                 var GD = gridView1.GetRowCellValue(rowhandle, "GD").ToString();
 
+                var tahun = Convert.ToInt32(setahun.Value);
+
                 if(GD=="G" )
                 {
                     if (XtraMessageBox.Show("Hapus Group Kode Perkiraan ?\n" + KODE + " " + NAMA +
                         "\nSemua kode dibawah group ini akan dihapus jika tidak memiliki tansaksi" , "Confirm Hapus", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                         return;
+
+                    var result = AccountServices.DeleteCoaCascade(CompanyInfo.IDDATA, tahun, ID);
+                    if (!result.Success)
+                    {
+                        XtraMessageBox.Show(
+                            "Tidak dapat menghapus. Kode berikut telah memiliki transaksi:\n" + string.Join(", ", result.BlockedKodeAcc),
+                            "Error Hapus", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    Load_COA();
+                    XtraMessageBox.Show($"{result.DeletedCount} Account Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
                     if (XtraMessageBox.Show("Hapus Detail Kode Perkiraan ? \n" + KODE + " " + NAMA, "Confirm Hapus", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                         return;
+                    DELETEAKUN(ID, KODE, tahun);
                 }
-                DELETEAKUN(ID);
             }
             catch (Exception ex)
             {
@@ -729,10 +656,16 @@ namespace Accounting.Form
             }
         }
 
-        private void DELETEAKUN(string iD)
+        private void DELETEAKUN(string iD, string kode, int tahun)
         {
             try
             {
+                if (AccountServices.HasTransactions(CompanyInfo.IDDATA, tahun, kode))
+                {
+                    XtraMessageBox.Show("Kode Perkiraan Telah diGunakan,tidak dapat dihapus.", "Error Delete", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
                 AccountServices.DeleteCOA(iD);
                 Load_COA();
                 XtraMessageBox.Show("Account Deleted", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1048,10 +981,8 @@ namespace Accounting.Form
 
                 if (Group == "G")
                 {
-                    //1st generate 
-                    LaporanServices.GenerateSub_LabaRugi(iddata, pbulan, ptahun, kode, userid, isakun_neraca, posisi);
-                    //2nd view data
-                    DataSet DSSubRL = LaporanServices.ViewSub_LabaRugi(iddata, userid);
+                    DataSet DSSubRL = LaporanServices.ViewAccountingReportDrillDown(iddata, pbulan, ptahun, isakun_neraca == "NERACA" ? "NERACA" : "LABARUGI", 0, kode);
+                    DSSubRL.Tables[0].TableName = "SubLabaRugi";
                     //DSSubRL.WriteXmlSchema("SubRL.xsd");
                     if (posisi == "D")
                     {

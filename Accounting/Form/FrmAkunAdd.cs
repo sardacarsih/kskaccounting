@@ -5,6 +5,7 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraSplashScreen;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
 
@@ -38,7 +39,6 @@ namespace Accounting
             setahun.Properties.MinValue = Acct.TahunMin;
             setahun.Properties.MaxValue = Acct.TahunMax;
             setahun.Value = Acct.TahunMax;
-            lbliddata.Text =CompanyInfo.IDDATA;
             Load_TipeAkun();
         }
         private void Load_TipeAkun()
@@ -333,7 +333,7 @@ namespace Accounting
             try
             {
                 if (txtkepalaakun.Text.Length != 3 ||
-                txtnoakungroup.Text.Length != 5 ||
+                txtnoakungroup.Text.Length != 6 ||
                 txtnoakundetail.Text.Length != 3)
                 {
                     XtraMessageBox.Show("Kode Akun wajib diisi lengkap", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -388,16 +388,53 @@ namespace Accounting
                     return;
                 }
 
+                if (AccountServices.CodeExists(piddata, p_tahun, pkode))
+                {
+                    XtraMessageBox.Show($"Kode Perkiraan {pkode} sudah digunakan", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
                 AccountServices.InsertCOA(piddata, p_tahun, pgrp, pinduk, pgd, pkode, plvl, pposisi, pnama, 0);
                 //if (checkEditbagianakun.Checked == true)
                 //{
                 //    LoadGroup();
                 //}
-               
-               
+
+                List<int> propagatedYears = new();
+                List<int> skippedYears = new();
+                for (int year = p_tahun + 1; year <= Acct.TahunMax; year++)
+                {
+                    if (AccountServices.CekCOAExist(piddata, year) == 1)
+                    {
+                        continue;
+                    }
+                    if (AccountServices.CodeExists(piddata, year, pkode))
+                    {
+                        continue;
+                    }
+                    try
+                    {
+                        AccountServices.InsertCOA(piddata, year, pgrp, pinduk, pgd, pkode, plvl, pposisi, pnama, 0);
+                        propagatedYears.Add(year);
+                    }
+                    catch (Exception)
+                    {
+                        skippedYears.Add(year);
+                    }
+                }
+
                 insert();
-               
-                XtraMessageBox.Show("Account Code SAved", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                string successMessage = "Account Code SAved";
+                if (propagatedYears.Count > 0)
+                {
+                    successMessage += "\nJuga dibuat di tahun: " + string.Join(", ", propagatedYears);
+                }
+                if (skippedYears.Count > 0)
+                {
+                    successMessage += "\nGagal dibuat di tahun: " + string.Join(", ", skippedYears);
+                }
+                XtraMessageBox.Show(successMessage, "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 checkEditbagianakun.Checked = false;
                 txtnamaakun.Text = "";
                 txtkepalaakun.Text = "";

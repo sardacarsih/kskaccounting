@@ -1,4 +1,4 @@
-﻿using Accounting.BusinessLayer;
+using Accounting.BusinessLayer;
 using DevExpress.XtraSplashScreen;
 using System;
 using System.Windows.Forms;
@@ -204,7 +204,7 @@ namespace Accounting.Form
             {
                // string query = "update acct_jurnal_dtl set posted='True' where did=:p_did and posted<>'True'";
 
-                OracleCommand cmd = new OracleCommand("ACCT_JURNAL.UpdateStatusND", con)
+                OracleCommand cmd = new OracleCommand("ACCT_JURNAL_V2.UpdateStatusND", con)
                 {
                     CommandType = CommandType.StoredProcedure
                 };

@@ -8,7 +8,7 @@ public sealed class JurnalImportRow
     public DateTime Tanggal { get; init; }
     public int Baris { get; init; }
     public string Kode { get; init; } = string.Empty;
-    public string Rekening { get; init; } = string.Empty;
+    public string Rekening { get; set; } = string.Empty;
     public decimal Debet { get; init; }
     public decimal Kredit { get; init; }
     public string Keterangan { get; init; } = string.Empty;
