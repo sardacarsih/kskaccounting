@@ -101,6 +101,16 @@ namespace Accounting.BusinessLayer
                 request.Keterangan.ToLower(),
                 request.Jumlah));
 
+            // Header rows are projected from detail rows, which carry no header version token.
+            // Look up the real optimistic-concurrency token (NVL(MODIFIED_DATE, CREATED_DATE))
+            // per JURNALID so an edit started from the search grid uses the same token as the
+            // standard "Daftar Jurnal" list. Without this, HeaderVersionUtc defaults to
+            // DateTime.MinValue and every UpdateJurnalMasterDetail on a searched journal fails
+            // the concurrency check with a spurious "Konflik Update".
+            Dictionary<double, DateTime> headerVersions = repository
+                .GetJurnalHeader_Dapper(request.IdData, request.Periode)
+                .ToDictionary(header => header.JURNALID, header => header.HeaderVersionUtc);
+
             List<JurnalHeaderDTO> headerRows = OrderHeaderRows(detailRows
                 .GroupBy(group => new { group.REFFID, group.HIDREFF, group.NoJurnal, group.Tanggal })
                 .Select(group => new JurnalHeaderDTO
@@ -108,7 +118,10 @@ namespace Accounting.BusinessLayer
                     JURNALID = group.Key.REFFID,
                     HID = group.Key.HIDREFF,
                     NoJurnal = group.Key.NoJurnal,
-                    Tanggal = group.Key.Tanggal
+                    Tanggal = group.Key.Tanggal,
+                    HeaderVersionUtc = headerVersions.TryGetValue(group.Key.REFFID, out DateTime version)
+                        ? version
+                        : default
                 })
                 .ToList());
 

@@ -23,8 +23,6 @@ EXCEPTION
 END;
 /
 
-BEGIN
-    EXECUTE IMMEDIATE q'[
 CREATE OR REPLACE PACKAGE ACCT_RECALLCULATIONS_V2 AS
     -- Menghitung ulang akun terdampak dari baris detail jurnal saat ini.
     -- Cocok untuk insert/update di mana baris detail masih ada.
@@ -58,10 +56,55 @@ CREATE OR REPLACE PACKAGE ACCT_RECALLCULATIONS_V2 AS
         p_PERIODE IN VARCHAR2,
         p_USERID  IN VARCHAR2
     );
-END ACCT_RECALLCULATIONS_V2;]';
+END ACCT_RECALLCULATIONS_V2;
+/
 
-    EXECUTE IMMEDIATE q'[
 CREATE OR REPLACE PACKAGE BODY ACCT_RECALLCULATIONS_V2 AS
+
+    PROCEDURE RecomputeNodeSaldo(
+        p_IDDATA  IN VARCHAR2,
+        p_TAHUN   IN INTEGER,
+        p_BULAN   IN INTEGER,
+        p_KODEACC IN VARCHAR2
+    ) IS
+        v_sql    VARCHAR2(32767);
+        v_set    VARCHAR2(32767) := '';
+        v_base   VARCHAR2(1000);
+        v_expr_d VARCHAR2(12000);
+        v_expr_k VARCHAR2(12000);
+    BEGIN
+        IF p_BULAN < 1 OR p_BULAN > 12 THEN
+            RAISE_APPLICATION_ERROR(-20012, 'Bulan saldo tidak valid: ' || p_BULAN);
+        END IF;
+
+        IF p_BULAN = 1 THEN
+            v_base := 'NVL(SALDOAWAL,0)';
+        ELSE
+            v_base := 'NVL("' || TO_CHAR(p_BULAN - 1) || 'S",0)';
+        END IF;
+
+        FOR target_month IN p_BULAN..12 LOOP
+            v_expr_d := v_base;
+            v_expr_k := v_base;
+
+            FOR source_month IN p_BULAN..target_month LOOP
+                v_expr_d := v_expr_d || '+(NVL("' || TO_CHAR(source_month) || 'D",0)-NVL("' || TO_CHAR(source_month) || 'K",0))';
+                v_expr_k := v_expr_k || '+(NVL("' || TO_CHAR(source_month) || 'K",0)-NVL("' || TO_CHAR(source_month) || 'D",0))';
+            END LOOP;
+
+            IF LENGTH(v_set) > 0 THEN
+                v_set := v_set || ',';
+            END IF;
+
+            v_set := v_set || '"' || TO_CHAR(target_month) || 'S" = CASE '
+                || 'WHEN POSISI=''D'' THEN ' || v_expr_d || ' '
+                || 'WHEN POSISI=''K'' THEN ' || v_expr_k || ' '
+                || 'ELSE ' || v_expr_d || ' END';
+        END LOOP;
+
+        v_sql := 'UPDATE ACCT_COA SET ' || v_set || ' WHERE IDDATA = :p_iddata AND TAHUN = :p_tahun AND KODEACC = :p_kodeacc';
+        EXECUTE IMMEDIATE v_sql USING p_IDDATA, p_TAHUN, p_KODEACC;
+    END RecomputeNodeSaldo;
 
     -- Menghitung ulang kolom mutasi bulanan satu node COA sebagai SUM absolut
     -- dari semua posting detail jurnal di bawah sub-tree node tersebut untuk periode terkait.
@@ -133,12 +176,7 @@ CREATE OR REPLACE PACKAGE BODY ACCT_RECALLCULATIONS_V2 AS
              WHERE IDDATA = p_IDDATA AND TAHUN = p_TAHUN AND KODEACC = p_KODEACC;
         END IF;
 
-        ACCT_RECALLCULATIONS.UpdSaldoAkhir_sd_Des_byKODE(
-            p_IDDATA => p_IDDATA,
-            p_BULAN  => p_BULAN,
-            p_TAHUN  => p_TAHUN,
-            p_KODEACC => p_KODEACC
-        );
+        RecomputeNodeSaldo(p_IDDATA, p_TAHUN, p_BULAN, p_KODEACC);
     END RecomputeNode;
 
     PROCEDURE ReCalcByJurnalID(
@@ -765,9 +803,10 @@ CREATE OR REPLACE PACKAGE BODY ACCT_RECALLCULATIONS_V2 AS
         RecomputePeriodMutasi(p_IDDATA, p_TAHUN, p_BULAN, p_PERIODE);
         RecomputePeriodSaldo(p_IDDATA, p_TAHUN, p_BULAN);
     END ReCalcPeriod;
-END ACCT_RECALLCULATIONS_V2;]';
+END ACCT_RECALLCULATIONS_V2;
+/
 
-
+BEGIN
     DBMS_OUTPUT.PUT_LINE('REPLACED ACCT_RECALLCULATIONS_V2 (period recompute entrypoint)');
 END;
 /

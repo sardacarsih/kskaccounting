@@ -274,9 +274,13 @@ namespace Accounting.Form
                 leperiode.Properties.DisplayMember = "PERIODE";
                 old_JurnalID = Convert.ToDouble(GVHeader.GetRowCellValue(rowhandle, "JURNALID"));
                 object headerVersionValue = GVHeader.GetRowCellValue(rowhandle, "HeaderVersionUtc");
-                old_HeaderVersionUtc = headerVersionValue == null || headerVersionValue == DBNull.Value
+                DateTime? capturedHeaderVersion = headerVersionValue == null || headerVersionValue == DBNull.Value
                     ? null
                     : Convert.ToDateTime(headerVersionValue);
+                // A default/MinValue timestamp means the row was materialized without a real version
+                // token; treat it as "no token" so the optimistic-concurrency check is skipped instead
+                // of falsely reporting a conflict.
+                old_HeaderVersionUtc = capturedHeaderVersion == default(DateTime) ? null : capturedHeaderVersion;
                 var NomorJurnal = GVHeader.GetRowCellValue(rowhandle, "NoJurnal").ToString();
                 var TanggalJurnal = Convert.ToDateTime(GVHeader.GetRowCellValue(rowhandle, "Tanggal"));
 
