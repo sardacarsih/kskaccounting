@@ -169,6 +169,11 @@ namespace Accounting.Form
                 {
                     if (string.IsNullOrEmpty(deJurnal.Text)) return;
 
+                    // Saat KeyDown, tanggal yang diketik belum ter-commit ke EditValue dan
+                    // leperiode belum tersinkron (EditValueChanged baru jalan setelah handler ini),
+                    // jadi commit dulu agar cek duplikat tidak memakai periode lama.
+                    if (!deJurnal.DoValidate()) return;
+
                     UpdateGridEnabledState();
 
                     if (!GCJurnal.Enabled)
@@ -180,7 +185,8 @@ namespace Accounting.Form
                     {
                         if (!NoJurnaltxt.Text.Contains("/ND") && !NoJurnaltxt.Text.Contains("/NK"))
                         {
-                            bool nomorexist = jurnalRepository.CekNoJurnalExist_input(CompanyInfo.IDDATA, NoJurnaltxt.Text.ToUpper(), leperiode.Text);
+                            string periodeCek = FormatPeriod(deJurnal.DateTime.Month, deJurnal.DateTime.Year);
+                            bool nomorexist = jurnalRepository.CekNoJurnalExist_input(CompanyInfo.IDDATA, NoJurnaltxt.Text.ToUpper(), periodeCek);
                             if (nomorexist)
                             {
                                 XtraMessageBox.Show("Nomor Jurnal : " + NoJurnaltxt.Text + " Sudah ada...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Error);
