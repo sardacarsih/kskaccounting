@@ -68,6 +68,9 @@ internal static class Program
                 case MigrationMode.RepairMissingCoa:
                     RepairMissingCoa(options);
                     break;
+                case MigrationMode.FindJurnal:
+                    FindJurnal(options);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unsupported mode: {options.Mode}");
             }
@@ -643,6 +646,86 @@ EXIT
         }
 
         Console.WriteLine(output);
+    }
+
+    private static void FindJurnal(AppOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.NoJurnal))
+        {
+            throw new ArgumentException("--mode findjurnal requires --nojurnal <nomor>. Optional filters: --iddata, --periode. Example: --nojurnal 083/BK-MANDIRI --periode 06/2026");
+        }
+
+        string noJurnal = EscapeSqlLiteral(options.NoJurnal.Trim().ToUpperInvariant());
+        string noJurnalPredicate = options.LikeMatch
+            ? $"UPPER(h.NOJURNAL) LIKE '%{noJurnal}%'"
+            : $"UPPER(h.NOJURNAL) = '{noJurnal}'";
+        string filters = string.Empty;
+        if (!string.IsNullOrWhiteSpace(options.IdData))
+        {
+            filters += $"\n   AND h.IDDATA = '{EscapeSqlLiteral(options.IdData)}'";
+        }
+        if (!string.IsNullOrWhiteSpace(options.Periode))
+        {
+            filters += $"\n   AND h.PERIODE = '{EscapeSqlLiteral(options.Periode)}'";
+        }
+
+        string sql = $"""
+SET SERVEROUTPUT ON
+SET HEADING ON
+SET FEEDBACK OFF
+SET LINESIZE 32767
+SET TRIMSPOOL ON
+COLUMN IDDATA FORMAT A12;
+COLUMN PERIODE FORMAT A8;
+COLUMN NOJURNAL FORMAT A25;
+COLUMN TANGGAL FORMAT A10;
+COLUMN SUMBER FORMAT A12;
+COLUMN USERID FORMAT A15;
+COLUMN ISRE FORMAT A4;
+COLUMN CREATED FORMAT A19;
+COLUMN MODIFIED FORMAT A19;
+COLUMN TOTAL_DEBET FORMAT 999999999999990.99;
+COLUMN TOTAL_KREDIT FORMAT 999999999999990.99;
+SELECT h.JURNALID,
+       h.IDDATA,
+       h.PERIODE,
+       h.NOJURNAL,
+       TO_CHAR(h.TANGGAL, 'DD/MM/YYYY') AS TANGGAL,
+       h.SUMBER,
+       h.USERID,
+       h.ISRE,
+       TO_CHAR(h.CREATED_DATE, 'DD/MM/YYYY HH24:MI:SS') AS CREATED,
+       TO_CHAR(h.MODIFIED_DATE, 'DD/MM/YYYY HH24:MI:SS') AS MODIFIED,
+       (SELECT SUM(NVL(d.DEBET, 0))
+          FROM ACCT_JURNAL_DTL d
+         WHERE d.IDDATA = h.IDDATA
+           AND d.PERIODE = h.PERIODE
+           AND UPPER(d.NOJURNAL) = UPPER(h.NOJURNAL)) AS TOTAL_DEBET,
+       (SELECT SUM(NVL(d.KREDIT, 0))
+          FROM ACCT_JURNAL_DTL d
+         WHERE d.IDDATA = h.IDDATA
+           AND d.PERIODE = h.PERIODE
+           AND UPPER(d.NOJURNAL) = UPPER(h.NOJURNAL)) AS TOTAL_KREDIT
+  FROM ACCT_JURNAL_HDR h
+ WHERE {noJurnalPredicate}{filters}
+ ORDER BY h.IDDATA, h.PERIODE, h.TANGGAL;
+{(string.IsNullOrWhiteSpace(options.IdData) ? string.Empty : $"""
+PROMPT === ACCT_PERIODE untuk IDDATA {EscapeSqlLiteral(options.IdData)} ===
+COLUMN ISLOCKED FORMAT A8;
+SELECT p.PERIODE,
+       NVL(p.ISLOCKED, 'N') AS ISLOCKED
+  FROM ACCT_PERIODE p
+ WHERE p.IDDATA = '{EscapeSqlLiteral(options.IdData)}'
+ ORDER BY p.TAHUN, p.BULAN;
+""")}
+EXIT
+""";
+
+        SqlExecutionResult result = ExecuteSqlInline(options, sql, "find_jurnal");
+        string output = result.Output.Trim();
+        Console.WriteLine(string.IsNullOrWhiteSpace(output)
+            ? $"[INFO] Tidak ada jurnal dengan NOJURNAL '{options.NoJurnal.Trim().ToUpperInvariant()}' pada filter tersebut."
+            : output);
     }
 
     private static void RepairMissingCoa(AppOptions options)
@@ -1409,7 +1492,8 @@ internal enum MigrationMode
     ShowCompileErrors,
     ReconcileCoa,
     ShowSource,
-    RepairMissingCoa
+    RepairMissingCoa,
+    FindJurnal
 }
 
 internal sealed class AppOptions
@@ -1432,6 +1516,8 @@ internal sealed class AppOptions
     public int? Bulan { get; private init; }
     public string BulanList { get; private init; } = string.Empty;
     public string UserId { get; private init; } = string.Empty;
+    public string NoJurnal { get; private init; } = string.Empty;
+    public bool LikeMatch { get; private init; }
     public bool Apply { get; private init; }
     public int ScriptTimeoutMs { get; private init; } = 600000;
     public int ConnTimeoutMs { get; private init; } = 30000;
@@ -1465,6 +1551,10 @@ Options:
   --userid       Required for --mode repairmissingcoa: USERID to pass to ACCT_RECALLCULATIONS_V2.ReCalcPeriod.
   --apply        With --mode repairmissingcoa: actually INSERT/COMMIT and run the recalc. Without it, the
                   mode only prints what would be inserted (dry run, no writes).
+  --nojurnal     Required for --mode findjurnal: journal number to look up in ACCT_JURNAL_HDR
+                  (case-insensitive exact match). Optional filters: --iddata, --periode.
+  --like         With --mode findjurnal: match NOJURNAL with LIKE '%value%' instead of exact
+                  equality (catches hidden whitespace or prefix/suffix variants).
   --steps        Number of steps for down mode (default: 1)
   --timeout      Max milliseconds per SQL script before sqlplus is killed (default: 600000)
   --conn-timeout Max milliseconds for the startup connection check (default: 30000)
@@ -1531,7 +1621,7 @@ Default behavior:
         {
             if (!Enum.TryParse(modeArg, true, out mode))
             {
-                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors, reconcilecoa, showsource, repairmissingcoa.");
+                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors, reconcilecoa, showsource, repairmissingcoa, findjurnal.");
             }
         }
 
@@ -1585,6 +1675,12 @@ Default behavior:
 
         bool apply = map.ContainsKey("apply");
 
+        string noJurnal = map.TryGetValue("nojurnal", out string? noJurnalArg) && !string.IsNullOrWhiteSpace(noJurnalArg)
+            ? noJurnalArg.Trim()
+            : string.Empty;
+
+        bool likeMatch = map.ContainsKey("like");
+
         int steps = 1;
         if (map.TryGetValue("steps", out string? stepsArg) && !string.IsNullOrWhiteSpace(stepsArg))
         {
@@ -1636,6 +1732,8 @@ Default behavior:
             Bulan = bulan,
             BulanList = bulanList,
             UserId = userId,
+            NoJurnal = noJurnal,
+            LikeMatch = likeMatch,
             Apply = apply,
             ScriptTimeoutMs = scriptTimeoutMs,
             ConnTimeoutMs = connTimeoutMs,
