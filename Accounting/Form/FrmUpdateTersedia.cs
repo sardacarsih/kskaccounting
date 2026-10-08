@@ -45,6 +45,12 @@ namespace Accounting.Form
 
             BuildLayout();
             FormClosing += FrmUpdateTersedia_FormClosing;
+            Shown += (_, _) =>
+            {
+                // Fokus awal di catatan rilis membuat seluruh teks tampak terblok; arahkan ke tombol Update.
+                memoNotes.DeselectAll();
+                ActiveControl = btnUpdate;
+            };
         }
 
         private void BuildLayout()
@@ -61,6 +67,7 @@ namespace Accounting.Form
             }
 
             memoNotes.Properties.ReadOnly = true;
+            memoNotes.TabStop = false;
             memoNotes.Properties.ScrollBars = ScrollBars.Vertical;
             memoNotes.Text = string.IsNullOrWhiteSpace(update.Manifest?.Notes)
                 ? "(Tidak ada catatan rilis)"
@@ -97,8 +104,8 @@ namespace Accounting.Form
                 WrapContents = false,
                 Margin = new Padding(0, 8, 0, 0)
             };
-            btnUpdate.Width = 130;
-            btnNanti.Width = 90;
+            btnUpdate.Size = new Size(170, 30);
+            btnNanti.Size = new Size(100, 30);
             buttons.Controls.AddRange(new Control[] { btnNanti, btnUpdate });
 
             var table = new TableLayoutPanel { AutoSize = true, ColumnCount = 1, Dock = DockStyle.Fill };
