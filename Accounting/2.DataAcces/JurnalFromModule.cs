@@ -453,7 +453,12 @@ namespace Accounting.DataLayer
                       AND COA.IDDATA = :p_iddata
                       AND COA.TAHUN = :p_glyear) AS DEBIT_ACCOUNT_NAME,
                    ILT.""CreditAccountNumber"" AS CREDIT_ACCOUNT,
-                   IIT.""Name"" AS CREDIT_ACCOUNT_NAME,
+                   NVL((SELECT MAX(COA.NAMAACC)
+                        FROM ACCT_COA COA
+                        WHERE COA.KODEACC = ILT.""CreditAccountNumber""
+                          AND COA.IDDATA = :p_iddata
+                          AND COA.TAHUN = :p_glyear),
+                       IIT.""Name"") AS CREDIT_ACCOUNT_NAME,
                    II.""Name"" AS ITEM_NAME,
                    IU.""Name"" AS UNIT_NAME,
                    IUSI.""Quantity"" AS QUANTITY,

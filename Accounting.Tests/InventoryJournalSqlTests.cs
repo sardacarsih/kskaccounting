@@ -58,6 +58,17 @@ public sealed class InventoryJournalSqlTests
     }
 
     [Fact]
+    public void InventoryBaruDetailSql_LkCreditAccountName_UsesCoaNameNotItemTypeName()
+    {
+        string sql = NormalizeWhitespace(GetInventoryBaruDetailSql());
+
+        Assert.Contains(
+            "NVL((SELECT MAX(COA.NAMAACC) FROM ACCT_COA COA WHERE COA.KODEACC = ILT.\"CreditAccountNumber\" AND COA.IDDATA = :p_iddata AND COA.TAHUN = :p_glyear), IIT.\"Name\") AS CREDIT_ACCOUNT_NAME",
+            sql);
+        Assert.DoesNotContain("IIT.\"Name\" AS CREDIT_ACCOUNT_NAME", sql);
+    }
+
+    [Fact]
     public void InventoryBaruDetailSql_LkAgronomy_UsesNotesOnly()
     {
         string sql = NormalizeWhitespace(GetInventoryBaruDetailSql());
