@@ -172,7 +172,10 @@ namespace Accounting.Utilities.Update
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new HttpRequestException($"Server update menjawab HTTP {(int)response.StatusCode} saat mengunduh paket.");
+                    throw new HttpRequestException(
+                        $"Server update menjawab HTTP {(int)response.StatusCode} saat mengunduh paket." +
+                        $"{Environment.NewLine}{update.PackageUri}" +
+                        $"{Environment.NewLine}Coba lagi beberapa menit lagi; bila tetap gagal hubungi IT.");
                 }
 
                 long? total = response.Content.Headers.ContentLength ?? update.Manifest.Size;
