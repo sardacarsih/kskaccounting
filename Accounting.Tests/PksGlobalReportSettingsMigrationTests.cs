@@ -17,9 +17,9 @@ public sealed class PksGlobalReportSettingsMigrationTests
         JsonElement[] migrations = root.GetProperty("migrations").EnumerateArray().ToArray();
         JsonElement migration = migrations.Single(entry => entry.GetProperty("id").GetString() == MigrationId);
 
-        Assert.Equal("2026.07.29.4", root.GetProperty("version").GetString());
-        Assert.Equal(67, migration.GetProperty("order").GetInt32());
-        Assert.Equal(68, migrations.Max(entry => entry.GetProperty("order").GetInt32()));
+        Assert.Equal("2026.10.08.1", root.GetProperty("version").GetString());
+        Assert.Equal(68, migration.GetProperty("order").GetInt32());
+        Assert.Equal(69, migrations.Max(entry => entry.GetProperty("order").GetInt32()));
 
         AssertMigrationFileExists(migratorDirectory, migration, "script");
         AssertMigrationFileExists(migratorDirectory, migration, "rollbackScript");
