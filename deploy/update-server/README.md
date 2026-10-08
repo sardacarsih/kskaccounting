@@ -1,6 +1,6 @@
 # Server Update Accounting (Apache di grahafajar + Cloudflare Tunnel)
 
-Menyajikan `https://update.kskgroup.web.id/accounting/version.json` yang dibaca `UpdateCheckService`.
+Menyajikan `https://update.kskgroup.web.id/accounting/latest.json` yang dibaca `UpdateCheckService`.
 Pola sama dengan Finance: menumpang di vhost `update.kskgroup.web.id` yang sudah ada
 (ingress cloudflared tidak diubah, Apache hanya reload graceful).
 
@@ -20,14 +20,14 @@ Script idempotent: membuat folder (label SELinux `httpd_sys_content_t`), memasan
 `/etc/httpd/conf.d/update-vhost.d/`, `apachectl configtest` (rollback otomatis bila gagal), lalu reload.
 
 ## Rilis
-1. Naikkan `FileVersion` di `Accounting/Accounting.csproj`, publish, buat `GL_Setup.zip`.
-2. Unggah paket **dulu**, lalu `version.json` (contoh: `Accounting/Utilities/Update/version.json`):
+Otomatis lewat skrip (membuat ZIP + `latest.json`, upload ZIP dulu, cek SHA-256 di server, baru `latest.json`):
 ```powershell
-scp GL_Setup.zip   dharyadi@ssh.kskgroup.web.id:/srv/accounting-update/accounting/
-scp version.json   dharyadi@ssh.kskgroup.web.id:/srv/accounting-update/accounting/
+.	ools\publish-update.ps1 -NotesFile .\catatan.txt -UploadTarget dharyadi@ssh.kskgroup.web.id
 ```
-3. Cek: `curl -I https://update.kskgroup.web.id/accounting/version.json` → 200, `application/json`, `no-cache`.
-   File lain di `/accounting/` selain `version.json` dan `GL_Setup*.zip|exe` → 403.
+Detail alur dan format manifest: [docs/auto-update.md](../../docs/auto-update.md).
+
+Cek: `curl -I https://update.kskgroup.web.id/accounting/latest.json` -> 200, `application/json`, `no-cache`.
+File lain di `/accounting/` selain `latest.json` dan `Accounting-<versi>-win-x64|x86.zip` -> 403.
 
 ## Rollback
 Lihat baris terakhir output setup (perintah `cp -p ...before-accounting-*.bak`), lalu

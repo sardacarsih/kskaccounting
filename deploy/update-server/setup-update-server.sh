@@ -95,7 +95,7 @@ probe() {
     curl -s -o /dev/null -w '%{http_code}' -H "Host: $HOSTNAME_UPDATE" "http://127.0.0.1$1"
 }
 echo "==> Tes lokal:"
-echo "    /accounting/version.json                   -> $(probe /accounting/version.json)  (404 wajar sebelum rilis pertama)"
+echo "    /accounting/latest.json                   -> $(probe /accounting/latest.json)  (404 wajar sebelum rilis pertama)"
 echo "    /accounting/rahasia.txt                   -> $(probe /accounting/rahasia.txt)  (harus 403/404)"
 echo "    /smartmillscale/releases.stable.json   -> $(probe /smartmillscale/releases.stable.json)  (SmartMillScale tetap 200)"
 
@@ -104,6 +104,6 @@ cat <<EOF
 Selesai. Rilis dari mesin Windows (root repo Accounting):
   .\\tools\\publish-update.ps1 -NotesFile .\\catatan.txt -UploadTarget $DEPLOY_USER@ssh.kskgroup.web.id
 Cek dari luar:
-  curl -I https://$HOSTNAME_UPDATE/accounting/version.json
+  curl -I https://$HOSTNAME_UPDATE/accounting/latest.json
 Rollback config: cp -p "$BACKUP" "$VHOST_FILE" && rm -f "$INCLUDE_FILE" && apachectl configtest && systemctl reload httpd
 EOF

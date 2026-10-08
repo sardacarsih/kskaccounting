@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Accounting.Updater</RootNamespace>
+    <AssemblyName>Accounting.Updater</AssemblyName>
+    <ApplicationIcon>..\icons\gl1_9S6_2.ico</ApplicationIcon>
+    <Title>Accounting Updater</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Accounting.Tests" />
+  </ItemGroup>
+
+</Project>
