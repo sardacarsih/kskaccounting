@@ -63,6 +63,14 @@ if (Test-Path $publishDir) {
     Remove-Item -Recurse -Force $publishDir
 }
 
+# Restore runtime-specific untuk proyek yang direferensikan. Tanpa ini, SDK .NET 10 bisa gagal dengan
+# NU1012 ("Platform version is not present") bila restore terakhir dilakukan tanpa -r (mis. dotnet test/build).
+Write-Host "Restore Accounting.Updater ($Runtime)..."
+dotnet restore (Join-Path $repoRoot "Accounting\Accounting.Updater\Accounting.Updater.csproj") -r $Runtime
+if ($LASTEXITCODE -ne 0) {
+    throw "dotnet restore Accounting.Updater gagal."
+}
+
 Write-Host "Publish Accounting $version ($Runtime)..."
 dotnet publish $csproj -c Release -r $Runtime --self-contained false -p:PublishSingleFile=false -o $publishDir
 if ($LASTEXITCODE -ne 0) {
