@@ -24,23 +24,9 @@ Menu **About -> Cek Update** memeriksa secara manual.
 - `sqlplus` ada di `PATH` komputer yang menjalankan update (syarat GLMigrator).
 - Akun database di `config.json` boleh menjalankan DDL migrasi.
 - `--mode verify` harus lolos. Jika database sudah punya drift/checksum bentrok lama, update akan gagal dan file dikembalikan; perbaiki dulu dengan GLMigrator (`--mode rebaselinechecksum`, dll.).
+- Migrasi khusus PKS (`20260729_001/002`) otomatis dilewati (`[N/A]`) di database yang tidak punya data PKS, jadi tidak lagi menggagalkan update di database kebun.
+- `verify` mengompilasi ulang objek INVALID lebih dulu, supaya paket yang hanya "basi" akibat DDL migrasi tidak membuat verifikasi gagal.
 - Komputer yang **tidak** boleh/bisa memigrasi (mis. tanpa sqlplus) set `"RunMigrator": false` pada section `Update`; migrasi dilewati dan harus dijalankan oleh komputer lain/IT.
-
-## Klien non-PKS: matikan migrator
-
-Migrasi `20260729_001_pks_global_report_settings` dan `20260729_002_pks_global_labarugi_repair` hanya untuk database PKS (butuh 74 mapping PKS di FSKPKS/FSLPKS/KSKPKS/MSLPKS). Di database lain (mis. kebun) keduanya berhenti dengan `ORA-20866`, sehingga update dengan migrator aktif **gagal dan file dikembalikan**.
-
-Untuk komputer yang database-nya bukan PKS, tambahkan di `Utilities\config.json` (lengkap: section `Update` menggantikan default `App.config`, jadi `ManifestUrl` wajib diisi atau pengecekan update mati):
-
-```json
-"Update": {
-  "Enabled": true,
-  "ManifestUrl": "https://update.kskgroup.web.id/accounting/latest.json",
-  "RunMigrator": false
-}
-```
-
-Updater lalu hanya mengganti file dan melewati GLMigrator. Migrasi database untuk server itu dijalankan terpisah oleh IT (GLMigrator `--mode up`); jangan menjalankan `up` penuh di database non-PKS selama migrasi PKS di atas belum diperbaiki.
 
 ## Konfigurasi klien
 

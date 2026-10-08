@@ -9,6 +9,7 @@ using System.Windows.Forms;
 
 namespace Accounting.Tests;
 
+[Collection(WinFormsUiCollection.Name)]
 public sealed class JurnalGridColumnWidthControllerTests
 {
     [Fact]
@@ -205,7 +206,7 @@ public sealed class JurnalGridColumnWidthControllerTests
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "STA grid test timed out.");
+        Assert.True(thread.Join(TimeSpan.FromSeconds(120)), "STA grid test timed out.");
 
         if (failure != null)
         {

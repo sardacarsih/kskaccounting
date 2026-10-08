@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.10.08.1",
+  "version": "2026.10.08.2",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -511,7 +511,8 @@
       "description": "Back up and remove scoped PKS report mappings, seed global Laba Rugi and Neraca settings from KSKPKS, and select PKS Neraca mappings without general duplicates.",
       "script": "migrations/V20260729_001__pks_global_report_settings.sql",
       "rollbackScript": "migrations/R20260729_001__pks_global_report_settings.sql",
-      "checkScript": "migrations/C20260729_001__pks_global_report_settings_check.sql"
+      "checkScript": "migrations/C20260729_001__pks_global_report_settings_check.sql",
+      "applicableScript": "migrations/A20260729_001__pks_scope_applicable.sql"
     },
     {
       "id": "20260729_002_pks_global_labarugi_repair",
@@ -519,7 +520,8 @@
       "description": "Repair the thirteen global PKS Laba Rugi account mappings omitted by the initial PKS globalisation migration.",
       "script": "migrations/V20260729_002__pks_global_labarugi_repair.sql",
       "rollbackScript": "migrations/R20260729_002__pks_global_labarugi_repair.sql",
-      "checkScript": "migrations/C20260729_002__pks_global_labarugi_repair_check.sql"
+      "checkScript": "migrations/C20260729_002__pks_global_labarugi_repair_check.sql",
+      "applicableScript": "migrations/A20260729_001__pks_scope_applicable.sql"
     }
   ]
 }

@@ -28,7 +28,7 @@ public sealed class HrdPayrollNonstaffMigrationTests
         JsonElement[] migrations = root.GetProperty("migrations").EnumerateArray().ToArray();
         JsonElement migration = migrations.Single(entry => entry.GetProperty("id").GetString() == MigrationId);
 
-        Assert.Equal("2026.10.08.1", root.GetProperty("version").GetString());
+        Assert.Equal("2026.10.08.2", root.GetProperty("version").GetString());
         Assert.Equal(66, migration.GetProperty("order").GetInt32());
 
         AssertMigrationFileExists(migratorDirectory, migration, "script");

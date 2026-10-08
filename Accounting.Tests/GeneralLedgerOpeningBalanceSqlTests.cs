@@ -17,7 +17,7 @@ public sealed class GeneralLedgerOpeningBalanceSqlTests
         JsonElement[] migrations = root.GetProperty("migrations").EnumerateArray().ToArray();
         JsonElement migration = migrations.Single(entry => entry.GetProperty("id").GetString() == MigrationId);
 
-        Assert.Equal("2026.10.08.1", root.GetProperty("version").GetString());
+        Assert.Equal("2026.10.08.2", root.GetProperty("version").GetString());
         Assert.Equal(67, migration.GetProperty("order").GetInt32());
         Assert.Equal(69, migrations.Max(entry => entry.GetProperty("order").GetInt32()));
 
