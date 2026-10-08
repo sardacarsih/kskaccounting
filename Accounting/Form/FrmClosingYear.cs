@@ -129,8 +129,7 @@ namespace Accounting.Form
 
         private void PlaySound(string fileName)
         {
-            player.SoundLocation = Environment.CurrentDirectory + "\\wav\\" + fileName;
-            player.Play();
+            global::Accounting.Utilities.AppSound.Play(player, fileName);
         }
     }
 }

@@ -659,8 +659,7 @@ namespace Accounting.Form
 
         private void PlaySound(string soundFileName)
         {
-            Player.SoundLocation = Path.Combine(Environment.CurrentDirectory, "wav", soundFileName);
-            Player.Play();
+            global::Accounting.Utilities.AppSound.Play(Player, soundFileName);
         }
 
         private bool EnsureRequiredPasswordChange()

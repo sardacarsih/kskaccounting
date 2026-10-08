@@ -69,8 +69,7 @@ namespace Accounting.Form
 
                 dr.Close();
                 conn.Close();
-                this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\iddata.wav";
-                this.Player.Play();
+                global::Accounting.Utilities.AppSound.Play(this.Player, "iddata.wav");
             }            
                  catch (SystemException ex)
             {

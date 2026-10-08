@@ -234,8 +234,7 @@ namespace Accounting.Form
             Acct.KunciPeriode = jurnalRepository.GetLockStatus(iddata, periode);
             if (Acct.KunciPeriode != "Y") return true;
 
-            Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\periode_dikunci.wav";
-            Player.Play();
+            global::Accounting.Utilities.AppSound.Play(Player, "periode_dikunci.wav");
             XtraMessageBox.Show(
                 $"Tidak dapat melakukan proses import Jurnal pada periode ini...!!!\nPeriode Akuntansi : {periodeDisplay} Telah Dikunci.",
                 "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -316,8 +315,7 @@ namespace Accounting.Form
                 return;
             }
 
-            Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_selesai.wav";
-            Player.Play();
+            global::Accounting.Utilities.AppSound.Play(Player, "jurnal_selesai.wav");
             allperiode();
             XtraMessageBox.Show($"Import Jurnal {moduleLabel} Selesai \n {FormatJurnalImportElapsed(result.Elapsed)}", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -364,8 +362,7 @@ namespace Accounting.Form
 
             if (!string.IsNullOrWhiteSpace(sound))
             {
-                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\" + sound;
-                Player.Play();
+                global::Accounting.Utilities.AppSound.Play(Player, sound);
             }
         }
 
