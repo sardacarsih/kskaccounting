@@ -9,9 +9,9 @@
     <PackageIcon>gl1_9S6_2.ico</PackageIcon>
     <Platforms>AnyCPU;x64</Platforms>
     <Nullable>annotations</Nullable>
-    <Version>2.1.4.0</Version>
-    <AssemblyVersion>2.1.4.0</AssemblyVersion>
-    <FileVersion>2.1.4.0</FileVersion>
+    <Version>2.1.5.0</Version>
+    <AssemblyVersion>2.1.5.0</AssemblyVersion>
+    <FileVersion>2.1.5.0</FileVersion>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
