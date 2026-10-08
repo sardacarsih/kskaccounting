@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.07.29.4",
+  "version": "2026.10.08.1",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -475,8 +475,16 @@
       "checkScript": "migrations/C20260714_002__bukubesar_period_opening_balances_check.sql"
     },
     {
-      "id": "20260721_001_master_estate_compat",
+      "id": "20261008_001_master_estate_id_backfill",
       "order": 64,
+      "description": "Backfill NULL MASTER_ESTATE.ID on legacy tables so 20260721_001 can add PRIMARY KEY (ID).",
+      "script": "migrations/V20261008_001__master_estate_id_backfill.sql",
+      "rollbackScript": "migrations/R20261008_001__master_estate_id_backfill.sql",
+      "checkScript": "migrations/C20261008_001__master_estate_id_backfill_check.sql"
+    },
+    {
+      "id": "20260721_001_master_estate_compat",
+      "order": 65,
       "description": "Ensure MASTER_ESTATE and its minimum Accounting application contract exist.",
       "script": "migrations/V20260721_001__master_estate_compat.sql",
       "rollbackScript": "migrations/R20260721_001__master_estate_compat.sql",
@@ -484,7 +492,7 @@
     },
     {
       "id": "20260721_002_hrd_payroll_nonstaff_compat",
-      "order": 65,
+      "order": 66,
       "description": "Ensure HRD_PAYROLL_NONSTAFF matches the canonical HRD payroll staging contract.",
       "script": "migrations/V20260721_002__hrd_payroll_nonstaff_compat.sql",
       "rollbackScript": "migrations/R20260721_002__hrd_payroll_nonstaff_compat.sql",
@@ -492,14 +500,14 @@
     },
     {
       "id": "20260728_001_bukubesar_all_account_opening_balances",
-      "order": 66,
+      "order": 67,
       "description": "Emit a monthly opening-balance row for every General Ledger detail account, including profit-and-loss accounts and zero balances.",
       "script": "migrations/V20260728_001__bukubesar_all_account_opening_balances.sql",
       "checkScript": "migrations/C20260728_001__bukubesar_all_account_opening_balances_check.sql"
     },
     {
       "id": "20260729_001_pks_global_report_settings",
-      "order": 67,
+      "order": 68,
       "description": "Back up and remove scoped PKS report mappings, seed global Laba Rugi and Neraca settings from KSKPKS, and select PKS Neraca mappings without general duplicates.",
       "script": "migrations/V20260729_001__pks_global_report_settings.sql",
       "rollbackScript": "migrations/R20260729_001__pks_global_report_settings.sql",
@@ -507,7 +515,7 @@
     },
     {
       "id": "20260729_002_pks_global_labarugi_repair",
-      "order": 68,
+      "order": 69,
       "description": "Repair the thirteen global PKS Laba Rugi account mappings omitted by the initial PKS globalisation migration.",
       "script": "migrations/V20260729_002__pks_global_labarugi_repair.sql",
       "rollbackScript": "migrations/R20260729_002__pks_global_labarugi_repair.sql",

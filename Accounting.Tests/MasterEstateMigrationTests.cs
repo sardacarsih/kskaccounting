@@ -14,7 +14,7 @@ public sealed class MasterEstateMigrationTests
         using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
 
         JsonElement root = manifest.RootElement;
-        Assert.Equal("2026.07.29.4", root.GetProperty("version").GetString());
+        Assert.Equal("2026.10.08.1", root.GetProperty("version").GetString());
 
         JsonElement[] migrations = root
             .GetProperty("migrations")
@@ -23,7 +23,7 @@ public sealed class MasterEstateMigrationTests
         JsonElement migration = migrations
             .Single(entry => entry.GetProperty("id").GetString() == MigrationId);
 
-        Assert.Equal(64, migration.GetProperty("order").GetInt32());
+        Assert.Equal(65, migration.GetProperty("order").GetInt32());
 
         AssertMigrationFileExists(migratorDirectory, migration, "script");
         AssertMigrationFileExists(migratorDirectory, migration, "rollbackScript");
