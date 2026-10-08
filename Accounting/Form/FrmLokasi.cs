@@ -141,6 +141,8 @@ namespace Accounting.Form
                 gridView1.FocusRectStyle = DrawFocusRectStyle.RowFocus;
                 gridView1.BestFitMaxRowCount = 100;
 
+                IDPT.SortOrder = DevExpress.Data.ColumnSortOrder.Ascending;
+
                 IDPT.MinWidth = ScaleForDpi(72);
                 IDDATA.MinWidth = ScaleForDpi(92);
                 NAMAPT.MinWidth = ScaleForDpi(250);

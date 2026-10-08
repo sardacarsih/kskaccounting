@@ -9,7 +9,7 @@ namespace Accounting.Services
     public static class LabaRugiReportDataAdapter
     {
         // Section code -> result line emitted immediately after that section's subtotal.
-        private static readonly IReadOnlyDictionary<string, string> ResultLineAfterSection =
+        private static readonly IReadOnlyDictionary<string, string> DefaultResultLineAfterSection =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 ["HPP"] = "LABA KOTOR",
@@ -18,7 +18,17 @@ namespace Accounting.Services
                 ["PPH_BADAN"] = "LABA SETELAH PAJAK"
             };
 
-        private const string FinalResultLine = "LABA BERSIH";
+        private static readonly IReadOnlyDictionary<string, string> PksResultLineAfterSection =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["PKS_HPP"] = "LABA KOTOR USAHA",
+                ["PKS_B5"] = "LABA BERSIH USAHA",
+                ["PKS_B6"] = "LABA BERSIH SEBELUM BUNGA DAN PAJAK",
+                ["PKS_B3"] = "LABA BERSIH SEBELUM PAJAK"
+            };
+
+        private const string DefaultFinalResultLine = "LABA BERSIH";
+        private const string PksFinalResultLine = "LABA / RUGI BERSIH";
 
         public static DataSet CreateReportDataSet(IEnumerable<LabaRugiRow> rows)
         {
@@ -142,6 +152,11 @@ namespace Accounting.Services
 
             List<LabaRugiRow> input = rowsWithSubtotals.ToList();
             List<LabaRugiRow> output = [];
+            bool isPksReport = input.Any(row => IsPksSection(row.SetSub));
+            IReadOnlyDictionary<string, string> resultLineAfterSection = isPksReport
+                ? PksResultLineAfterSection
+                : DefaultResultLineAfterSection;
+            string finalResultLine = isPksReport ? PksFinalResultLine : DefaultFinalResultLine;
 
             decimal runningBulan = 0m;
             decimal runningTahun = 0m;
@@ -161,7 +176,7 @@ namespace Accounting.Services
                 runningTahun += sign * row.TahunIni;
                 lastSubtotal = row;
 
-                if (ResultLineAfterSection.TryGetValue(row.SetSub ?? string.Empty, out string resultLabel))
+                if (resultLineAfterSection.TryGetValue(row.SetSub ?? string.Empty, out string resultLabel))
                 {
                     output.Add(CreateTotalRow(resultLabel, runningBulan, runningTahun, row));
                 }
@@ -169,7 +184,7 @@ namespace Accounting.Services
 
             if (lastSubtotal != null)
             {
-                output.Add(CreateTotalRow(FinalResultLine, runningBulan, runningTahun, lastSubtotal));
+                output.Add(CreateTotalRow(finalResultLine, runningBulan, runningTahun, lastSubtotal));
             }
 
             return output;
@@ -229,6 +244,12 @@ namespace Accounting.Services
             }
 
             return row.TipeAcc;
+        }
+
+        private static bool IsPksSection(string setSub)
+        {
+            return !string.IsNullOrWhiteSpace(setSub)
+                && setSub.StartsWith("PKS_", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

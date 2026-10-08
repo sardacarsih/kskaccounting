@@ -9,6 +9,8 @@ using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraSplashScreen;
+using Oracle.ManagedDataAccess.Client;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -307,10 +309,31 @@ namespace Accounting.Form
 		{
 			// Expected when a newer debounced reload cancels this one (e.g. during form init).
 		}
+		catch (OracleException ex) when (ex.Number == 942)
+		{
+			Log.Error(
+				ex,
+				"HRD_PAYROLL_NONSTAFF is unavailable while loading Payroll UMUM. IdData={IdData}, Year={Year}, Month={Month}, Remise={Remise}",
+				CompanyInfo.IDDATA,
+				yearSnapshot,
+				monthSnapshot,
+				remiseSnapshot);
+			XtraMessageBox.Show(
+				"HRD_PAYROLL_NONSTAFF tidak tersedia pada database. Jalankan GLMigrator terbaru atau periksa hak akses schema, lalu coba kembali.",
+				"Database Belum Siap",
+				MessageBoxButtons.OK,
+				MessageBoxIcon.Error);
+		}
 		catch (Exception ex)
 		{
-			Exception ex2 = ex;
-			XtraMessageBox.Show("An error occurred: " + ex2.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			Log.Error(
+				ex,
+				"Failed to load Payroll UMUM. IdData={IdData}, Year={Year}, Month={Month}, Remise={Remise}",
+				CompanyInfo.IDDATA,
+				yearSnapshot,
+				monthSnapshot,
+				remiseSnapshot);
+			XtraMessageBox.Show($"Data Payroll UMUM gagal dimuat: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 		}
 	}
 

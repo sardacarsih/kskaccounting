@@ -19,6 +19,8 @@ using System.Drawing.Printing;
 using System.IO;
 using System.Linq;
 using System.Media;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Accounting.Services;
 
@@ -148,7 +150,68 @@ namespace Accounting.Form
             XtraMessageBox.Show(readiness.Message, "Neraca Belum Balance", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return true;
         }
-        private void sbexport_Click(object sender, EventArgs e)
+
+        private async Task SaveAndOpenExcelAsync(byte[] excelData, string defaultFileName)
+        {
+            using SaveFileDialog dialog = new()
+            {
+                Title = "Simpan Laporan Excel",
+                Filter = "Excel Workbook (*.xlsx)|*.xlsx",
+                DefaultExt = "xlsx",
+                AddExtension = true,
+                OverwritePrompt = true,
+                FileName = defaultFileName
+            };
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+
+            await File.WriteAllBytesAsync(dialog.FileName, excelData, CancellationToken.None);
+            Process.Start(new ProcessStartInfo(dialog.FileName)
+            {
+                UseShellExecute = true
+            });
+        }
+
+        private static string BuildGeneralLedgerFileName(
+            string fromCode,
+            string fromAccount,
+            string toCode,
+            string toAccount,
+            int fromYear,
+            int fromMonth,
+            int toYear,
+            int toMonth)
+        {
+            string fromSegment = SanitizeFileNameSegment($"{fromCode}_{fromAccount}");
+            string accountSegment = string.Equals(fromCode, toCode, StringComparison.OrdinalIgnoreCase)
+                ? fromSegment
+                : $"{fromSegment}_sd_{SanitizeFileNameSegment($"{toCode}_{toAccount}")}";
+
+            return $"BukuBesar_{accountSegment}_{fromYear}{fromMonth:00}_{toYear}{toMonth:00}.xlsx";
+        }
+
+        private static string SanitizeFileNameSegment(string value)
+        {
+            char[] invalidCharacters = Path.GetInvalidFileNameChars();
+            string sanitized = new(value
+                .Trim()
+                .Select(character => invalidCharacters.Contains(character) || char.IsWhiteSpace(character)
+                    ? '_'
+                    : character)
+                .ToArray());
+
+            while (sanitized.Contains("__", StringComparison.Ordinal))
+            {
+                sanitized = sanitized.Replace("__", "_", StringComparison.Ordinal);
+            }
+
+            return sanitized.Trim('_');
+        }
+
+        private async void sbexport_Click(object sender, EventArgs e)
         {
             if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanExportReports))
             {
@@ -225,17 +288,8 @@ namespace Accounting.Form
                         //package.Save();
                         // package.Dispose();
 
-                        Byte[] bin = package.GetAsByteArray();
-                        string tempPath = Path.GetTempPath();
-                        string file = Path.Combine(tempPath, $"LabaRugi_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
-                        File.WriteAllBytes(file, bin);
-
-                        //These lines will open it in Excel
-                        ProcessStartInfo pi = new(file)
-                        {
-                            UseShellExecute = true
-                        };
-                        Process.Start(pi);
+                        byte[] bin = package.GetAsByteArray();
+                        await SaveAndOpenExcelAsync(bin, $"LabaRugi_{p_daritahun}{pbulan:00}.xlsx");
 
                     }
                 }
@@ -280,17 +334,8 @@ namespace Accounting.Form
                         //package.Save();
                         // package.Dispose();
 
-                        Byte[] bin = package.GetAsByteArray();
-                        string tempPath = Path.GetTempPath();
-                        string file = tempPath + "Neraca.xlsx";
-                        File.WriteAllBytes(file, bin);
-
-                        //These lines will open it in Excel
-                        ProcessStartInfo pi = new(file)
-                        {
-                            UseShellExecute = true
-                        };
-                        Process.Start(pi);
+                        byte[] bin = package.GetAsByteArray();
+                        await SaveAndOpenExcelAsync(bin, $"Neraca_{p_daritahun}{pbulan:00}.xlsx");
 
                     }
 
@@ -330,83 +375,25 @@ namespace Accounting.Form
                 }
                 if (radioGroup1.SelectedIndex == 3)
                 {
-                    var neracasaldo = LaporanServices.NeracaSaldoTahun(iddata, p_daritahun);
-                    using ExcelPackage package = new();
-
-                    if (neracasaldo.Any())
+                    IReadOnlyList<NeracaSaldoRow> rows = await NeracaSaldoReportService
+                        .LoadRowsAsync(iddata, p_daritahun, CancellationToken.None);
+                    if (rows.Count == 0)
                     {
-                        var wsDt = package.Workbook.Worksheets.Add("Neraca Saldo");
-
-                        //Load the datatable and set the number formats...
-                        wsDt.Cells["A6"].LoadFromCollection(neracasaldo, true, TableStyle: OfficeOpenXml.Table.TableStyles.Medium17);
-                     
-                        wsDt.Cells[7, 4, neracasaldo.Count + 6, 16].Style.Numberformat.Format = fullNumberFormat;
-                        wsDt.Cells["A1"].Value = CompanyInfo.NAMAPT;
-                        wsDt.Cells["A2"].Value = CompanyInfo.WILAYAH;
-                        wsDt.Cells["A3"].Value = "NERACA SALDO";
-                        wsDt.Cells["A4"].Value = "Periode :" +  daritahun.Text;
-                        //wsDt.Cells["A3:H3"].Merge = true;
-                        //wsDt.Cells["A4:H4"].Merge = true;
-                        //wsDt.Cells["A3:H4"].Style.VerticalAlignment = ExcelVerticalAlignment.Center;
-                        //wsDt.Cells["A3:H4"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                        //wsDt.Cells["A3"].Style.Font.Bold = true;
-                        //wsDt.Cells["A3"].Style.Font.Size = 14;
-
-
-                        //wsDt.Cells[2, 7, dt.Rows.Count + 1, 7].Style.Numberformat.Format = "#,##0.00";
-
-                        // 
-                        wsDt.Cells[wsDt.Dimension.Address].AutoFitColumns();
-                        //package.Save();
-                        // package.Dispose();
-
-                        // Obtain the Excel file data as a byte array
-                        byte[] excelData = package.GetAsByteArray();
-
-                        // Generate a temporary file path
-                        string tempFilePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.xlsx");
-
-                        // Write the byte array to the temporary file
-                        File.WriteAllBytes(tempFilePath, excelData);
-
-                        // Open the temporary file with the default associated Excel program
-                        ProcessStartInfo psi = new(tempFilePath)
-                        {
-                            UseShellExecute = true
-                        };
-                        Process.Start(psi);
-
+                        XtraMessageBox.Show(
+                            $"Tidak ada data Neraca Saldo untuk tahun {p_daritahun}.",
+                            "Info",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                        return;
                     }
 
+                    NeracaSaldoReportMetadata metadata = CreateNeracaSaldoMetadata(p_daritahun);
+                    byte[] excelData = NeracaSaldoExcelExporter.CreateWorkbook(rows, metadata);
+                    await SaveAndOpenExcelAsync(
+                        excelData,
+                        NeracaSaldoExcelExporter.CreateFileName(metadata));
                 }
                 if (radioGroup1.SelectedIndex == 4)
-                {
-                    //get data for report
-                    DSNeraca = LaporanServices.ViewLap_NeracaHalfYear(iddata, p_daritahun, userid, 2);
-                    //DSNeraca.WriteXmlSchema("NeracaH2.xsd");
-
-
-                    BalanceSheetHalf2 laporan = new()
-                    {
-                        DataSource = DSNeraca
-                    };
-
-                    laporan.Parameters["PBULAN"].Value = pbulan;
-                    laporan.Parameters["PTAHUN"].Value = p_daritahun;
-                    laporan.Parameters["BULAN"].Value = "Tahun : " + p_daritahun;
-                    laporan.Parameters["PERIODE"].Value = periode;
-                    laporan.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                    laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                    laporan.Parameters["USERID"].Value = userid;
-                    laporan.RequestParameters = true;
-                    ReportPrintTool tool = new (laporan);
-                    tool.ShowPreview();
-                }
-                if (radioGroup1.SelectedIndex == 5)
-                {
-                    ExportNeracaKonsolidasi(pbulan, p_daritahun,periode);
-                }
-                if (radioGroup1.SelectedIndex == 6)
                 {
                     if (searchLookUpEdit1.EditValue == null || searchLookUpEdit2.EditValue == null)
                     {
@@ -449,11 +436,6 @@ namespace Accounting.Form
 
                     }
 
-                    //cek record jurnal exist ?
-
-                    var record = JurnalServices.CekRecordJurnalExist(iddata, periode);
-                    if (record == 0) { XtraMessageBox.Show("Belum ada transaksi jurnal", "info", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
-
                     var darikode = searchLookUpEdit1.EditValue.ToString();
                     var sampaikode = searchLookUpEdit2.EditValue.ToString();
 
@@ -477,44 +459,46 @@ namespace Accounting.Form
                     using ExcelPackage package = new();
                     //Here goes the ExcelPackage code etc
 
-                    DataTable dt = DSGL.Tables[0];
+                    DataTable dt = GeneralLedgerRow.GetRequiredTable(DSGL);
 
-                    if (dt.Rows.Count > 0)
+                    if (dt.Rows.Count == 0)
                     {
-                        var wsDt = package.Workbook.Worksheets.Add("General Ledger");
-
-                        //Load the datatable and set the number formats...
-                        wsDt.Cells["A1"].LoadFromDataTable(dt, true);
-                        wsDt.DeleteColumn(1, 2);//delete column1 dan 2
-                        wsDt.Cells[2, 5, dt.Rows.Count + 1, 5].Style.Numberformat.Format = "dd-MMM-yyyy";
-                        wsDt.Cells[2, 7, dt.Rows.Count + 1, 7].Style.Numberformat.Format = fullNumberFormat;
-                        wsDt.Cells[2, 8, dt.Rows.Count + 1, 8].Style.Numberformat.Format = fullNumberFormat;
-                        //subtotal debet
-                        wsDt.Cells[dt.Rows.Count + 2, 7, dt.Rows.Count + 2, 7].Formula = string.Format("SUBTOTAL(9,{0})", new ExcelAddress(2, 7, dt.Rows.Count + 1, 7).Address);
-                        wsDt.Cells[dt.Rows.Count + 2, 7, dt.Rows.Count + 2, 7].Style.Numberformat.Format = "#,##0.00";
-                        wsDt.Cells[dt.Rows.Count + 2, 7, dt.Rows.Count + 2, 7].Style.Font.Bold = true;
-                        // 
-                        //subtotal kredit
-                        wsDt.Cells[dt.Rows.Count + 2, 8, dt.Rows.Count + 2, 8].Formula = string.Format("SUBTOTAL(9,{0})", new ExcelAddress(2, 8, dt.Rows.Count + 1, 8).Address);
-                        wsDt.Cells[dt.Rows.Count + 2, 8, dt.Rows.Count + 2, 8].Style.Numberformat.Format = "#,##0.00";
-                        wsDt.Cells[dt.Rows.Count + 2, 8, dt.Rows.Count + 2, 8].Style.Font.Bold = true;
-                        // 
-                        wsDt.Cells[wsDt.Dimension.Address].AutoFitColumns();
-                        //package.Save();
-                        // package.Dispose();
-
-                        Byte[] bin = package.GetAsByteArray();
-                        string tempPath = Path.GetTempPath();
-                        string file = tempPath + "BukuBesar.xlsx";
-                        File.WriteAllBytes(file, bin);
-
-                        //These lines will open it in Excel
-                        ProcessStartInfo pi = new(file)
-                        {
-                            UseShellExecute = true
-                        };
-                        Process.Start(pi);
+                        XtraMessageBox.Show("Tidak ada data Buku Besar pada periode yang dipilih.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
                     }
+
+                    var wsDt = package.Workbook.Worksheets.Add("General Ledger");
+
+                    //Load the datatable and set the number formats...
+                    wsDt.Cells["A1"].LoadFromDataTable(dt, true);
+                    wsDt.DeleteColumn(1, 2);//delete column1 dan 2
+                    wsDt.Cells[2, 5, dt.Rows.Count + 1, 5].Style.Numberformat.Format = "dd-MMM-yyyy";
+                    wsDt.Cells[2, 7, dt.Rows.Count + 1, 7].Style.Numberformat.Format = fullNumberFormat;
+                    wsDt.Cells[2, 8, dt.Rows.Count + 1, 8].Style.Numberformat.Format = fullNumberFormat;
+                    //subtotal debet
+                    wsDt.Cells[dt.Rows.Count + 2, 7, dt.Rows.Count + 2, 7].Formula = string.Format("SUBTOTAL(9,{0})", new ExcelAddress(2, 7, dt.Rows.Count + 1, 7).Address);
+                    wsDt.Cells[dt.Rows.Count + 2, 7, dt.Rows.Count + 2, 7].Style.Numberformat.Format = "#,##0.00";
+                    wsDt.Cells[dt.Rows.Count + 2, 7, dt.Rows.Count + 2, 7].Style.Font.Bold = true;
+                    //subtotal kredit
+                    wsDt.Cells[dt.Rows.Count + 2, 8, dt.Rows.Count + 2, 8].Formula = string.Format("SUBTOTAL(9,{0})", new ExcelAddress(2, 8, dt.Rows.Count + 1, 8).Address);
+                    wsDt.Cells[dt.Rows.Count + 2, 8, dt.Rows.Count + 2, 8].Style.Numberformat.Format = "#,##0.00";
+                    wsDt.Cells[dt.Rows.Count + 2, 8, dt.Rows.Count + 2, 8].Style.Font.Bold = true;
+                    wsDt.Cells[wsDt.Dimension.Address].AutoFitColumns();
+                    //package.Save();
+                    // package.Dispose();
+
+                    byte[] bin = package.GetAsByteArray();
+                    await SaveAndOpenExcelAsync(
+                        bin,
+                        BuildGeneralLedgerFileName(
+                            darikode,
+                            searchLookUpEdit1.Text,
+                            sampaikode,
+                            searchLookUpEdit2.Text,
+                            p_daritahun,
+                            pbulan,
+                            p_sampaitahun,
+                            p_sampaibulan));
                 }
             }
             catch (SystemException ex)
@@ -718,6 +702,8 @@ namespace Accounting.Form
 
         private void radioGroup1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            ConfigureNeracaSaldoYearInput(radioGroup1.SelectedIndex == 3);
+
             if (radioGroup1.SelectedIndex == 0)
             {
                 lblcompany.Text = "Laporan Laba / Rugi";
@@ -755,40 +741,15 @@ namespace Accounting.Form
             {
                 lblcompany.Text = "Laporan Neraca Saldo";
                 cmbbulan.SelectedIndex = 0;
-                cmbbulan2.SelectedIndex = 5;
+                cmbbulan2.SelectedIndex = 11;
                 cmbbulan.Enabled = false;
                 cmbbulan2.Enabled = false;
                 panel1.Visible = false;
-                cmbbulan.SelectedIndex = 0;
-                cmbbulan2.SelectedIndex = 11;
-                sampaitahun.Value = 0;
+                sampaitahun.Value = daritahun.Value;
                 sampaitahun.Enabled = false;
                 sbexport.Enabled = true;
             }
             if (radioGroup1.SelectedIndex == 4)
-            {
-                lblcompany.Text = "Laporan Neraca (Semester 2)";
-                cmbbulan.SelectedIndex = 6;
-                cmbbulan2.SelectedIndex = 11;
-                cmbbulan.Enabled = false;
-                cmbbulan2.Enabled = false;
-                panel1.Visible = false;
-                sampaitahun.Value = 0;
-                sampaitahun.Enabled = false;
-                sbexport.Enabled = false;
-            }
-            if (radioGroup1.SelectedIndex == 5)
-            {
-                lblcompany.Text = "Laporan Neraca Konsolidasi";
-                cmbbulan.Enabled = true;
-                panel1.Visible = false;
-                cmbbulan2.SelectedIndex = -1;
-                cmbbulan2.Enabled = false;
-                sampaitahun.Value = 0;
-                sampaitahun.Enabled = false;
-                sbexport.Enabled = true;
-            }
-            if (radioGroup1.SelectedIndex == 6)
             {
                 lblcompany.Text = "Laporan Buku Besar";
                 cmbbulan.Enabled = true;
@@ -809,10 +770,41 @@ namespace Accounting.Form
 
             sbexport.Enabled = sbexport.Enabled && AuthorizationService.CanExportReports();
         }
+
+        private void ConfigureNeracaSaldoYearInput(bool isNeracaSaldo)
+        {
+            groupControl1.SuspendLayout();
+            try
+            {
+                cmbbulan.Visible = !isNeracaSaldo;
+                cmbbulan2.Visible = !isNeracaSaldo;
+                labelControl4.Visible = !isNeracaSaldo;
+                sampaitahun.Visible = !isNeracaSaldo;
+                labelControl3.Text = isNeracaSaldo ? "Tahun" : "Dari";
+                daritahun.Location = isNeracaSaldo
+                    ? cmbbulan.Location
+                    : new System.Drawing.Point(sampaitahun.Left, cmbbulan.Top);
+            }
+            finally
+            {
+                groupControl1.ResumeLayout(true);
+            }
+        }
+
+        private static NeracaSaldoReportMetadata CreateNeracaSaldoMetadata(int year)
+        {
+            return new NeracaSaldoReportMetadata(
+                CompanyInfo.NAMAPT,
+                CompanyInfo.WILAYAH,
+                year,
+                LoginInfo.userID,
+                DateTime.Now);
+        }
+
         private SoundPlayer Player = new SoundPlayer();
        // private FileInfo memoryStreamObject;
 
-        private void sbcetak_Click(object sender, EventArgs e)
+        private async void sbcetak_Click(object sender, EventArgs e)
         {
             if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanViewReports))
             {
@@ -965,71 +957,24 @@ namespace Accounting.Form
                 }
                 if (radioGroup1.SelectedIndex == 3)
                 {
-                    XtraMessageBox.Show("Module Belum Aktif", "info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    //bool akses = LevelAksesServices.CetakExport(33, LoginInfo.userID);
-                    //if (akses == false)
-                    //{
-                    //    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                    //    this.Player.Play();
-                    //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    //    return;
-                    //}
-                    ////get data for report
-                    //var neracasaldo = LaporanServices.NeracaSaldoTahun(iddata, p_daritahun);
-                    //// DSNeraca.WriteXmlSchema("NeracaH1.xsd");
-
-
-                    //NeracaSaldoTahun laporan = new NeracaSaldoTahun
-                    //{
-                    //    DataSource = neracasaldo
-                    //};
-
-                    ////laporan.Parameters["PBULAN"].Value = pbulan;
-                    ////laporan.Parameters["PTAHUN"].Value = p_daritahun;
-                    ////laporan.Parameters["BULAN"].Value = "Tahun : " + p_daritahun;
-                    ////laporan.Parameters["PERIODE"].Value = periode;
-                    ////laporan.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                    ////laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                    ////laporan.Parameters["USERID"].Value = userid;
-                    //laporan.RequestParameters = true;
-                    //ReportPrintTool tool = new ReportPrintTool(laporan);
-                    //tool.ShowPreview();
-
-
-                }
-                if (radioGroup1.SelectedIndex == 4)
-                {
-                    //get data for report
-                    DSNeraca = LaporanServices.ViewLap_NeracaHalfYear(iddata, p_daritahun, userid, 2);
-                   // DSNeraca.WriteXmlSchema("NeracaH2.xsd");
-
-
-                    BalanceSheetHalf2 laporan = new BalanceSheetHalf2
+                    IReadOnlyList<NeracaSaldoRow> rows = await NeracaSaldoReportService
+                        .LoadRowsAsync(iddata, p_daritahun, CancellationToken.None);
+                    if (rows.Count == 0)
                     {
-                        DataSource = DSNeraca
-                    };
+                        XtraMessageBox.Show(
+                            $"Tidak ada data Neraca Saldo untuk tahun {p_daritahun}.",
+                            "Info",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                        return;
+                    }
 
-                    laporan.Parameters["PBULAN"].Value = pbulan;
-                    laporan.Parameters["PTAHUN"].Value = p_daritahun;
-                    laporan.Parameters["BULAN"].Value = "Tahun : " + p_daritahun;
-                    laporan.Parameters["PERIODE"].Value = periode;
-                    laporan.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                    laporan.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                    laporan.Parameters["USERID"].Value = userid;
-                    laporan.RequestParameters = true;
-                    ReportPrintTool tool = new ReportPrintTool(laporan);
+                    NeracaSaldoTahun laporan = new();
+                    laporan.BindData(rows, CreateNeracaSaldoMetadata(p_daritahun));
+                    ReportPrintTool tool = new(laporan);
                     tool.ShowPreview();
                 }
-                if (radioGroup1.SelectedIndex == 5)
-                {
-                    Acct.p_bulan = pbulan;
-                    Acct.p_tahun = p_daritahun;
-                    Acct.p_periode = "Periode :"+pbulan.ToString("0#") + "/" + p_daritahun.ToString();
-                    FrmNeracaKonsolidasi f = new();
-                    f.ShowDialog();
-
-                }
-                if (radioGroup1.SelectedIndex == 6)
+                if (radioGroup1.SelectedIndex == 4)
                 {
                     //bool akses = LevelAksesServices.CetakExport(31, LoginInfo.userID);
                     //if (akses == false)

@@ -9,6 +9,30 @@ namespace Accounting.BusinessLayer
 {
     public sealed class JurnalImportSelectionService
     {
+        internal static DataTable FilterDetailsByJournalNumber(DataTable source, string journalNumber)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            DataTable result = source.Clone();
+            if (source.Rows.Count == 0 ||
+                !source.Columns.Contains("NOJURNAL") ||
+                string.IsNullOrWhiteSpace(journalNumber))
+            {
+                return result;
+            }
+
+            foreach (DataRow row in source.Rows)
+            {
+                string rowJournalNumber = Convert.ToString(row["NOJURNAL"]) ?? string.Empty;
+                if (string.Equals(rowJournalNumber, journalNumber, StringComparison.OrdinalIgnoreCase))
+                {
+                    result.ImportRow(row);
+                }
+            }
+
+            return result;
+        }
+
         public List<JurnalDetailAdd> BuildInputDetails(DataTable source, IEnumerable<string> selectedNomor)
         {
             if (source == null || source.Rows.Count == 0)

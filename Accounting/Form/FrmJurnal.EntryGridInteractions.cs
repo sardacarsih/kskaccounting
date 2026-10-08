@@ -340,6 +340,48 @@ namespace Accounting.Form
 
         }
 
+        private void ribhapus_ButtonClick(object? sender, ButtonPressedEventArgs e)
+        {
+            int rowHandle = JDgridView.FocusedRowHandle;
+            TryDeleteInputJurnalRow(JDgridView, rowHandle);
+        }
+
+        private bool TryDeleteInputJurnalRow(GridView gridView, int rowHandle)
+        {
+            if (rowHandle < 0 || gridView.GetRow(rowHandle) is not JurnalDetailAdd)
+            {
+                XtraMessageBox.Show(
+                    "Tidak ada baris yang dipilih untuk dihapus.",
+                    "Peringatan",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return false;
+            }
+
+            if (!TryEnsureJurnalAccess(editjurnal
+                    ? AuthorizationService.EnsureCanUpdateJurnal
+                    : AuthorizationService.EnsureCanCreateJurnal))
+            {
+                return false;
+            }
+
+            DialogResult confirmation = XtraMessageBox.Show(
+                "Hapus Baris?",
+                "Konfirmasi",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+            if (confirmation != DialogResult.Yes)
+            {
+                return false;
+            }
+
+            gridView.CloseEditor();
+            gridView.DeleteRow(rowHandle);
+            ReindexBarisInInputOrder();
+            gridView.RefreshData();
+            return true;
+        }
+
         private void JDgridView_KeyDown(object sender, KeyEventArgs e)
         {
             if (sender is not GridView gridView)
@@ -403,17 +445,30 @@ namespace Accounting.Form
                 // Saat selesai keterangan, langsung lanjut ke baris baru agar input cepat.
                 else if (string.Equals(focusedField, "Keterangan", StringComparison.OrdinalIgnoreCase))
                 {
+                    gridView.PostEditor();
+                    gridView.UpdateCurrentRow();
+
+                    string keterangan = gridView.GetRowCellValue(focusedRowHandle, "Keterangan")?.ToString() ?? string.Empty;
                     int lastRowHandle = gridView.RowCount - 1;
+                    int targetRowHandle;
                     if (focusedRowHandle >= lastRowHandle)
                     {
                         gridView.AddNewRow();
-                        gridView.FocusedColumn = gridView.Columns["Kode"];
+                        targetRowHandle = gridView.FocusedRowHandle;
                     }
                     else
                     {
-                        gridView.FocusedRowHandle = focusedRowHandle + 1;
-                        gridView.FocusedColumn = gridView.Columns["Kode"];
+                        targetRowHandle = focusedRowHandle + 1;
+                        gridView.FocusedRowHandle = targetRowHandle;
                     }
+
+                    string targetKeterangan = gridView.GetRowCellValue(targetRowHandle, "Keterangan")?.ToString() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(keterangan) && string.IsNullOrWhiteSpace(targetKeterangan))
+                    {
+                        gridView.SetRowCellValue(targetRowHandle, "Keterangan", keterangan);
+                    }
+
+                    gridView.FocusedColumn = gridView.Columns["Kode"];
                 }
                 else
                 {
@@ -423,26 +478,14 @@ namespace Accounting.Form
                 e.Handled = true;
             }
 
-            if (e.KeyCode == Keys.Delete && e.Modifiers == Keys.Control)
+            bool isDeleteShortcut = e.Modifiers == Keys.Control
+                && (e.KeyCode == Keys.Delete || e.KeyCode == Keys.D);
+            if (isDeleteShortcut)
             {
-                if (!TryEnsureJurnalAccess(editjurnal
-                        ? AuthorizationService.EnsureCanUpdateJurnal
-                        : AuthorizationService.EnsureCanCreateJurnal))
-                {
-                    return;
-                }
-
-                if (XtraMessageBox.Show("Hapus Baris?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                    return;
-
-                if (gridView.FocusedRowHandle >= 0)
-                {
-                    gridView.DeleteRow(gridView.FocusedRowHandle);
-                }
-                else
-                {
-                    XtraMessageBox.Show("Tidak ada baris yang dipilih untuk dihapus.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+                int rowHandle = gridView.FocusedRowHandle;
+                TryDeleteInputJurnalRow(gridView, rowHandle);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
             }
         }
 

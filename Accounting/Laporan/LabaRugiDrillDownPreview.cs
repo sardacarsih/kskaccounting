@@ -32,17 +32,16 @@ namespace Accounting.Laporan
                 var ptahun = (int)sourceReport.Parameters["PTAHUN"].Value;
                 var periode = pbulan.ToString("00") + "/" + ptahun;
                 var bulan = BulanIndonesia[pbulan] + "-" + ptahun;
-                LabaRugiDrillDownRow row = LabaRugiDrillDownRow.FromDataRow(dataRow.Row);
+                ReportDrillDownRow row = ReportDrillDownRow.FromDataRow(dataRow.Row);
 
-                if (row.Header == "G")
+                if (!ReportDrillDownPolicy.CanDrillDown(LabaRugiRow.DetailRowKind, row.IsHeader, row.KodeAcc))
                 {
                     XtraMessageBox.Show("Silahkan klik pada Detail", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                var dariLaporan = row.Kelompok == "NERACA" ? "NERACA" : "LABARUGI";
-                DataSet dsGl = LaporanServices.ViewLap_BukuBesar(iddata, ptahun, pbulan, pSampaiBulan, row.KodeAcc, row.KodeAcc, userid, dariLaporan);
-                XtraReport laporan = row.Posisi == "D"
+                DataSet dsGl = LaporanServices.ViewLap_BukuBesar_Tree(iddata, ptahun, pbulan, pSampaiBulan, row.KodeAcc);
+                XtraReport laporan = ReportDrillDownPolicy.GetGeneralLedgerSide(row.Posisi) == "D"
                     ? new GeneralLedgerD2 { DataSource = dsGl }
                     : new GeneralLedgerK2 { DataSource = dsGl };
 

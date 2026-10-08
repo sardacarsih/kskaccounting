@@ -12,9 +12,24 @@ namespace Accounting
 {
     public partial class FrmAkunEdit : DevExpress.XtraEditors.XtraForm
     {
+        private readonly AccountEditorLayoutHandle accountEditorLayout;
+
         public FrmAkunEdit(FrmAkunEF frm1)
         {
             InitializeComponent();
+            accountEditorLayout = AccountEditorLayout.ApplyEdit(
+                this,
+                layoutControl1,
+                grpKodeAkun,
+                liDetailKode,
+                liLevel,
+                liSisi,
+                gd,
+                rgsisi,
+                liUpdate,
+                liTutup,
+                sbupdate,
+                sbtutup);
         }
         int ptahun;
         DataTable grp;

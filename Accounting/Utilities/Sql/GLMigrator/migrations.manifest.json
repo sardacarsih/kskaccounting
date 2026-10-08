@@ -1,6 +1,6 @@
 {
   "packageName": "GL Migrator",
-  "version": "2026.07.06.1",
+  "version": "2026.07.29.4",
   "migrations": [
     {
       "id": "20260318_001_jurnal_index_tuning",
@@ -416,6 +416,102 @@
       "script": "migrations/V20260706_001__gladmin_default_user.sql",
       "rollbackScript": "migrations/R20260706_001__gladmin_default_user.sql",
       "checkScript": "migrations/C20260706_001__gladmin_default_user_check.sql"
+    },
+    {
+      "id": "20260710_001_labarugi_pks_legacy_settings",
+      "order": 55,
+      "description": "Seed legacy PKS Laba Rugi structure into report settings and add selector modes for GRP/LVL and parent-account mappings.",
+      "script": "migrations/V20260710_001__labarugi_pks_legacy_settings.sql",
+      "rollbackScript": "migrations/R20260710_001__labarugi_pks_legacy_settings.sql",
+      "checkScript": "migrations/C20260710_001__labarugi_pks_legacy_settings_check.sql"
+    },
+    {
+      "id": "20260710_002_remove_report_account_tahun_scope",
+      "order": 56,
+      "description": "Remove year-scoped report account settings and recompile report packages without ACCT_REPORT_SECTION_ACCOUNT.TAHUN.",
+      "script": "migrations/V20260710_002__remove_report_account_tahun_scope.sql",
+      "checkScript": "migrations/C20260710_002__remove_report_account_tahun_scope_check.sql"
+    },
+    {
+      "id": "20260713_001_fix_jurnal_duplicate_parameter_collision",
+      "order": 57,
+      "description": "Fix ACCT_JURNAL_V2 duplicate-number validation where the NOJURNAL column name collides with the function parameter.",
+      "script": "migrations/V20260713_001__fix_jurnal_duplicate_parameter_collision.sql",
+      "checkScript": "migrations/C20260713_001__fix_jurnal_duplicate_parameter_collision_check.sql"
+    },
+    {
+      "id": "20260713_003_report_drilldown_contract",
+      "order": 59,
+      "description": "Add a validated, report-aware drilldown contract with Neraca closing balances and Laba Rugi monthly movements.",
+      "script": "migrations/V20260713_003__report_drilldown_contract.sql",
+      "checkScript": "migrations/C20260713_003__report_drilldown_contract_check.sql"
+    },
+    {
+      "id": "20260713_004_coa_drilldown",
+      "order": 60,
+      "description": "Add a COA hierarchy drilldown contract with monthly debit, credit, and ending balance independent of report settings.",
+      "script": "migrations/V20260713_004__coa_drilldown.sql",
+      "checkScript": "migrations/C20260713_004__coa_drilldown_check.sql"
+    },
+    {
+      "id": "20260713_005_coa_drilldown_contract_repair",
+      "order": 61,
+      "description": "Recompile the COA group drilldown contract and verify its cursor schema for Gen G hierarchy navigation.",
+      "script": "migrations/V20260713_005__coa_drilldown_contract_repair.sql",
+      "checkScript": "migrations/C20260713_005__coa_drilldown_contract_repair_check.sql"
+    },
+    {
+      "id": "20260714_001_bukubesar_opening_balance",
+      "order": 62,
+      "description": "Restore one opening-balance row per Neraca account and the ten-column General Ledger report contract.",
+      "script": "migrations/V20260714_001__bukubesar_opening_balance.sql",
+      "checkScript": "migrations/C20260714_001__bukubesar_opening_balance_check.sql"
+    },
+    {
+      "id": "20260714_002_bukubesar_period_opening_balances",
+      "order": 63,
+      "description": "Emit one non-zero opening-balance row per Neraca account for every selected General Ledger period.",
+      "script": "migrations/V20260714_002__bukubesar_period_opening_balances.sql",
+      "checkScript": "migrations/C20260714_002__bukubesar_period_opening_balances_check.sql"
+    },
+    {
+      "id": "20260721_001_master_estate_compat",
+      "order": 64,
+      "description": "Ensure MASTER_ESTATE and its minimum Accounting application contract exist.",
+      "script": "migrations/V20260721_001__master_estate_compat.sql",
+      "rollbackScript": "migrations/R20260721_001__master_estate_compat.sql",
+      "checkScript": "migrations/C20260721_001__master_estate_compat_check.sql"
+    },
+    {
+      "id": "20260721_002_hrd_payroll_nonstaff_compat",
+      "order": 65,
+      "description": "Ensure HRD_PAYROLL_NONSTAFF matches the canonical HRD payroll staging contract.",
+      "script": "migrations/V20260721_002__hrd_payroll_nonstaff_compat.sql",
+      "rollbackScript": "migrations/R20260721_002__hrd_payroll_nonstaff_compat.sql",
+      "checkScript": "migrations/C20260721_002__hrd_payroll_nonstaff_compat_check.sql"
+    },
+    {
+      "id": "20260728_001_bukubesar_all_account_opening_balances",
+      "order": 66,
+      "description": "Emit a monthly opening-balance row for every General Ledger detail account, including profit-and-loss accounts and zero balances.",
+      "script": "migrations/V20260728_001__bukubesar_all_account_opening_balances.sql",
+      "checkScript": "migrations/C20260728_001__bukubesar_all_account_opening_balances_check.sql"
+    },
+    {
+      "id": "20260729_001_pks_global_report_settings",
+      "order": 67,
+      "description": "Back up and remove scoped PKS report mappings, seed global Laba Rugi and Neraca settings from KSKPKS, and select PKS Neraca mappings without general duplicates.",
+      "script": "migrations/V20260729_001__pks_global_report_settings.sql",
+      "rollbackScript": "migrations/R20260729_001__pks_global_report_settings.sql",
+      "checkScript": "migrations/C20260729_001__pks_global_report_settings_check.sql"
+    },
+    {
+      "id": "20260729_002_pks_global_labarugi_repair",
+      "order": 68,
+      "description": "Repair the thirteen global PKS Laba Rugi account mappings omitted by the initial PKS globalisation migration.",
+      "script": "migrations/V20260729_002__pks_global_labarugi_repair.sql",
+      "rollbackScript": "migrations/R20260729_002__pks_global_labarugi_repair.sql",
+      "checkScript": "migrations/C20260729_002__pks_global_labarugi_repair_check.sql"
     }
   ]
 }

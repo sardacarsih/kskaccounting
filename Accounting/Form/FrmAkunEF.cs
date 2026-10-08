@@ -4,7 +4,6 @@ using Accounting.Model;
 using DevExpress.Data.Linq;
 using DevExpress.Utils.Menu;
 using DevExpress.XtraEditors;
-using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraPrinting;
@@ -28,18 +27,23 @@ namespace Accounting.Form
 {
     public partial class FrmAkunEF : DevExpress.XtraEditors.XtraForm
     {
-        int pbulan, p_sampaibulan, ptahun, x;
+        int pbulan, p_sampaibulan, ptahun;
         private readonly Timer recalcStatusTimer = new() { Interval = 3000 };
         private readonly SimpleButton refreshManualButton = new();
+        private readonly SimpleButton previousPeriodButton = new();
+        private readonly SimpleButton nextPeriodButton = new();
         private CoaHeaderHandle headerLayout;
+        private CoaPeriodNavigator? periodNavigator;
         private long? monitoredRecalcJobId;
         private DateTime monitoredRecalcJobStartUtc;
         private bool isStatusCheckInProgress;
+        private bool isSynchronizingPeriodControls;
         private const int RecalcPollingTimeoutSeconds = 180;
 
         public FrmAkunEF()
         {
             InitializeComponent();
+            InitializePeriodNavigationButtons();
             InitializeManualRefreshButton();
             ConfigureResponsiveLayout();
             recalcStatusTimer.Tick += RecalcStatusTimer_Tick;
@@ -63,7 +67,6 @@ namespace Accounting.Form
             sbubah.Enabled = AuthorizationService.CanUpdateCoa();
             sbhapus.Enabled = AuthorizationService.CanDeleteCoa();
             sbexport.Enabled = AuthorizationService.CanExportCoa();
-            sbexpadvanced.Enabled = AuthorizationService.CanExportCoa();
         }
 
         private void FrmAkunEF_Load(object sender, EventArgs e)
@@ -76,17 +79,7 @@ namespace Accounting.Form
                     return;
                 }
                 Acct.TahunMax = AccountServices.MaxTahunCOA(CompanyInfo.IDDATA);
-                cmbbulan.Properties.Items.AddRange(new[] { "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" });
-                if (Acct.PeriodeMax.ToString().Length > 0)
-                {
-                    x = int.Parse(Acct.PeriodeMax.ToString().Substring(4, 2));
-                }
-
-                cmbbulan.SelectedIndex = x - 1;
-                setahun.Properties.MinValue = Acct.TahunMin;
-                setahun.Properties.MaxValue = Acct.TahunMax;
-                setahun.Value = Acct.TahunMax;
-                Load_TipeAkun();
+                InitializePeriodNavigation();
                 Load_COA();
                 ApplyAuthorizationState();
             }
@@ -96,6 +89,97 @@ namespace Accounting.Form
                 Close();
             }
            
+        }
+
+        private int ActiveMonth => periodNavigator?.Current.Month ?? 0;
+
+        private int ActiveYear => periodNavigator?.Current.Year ?? 0;
+
+        private CoaPeriod ActivePeriod =>
+            periodNavigator?.Current ?? throw new InvalidOperationException("Periode COA belum diinisialisasi.");
+
+        private void InitializePeriodNavigationButtons()
+        {
+            previousPeriodButton.Name = "sbPeriodPrev";
+            previousPeriodButton.Text = "Prev";
+            previousPeriodButton.Enabled = false;
+            previousPeriodButton.Click += (_, _) => NavigatePeriod(-1);
+
+            nextPeriodButton.Name = "sbPeriodNext";
+            nextPeriodButton.Text = "Next";
+            nextPeriodButton.Enabled = false;
+            nextPeriodButton.Click += (_, _) => NavigatePeriod(1);
+        }
+
+        private void InitializePeriodNavigation()
+        {
+            periodNavigator = new CoaPeriodNavigator(Acct.PeriodeMin, Acct.PeriodeMax);
+
+            cmbbulan.Properties.Items.Clear();
+            cmbbulan.Properties.Items.AddRange(CoaPeriod.IndonesianMonthNames.ToArray());
+            setahun.Properties.MinValue = periodNavigator.Minimum.Year;
+            setahun.Properties.MaxValue = periodNavigator.Maximum.Year;
+
+            SynchronizePeriodControls();
+        }
+
+        private void NavigatePeriod(int months)
+        {
+            if (periodNavigator?.TryMoveByMonths(months) != true)
+            {
+                return;
+            }
+
+            SynchronizePeriodControls();
+            Load_COA();
+        }
+
+        private void ApplyManualPeriodSelection()
+        {
+            if (isSynchronizingPeriodControls || periodNavigator == null || cmbbulan.SelectedIndex < 0 || setahun.Value == 0)
+            {
+                return;
+            }
+
+            CoaPeriod candidate = new(Convert.ToInt32(setahun.Value), cmbbulan.SelectedIndex + 1);
+            if (!periodNavigator.TrySetCurrent(candidate, out bool changed))
+            {
+                SynchronizePeriodControls();
+                return;
+            }
+
+            UpdatePeriodNavigationButtons();
+            if (changed)
+            {
+                Load_COA();
+            }
+        }
+
+        private void SynchronizePeriodControls()
+        {
+            if (periodNavigator == null)
+            {
+                return;
+            }
+
+            isSynchronizingPeriodControls = true;
+            try
+            {
+                cmbbulan.SelectedIndex = periodNavigator.Current.Month - 1;
+                setahun.Value = periodNavigator.Current.Year;
+            }
+            finally
+            {
+                isSynchronizingPeriodControls = false;
+            }
+
+            UpdatePeriodNavigationButtons();
+        }
+
+        private void UpdatePeriodNavigationButtons()
+        {
+            previousPeriodButton.Enabled = periodNavigator?.CanMovePrevious == true;
+            nextPeriodButton.Enabled = periodNavigator?.CanMoveNext == true;
         }
 
         private void InitializeManualRefreshButton()
@@ -120,11 +204,10 @@ namespace Accounting.Form
             headerLayout = CoaHeaderLayout.Apply(
                 this,
                 sidePanel1,
-                labelControl3, cmbbulan, setahun,
-                sbadd, sbubah, sbhapus, sbexport, sbexpadvanced, refreshManualButton,
-                AkunNeraca, AkunLabaRugi, cetbm, cetm,
-                CEMUTASI, NilaiSaldo, cegroup, cedetail,
-                labelControl1, lookUpEdit1);
+                cmbbulan, setahun,
+                previousPeriodButton, nextPeriodButton,
+                sbadd, sbubah, sbhapus, sbexport, refreshManualButton,
+                gridView1);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -171,8 +254,8 @@ namespace Accounting.Form
                     "COA AutoRefresh skipped_context_mismatch form=FrmAkunEF job_id={JobId} event_periode={EventPeriode} active_bulan={ActiveBulan} active_tahun={ActiveTahun}",
                     e.JobId,
                     e.Periode,
-                    cmbbulan.SelectedIndex + 1,
-                    Convert.ToInt32(setahun.Value));
+                    ActiveMonth,
+                    ActiveYear);
                 return;
             }
 
@@ -198,9 +281,7 @@ namespace Accounting.Form
                 return false;
             }
 
-            int bulanAktif = cmbbulan.SelectedIndex + 1;
-            int tahunAktif = Convert.ToInt32(setahun.Value);
-            return parsedPeriode.Month == bulanAktif && parsedPeriode.Year == tahunAktif;
+            return parsedPeriode.Month == ActiveMonth && parsedPeriode.Year == ActiveYear;
         }
 
         private async void RecalcStatusTimer_Tick(object? sender, EventArgs e)
@@ -295,8 +376,8 @@ namespace Accounting.Form
             else
             {
                 var p_iddata =CompanyInfo.IDDATA;
-                var p_tahun = Convert.ToInt32(setahun.Value);
-                var p_bulan = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
+                var p_tahun = ActiveYear;
+                var p_bulan = ActiveMonth;
                 if (p_tahun != 0 && p_bulan != 0)
                 {
                     var data = AccountServices.GetPerkiraanSaldo_ADO(p_iddata, p_tahun, p_bulan);
@@ -309,8 +390,8 @@ namespace Accounting.Form
         private void Dapper_GetQueryable(object sender, GetQueryableEventArgs e)
         {
             var p_iddata =CompanyInfo.IDDATA;
-            var p_tahun = Convert.ToInt32(setahun.Value);
-            var p_bulan = Convert.ToInt32(cmbbulan.SelectedIndex + 1);
+            var p_tahun = ActiveYear;
+            var p_bulan = ActiveMonth;
             if (p_tahun != 0 && p_bulan != 0)
             {
                 var data = AccountServices.GetPerkiraanSaldo_Dapper(p_iddata, p_tahun, p_bulan);
@@ -318,74 +399,6 @@ namespace Accounting.Form
             }
         }
 
-
-        private void Load_TipeAkun()
-        {
-            var data = AccountServices.GetTipeAkun("needzero");
-            lookUpEdit1.Properties.DataSource = data;
-            lookUpEdit1.Properties.ValueMember = "ID";
-            lookUpEdit1.Properties.DisplayMember = "TIPE_AKUN";
-            ConfigureTipeAkunLookup();
-            lookUpEdit1.ItemIndex = 0;
-        }
-
-        private void ConfigureTipeAkunLookup()
-        {
-            var props = lookUpEdit1.Properties;
-            props.PopulateColumns();
-            props.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
-            props.PopupWidthMode = DevExpress.XtraEditors.PopupWidthMode.ContentWidth;
-            props.QueryPopUp -= LookUpEditTipeAkun_QueryPopUp;
-            props.QueryPopUp += LookUpEditTipeAkun_QueryPopUp;
-
-            foreach (DevExpress.XtraEditors.Controls.LookUpColumnInfo column in props.Columns)
-            {
-                string fieldName = column.FieldName ?? string.Empty;
-                bool isVisible = string.Equals(fieldName, "ID", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(fieldName, "TIPE_AKUN", StringComparison.OrdinalIgnoreCase);
-                column.Visible = isVisible;
-            }
-
-            if (props.Columns["ID"] != null)
-            {
-                props.Columns["ID"].Width = 56;
-            }
-
-            if (props.Columns["TIPE_AKUN"] != null)
-            {
-                props.Columns["TIPE_AKUN"].Width = 320;
-            }
-
-            props.BestFit();
-        }
-
-        private void LookUpEditTipeAkun_QueryPopUp(object? sender, System.ComponentModel.CancelEventArgs e)
-        {
-            lookUpEdit1.Properties.BestFit();
-        }
-        private void lookUpEdit1_EditValueChanged(object sender, EventArgs e)
-        {
-            try
-            {
-                var TIPE = Convert.ToString(lookUpEdit1.EditValue);
-                if (TIPE == "00")
-                {
-                    AkunNeraca.Checked = false;
-                    AkunLabaRugi.Checked = false;
-                    gridView1.ClearColumnsFilter();
-                    gridView1.ExpandAllGroups();
-                }
-                else
-                {
-                    gridView1.Columns["GRP"].FilterInfo = new ColumnFilterInfo($"[GRP]='{TIPE}'");
-                }
-            }
-            catch (SystemException ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error lookup", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-  
         private void sbexport_Click(object sender, EventArgs e)
         {
             if (!AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanExportCoa))
@@ -439,7 +452,8 @@ namespace Accounting.Form
                 }
 
                 // gridView1.BestFitColumns();
-                string sheetname =CompanyInfo.IDDATA + cmbbulan.Text + setahun.Value;
+                CoaPeriod exportPeriod = ActivePeriod;
+                string sheetname = CompanyInfo.IDDATA + exportPeriod.MonthName + exportPeriod.Year;
 
                 XlsxExportOptionsEx xlsxOptions = new XlsxExportOptionsEx
                 {
@@ -577,7 +591,7 @@ namespace Accounting.Form
 
                 var rowHandle = gridView1.FocusedRowHandle;
                 EditCOA.COAID = gridView1.GetRowCellValue(rowHandle, "ID").ToString();
-                EditCOA.TAHUN = Convert.ToInt32(setahun.Value);
+                EditCOA.TAHUN = ActiveYear;
                 EditCOA.JENIS = gridView1.GetRowCellValue(rowHandle, "GRP").ToString();
                 EditCOA.INDUK = gridView1.GetRowCellValue(rowHandle, "INDUK").ToString();
                 EditCOA.GD = Convert.ToChar(gridView1.GetRowCellValue(rowHandle, "GD").ToString());
@@ -624,7 +638,7 @@ namespace Accounting.Form
                 var NAMA = gridView1.GetRowCellValue(rowhandle, "NAMAACC").ToString();
                 var GD = gridView1.GetRowCellValue(rowhandle, "GD").ToString();
 
-                var tahun = Convert.ToInt32(setahun.Value);
+                var tahun = ActiveYear;
 
                 if(GD=="G" )
                 {
@@ -716,144 +730,6 @@ namespace Accounting.Form
             Load_COA();
         }
 
-        private void AkunNeraca_CheckedChanged(object sender, EventArgs e)
-        {
-            if (AkunNeraca.Checked == true)
-            {
-                AkunLabaRugi.Checked = false;
-                cetbm.Checked = false;
-                cetm.Checked = false;
-                gridView1.Columns["KODEACC"].ClearFilter();
-
-                ColumnView view = gridView1;
-                GridColumn colCategory = view.Columns["GRP"];
-                ColumnFilterInfo filter = new ColumnFilterInfo("[GRP] = '01' OR [GRP] = '02' OR [GRP] = '03' OR [GRP] = '04' OR [GRP] = '05' OR [GRP] = '06' " +
-                    "OR [GRP] = '07' OR [GRP] = '08' OR [GRP] = '09' OR [GRP] = '10' ", string.Empty);
-                //ColumnFilterInfo filter = new ColumnFilterInfo("[GRP] IN '01','02','03,'04','05','06','07','08','09','10'", "");
-                view.ActiveFilter.Add(colCategory, filter);
-            }
-            else
-            {
-                gridView1.Columns["GRP"].ClearFilter();
-                //gridView1.FormatRules["LEVEL1"].ApplyToRow = true;
-            }
-        }
-
-        private void AkunLabaRugi_CheckedChanged(object sender, EventArgs e)
-        {
-            if (AkunLabaRugi.Checked == true)
-            {
-                AkunNeraca.Checked = false;
-                cetbm.Checked = false;
-                cetm.Checked = false;
-                gridView1.Columns["KODEACC"].ClearFilter();
-
-                ColumnView view = gridView1;
-                GridColumn colCategory = view.Columns["GRP"];
-                ColumnFilterInfo filter = new ("[GRP] = '11' OR [GRP] = '12' OR [GRP] = '13' OR [GRP] = '14' OR [GRP] = '15' OR [GRP] = '16' " +
-                    "OR [GRP] = '17' OR [GRP] = '18' OR [GRP] = '19' OR [GRP] = '20' OR [GRP] = '21'  ", string.Empty);
-                //ColumnFilterInfo filter = new ColumnFilterInfo("[GRP] IN '01','02','03,'04','05','06','07','08','09','10'", "");
-                view.ActiveFilter.Add(colCategory, filter);
-            }
-            else
-            {
-                // gridView1.FormatRules["GROUP"].ApplyToRow = true;
-                gridView1.Columns["GRP"].ClearFilter();
-            }
-        }
-
-        private void NilaiSaldo_CheckedChanged(object sender, EventArgs e)
-        {
-            if (NilaiSaldo.Checked == true)
-            {
-                CEMUTASI.Checked = false;
-                ColumnView view = gridView1;
-                GridColumn colCategory = view.Columns["SALDOAKHIR"];
-                ColumnFilterInfo filter = new ColumnFilterInfo("[SALDOAKHIR] !=0", string.Empty);
-                view.ActiveFilter.Add(colCategory, filter);
-            }
-            else
-            {
-
-                gridView1.Columns["SALDOAKHIR"].ClearFilter();
-            }
-        }
-
-
-        private void cetm_Click(object sender, EventArgs e)
-        {
-            if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
-            {
-                XtraMessageBox.Show("Hanya untuk kebun", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-        }
-
-        private void cetbm_Click(object sender, EventArgs e)
-        {
-            if (CompanyInfo.JENIS_AKUNTING != "KEBUN")
-            {
-                XtraMessageBox.Show("Hanya untuk kebun", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-        }
-
-        private void cetbm_CheckedChanged(object sender, EventArgs e)
-        {
-            if (cetbm.Checked == true)
-            {
-                AkunNeraca.Checked = false;
-                AkunLabaRugi.Checked = false;
-                cetm.Checked = false;
-                ColumnView view = gridView1;
-                GridColumn colCategory = view.Columns["KODEACC"];
-                ColumnFilterInfo filter = new ColumnFilterInfo("StartsWith([KODEACC], '20')", string.Empty);
-                view.ActiveFilter.Add(colCategory, filter);
-            }
-            else
-            {
-
-                gridView1.Columns["KODEACC"].ClearFilter();
-            }
-        }
-
-        private void CEMUTASI_CheckedChanged(object sender, EventArgs e)
-        {
-            if (CEMUTASI.Checked == true)
-            {
-                NilaiSaldo.Checked = false;
-                ColumnView view = gridView1;
-                GridColumn colCategory = view.Columns["MUTASI"];
-                ColumnFilterInfo filter = new ColumnFilterInfo("[MUTASI] !=0", string.Empty);
-                view.ActiveFilter.Add(colCategory, filter);
-            }
-            else
-            {
-
-                gridView1.Columns["MUTASI"].ClearFilter();
-            }
-        }
-
-        private void cetm_CheckedChanged(object sender, EventArgs e)
-        {
-            if (cetm.Checked == true)
-            {
-                AkunNeraca.Checked = false;
-                AkunLabaRugi.Checked = false;
-                cetbm.Checked = false;
-                ColumnView view = gridView1;
-                GridColumn colCategory = view.Columns["KODEACC"];
-                ColumnFilterInfo filter = new ColumnFilterInfo("StartsWith([KODEACC], '80') or StartsWith([KODEACC], '81')", string.Empty);
-                view.ActiveFilter.Add(colCategory, filter);
-            }
-            else
-            {
-
-                gridView1.Columns["KODEACC"].ClearFilter();
-            }
-        }
-
-
         private DXMenuItem CreateMenuItemDetail(GridView view, int rowHandle)
         {
             DXMenuItem checkItem = new DXMenuItem("Detail Transactions", new EventHandler(OnDetailClick));
@@ -863,48 +739,10 @@ namespace Accounting.Form
 
         private void cmbbulan_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if(cmbbulan.SelectedIndex != -1)
-            {
-                Load_COA();
-            }
-            
+            ApplyManualPeriodSelection();
         }
 
 
-
-        private void cedetail_CheckedChanged(object sender, EventArgs e)
-        {
-            if (cedetail.Checked == true)
-            {
-                cegroup.Checked = false;
-                ColumnView view = gridView1;
-                GridColumn colCategory = view.Columns["GD"];
-                ColumnFilterInfo filter = new ColumnFilterInfo("[GD] ='D'", string.Empty);
-                view.ActiveFilter.Add(colCategory, filter);
-            }
-            else
-            {
-
-                gridView1.Columns["GD"].ClearFilter();
-            }
-        }
-
-        private void cegroup_CheckedChanged(object sender, EventArgs e)
-        {
-            if (cegroup.Checked == true)
-            {
-                cedetail.Checked = false;
-                ColumnView view = gridView1;
-                GridColumn colCategory = view.Columns["GD"];
-                ColumnFilterInfo filter = new ColumnFilterInfo("[GD] ='G'", string.Empty);
-                view.ActiveFilter.Add(colCategory, filter);
-            }
-            else
-            {
-
-                gridView1.Columns["GD"].ClearFilter();
-            }
-        }
 
         private void gridView1_KeyDown(object sender, KeyEventArgs e)
         {
@@ -921,10 +759,7 @@ namespace Accounting.Form
 
         private void setahun_EditValueChanged(object sender, EventArgs e)
         {
-            if (setahun.Value != 0)
-            {
-                Load_COA();
-            }
+            ApplyManualPeriodSelection();
         }
 
         private void OnDetailClick(object sender, EventArgs e)
@@ -935,97 +770,50 @@ namespace Accounting.Form
             }
             try
             {
-                if (this.gridView1.GetFocusedRowCellValue("GD") == null) return;
-                //bool akses = LevelAksesServices.CetakExport(4, LoginInfo.userID);
-                //if (akses == false)
-                //{
-                //    XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //    return;
-                //}
-                string[] bulanbi = { "Bulan", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember" };
+                if (!TryGetFocusedCoaDetail(out CoaDetailSelection selection))
+                {
+                    XtraMessageBox.Show("Pilih baris COA yang valid terlebih dahulu.", "Detail Transactions", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
 
-                var rowhandle = gridView1.FocusedRowHandle;
-                var kode = gridView1.GetRowCellValue(rowhandle, "KODEACC").ToString();
-                var nama = gridView1.GetRowCellValue(rowhandle, "NAMAACC").ToString();
-                var Group = gridView1.GetRowCellValue(rowhandle, "GD").ToString();
-                var GRP = gridView1.GetRowCellValue(rowhandle, "GD").ToString();
-                var posisi = gridView1.GetRowCellValue(rowhandle, "POSISI").ToString();
-                var debet = Convert.ToDecimal(gridView1.GetRowCellValue(rowhandle, "DEBET"));
-                var kredit = Convert.ToDecimal(gridView1.GetRowCellValue(rowhandle, "KREDIT"));
-                pbulan = cmbbulan.SelectedIndex + 1;
-                p_sampaibulan = cmbbulan.SelectedIndex + 1;
-                ptahun = (int)setahun.Value;
-                var bulan = bulanbi[pbulan].ToString() + "-" + ptahun.ToString();
-                var periode = pbulan.ToString("00") + "/" + ptahun.ToString();
-                var iddata =CompanyInfo.IDDATA;
-                var userid = LoginInfo.userID;
+                CoaPeriod detailPeriod = ActivePeriod;
+                pbulan = detailPeriod.Month;
+                p_sampaibulan = detailPeriod.Month;
+                ptahun = detailPeriod.Year;
+                string bulan = $"{detailPeriod.MonthName}-{ptahun}";
+                string periode = $"{pbulan:00}/{ptahun}";
+                string iddata = CompanyInfo.IDDATA;
+                string userid = LoginInfo.userID;
 
-                if (debet == 0 && kredit == 0)
+                if (CoaDrillDownPolicy.HasNoDirectTransactions(selection.Generation, selection.Debet, selection.Kredit))
                 {
                     MessageBox.Show("Tidak ada transaksi", string.Empty, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                string[] myArray_neraca = new string[] { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10" };
-
-                bool isneraca = myArray_neraca.Contains(GRP);
-                var isakun_neraca = string.Empty;
-                if (isneraca)
+                if (CoaDrillDownPolicy.OpensHierarchy(selection.Generation))
                 {
-                    isakun_neraca = "NERACA";
-                }
-                else
-                {
-                    isakun_neraca = "NON NERACA";
-                }
-
-                if (Group == "G")
-                {
-                    DataSet DSSubRL = LaporanServices.ViewAccountingReportDrillDown(iddata, pbulan, ptahun, isakun_neraca == "NERACA" ? "NERACA" : "LABARUGI", 0, kode);
-                    DSSubRL.Tables[0].TableName = "SubLabaRugi";
-                    //DSSubRL.WriteXmlSchema("SubRL.xsd");
-                    if (posisi == "D")
+                    DataTable source;
+                    try
                     {
-                        rsub_rl_DetailD detailReport = new rsub_rl_DetailD
-                        {
-                            DataSource = DSSubRL
-                        };
-                        detailReport.Parameters["SUB"].Value = nama;
-                        detailReport.Parameters["PBULAN"].Value = pbulan;
-                        detailReport.Parameters["PTAHUN"].Value = ptahun;
-                        detailReport.Parameters["BULAN"].Value = bulan;
-                        // detailReport.Parameters["PERIODE"].Value = periode;
-                        detailReport.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                        detailReport.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                        detailReport.RequestParameters = true;
-                        detailReport.ShowPreviewDialog();
+                        DataSet dataSet = LaporanServices.ViewCoaDrillDown(iddata, pbulan, ptahun, userid, selection.Kode);
+                        source = CoaDrillDownRow.GetRequiredTable(dataSet);
                     }
-                    else
+                    catch (InvalidOperationException ex)
                     {
-                        rsub_rl_DetailK detailReport = new ()
-                        {
-                            DataSource = DSSubRL
-                        };
-                        detailReport.Parameters["SUB"].Value = nama;
-                        detailReport.Parameters["PBULAN"].Value = pbulan;
-                        detailReport.Parameters["PTAHUN"].Value = ptahun;
-                        detailReport.Parameters["BULAN"].Value = bulan;
-                        // detailReport.Parameters["PERIODE"].Value = periode;
-                        detailReport.Parameters["NAMAPT"].Value = CompanyInfo.NAMAPT;
-                        detailReport.Parameters["WILAYAH"].Value = CompanyInfo.WILAYAH;
-                        detailReport.RequestParameters = true;
-                        detailReport.ShowPreviewDialog();
+                        throw new InvalidOperationException(
+                            $"Respons drilldown COA untuk akun {selection.Kode} tidak sesuai kontrak. {ex.Message}",
+                            ex);
                     }
 
+                    using FrmCoaDrillDown dialog = new(source, $"Rincian COA - {selection.Kode} {selection.Nama}", pbulan, ptahun, iddata, userid);
+                    dialog.ShowDialog(this);
+                    return;
                 }
-                else
-                {
-                    var darikode = kode;
-                    var sampaikode = kode;
-                    //get data for report
-                    DSGL = LaporanServices.ViewLap_BukuBesar(iddata, ptahun, pbulan, p_sampaibulan, darikode, sampaikode, userid, isakun_neraca);
+
+                DSGL = LaporanServices.ViewLap_BukuBesar_Tree(iddata, ptahun, pbulan, p_sampaibulan, selection.Kode);
                     //DSGL.WriteXmlSchema("GeneralLedger.xsd");
-                    if (posisi == "D")
+                    if (selection.Posisi == "D")
                     {
 
                         GeneralLedgerD2 laporan = new ()
@@ -1063,15 +851,62 @@ namespace Accounting.Form
                         ReportPrintTool tool = new (laporan);
                         tool.ShowPreview();
                     }
-                }
             }
             catch (SystemException ex)
             {
+                Log.Error(ex, "COA detail drilldown failed. RowHandle={RowHandle}", gridView1.FocusedRowHandle);
                 XtraMessageBox.Show(ex.Message, "Error Detail ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
 
         }
+
+        private bool TryGetFocusedCoaDetail(out CoaDetailSelection selection)
+        {
+            selection = default;
+            int rowHandle = gridView1.FocusedRowHandle;
+            if (!gridView1.IsDataRow(rowHandle))
+            {
+                return false;
+            }
+
+            string kode = GetStringCellValue(rowHandle, "KODEACC");
+            string generation = GetStringCellValue(rowHandle, "GD");
+            if (string.IsNullOrWhiteSpace(kode) || string.IsNullOrWhiteSpace(generation))
+            {
+                return false;
+            }
+
+            selection = new CoaDetailSelection(
+                kode,
+                GetStringCellValue(rowHandle, "NAMAACC"),
+                generation,
+                GetStringCellValue(rowHandle, "POSISI"),
+                GetDecimalCellValue(rowHandle, "DEBET"),
+                GetDecimalCellValue(rowHandle, "KREDIT"));
+            return true;
+        }
+
+        private string GetStringCellValue(int rowHandle, string fieldName)
+        {
+            object value = gridView1.GetRowCellValue(rowHandle, fieldName);
+            return value == null || value == DBNull.Value ? string.Empty : value.ToString()?.Trim() ?? string.Empty;
+        }
+
+        private decimal GetDecimalCellValue(int rowHandle, string fieldName)
+        {
+            object value = gridView1.GetRowCellValue(rowHandle, fieldName);
+            return value == null || value == DBNull.Value ? 0m : Convert.ToDecimal(value);
+        }
+
+        private readonly record struct CoaDetailSelection(
+            string Kode,
+            string Nama,
+            string Generation,
+            string Posisi,
+            decimal Debet,
+            decimal Kredit);
+
         private void simpleButton1_Click(object sender, EventArgs e)
         {
             _ = AuthorizationDialogs.TryEnsure(this, AuthorizationService.EnsureCanExportCoa);

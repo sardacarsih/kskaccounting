@@ -354,7 +354,7 @@ namespace Accounting.Laporan
             this.xrTableCell1.Borders = DevExpress.XtraPrinting.BorderSide.None;
             this.xrTableCell1.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[KODEACC]"),
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([HEADER]=\'G\',\'header\' ,? )")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([ISHEADER]=\'G\',\'header\' ,? )")});
             this.xrTableCell1.Multiline = true;
             this.xrTableCell1.Name = "xrTableCell1";
             this.xrTableCell1.StyleName = "DetailData1";
@@ -371,7 +371,7 @@ namespace Accounting.Laporan
             // 
             this.tableCell12.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NAMAACC]"),
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([HEADER]=\'G\',\'header\' ,? )")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([ISHEADER]=\'G\',\'header\' ,? )")});
             this.tableCell12.Name = "tableCell12";
             this.tableCell12.StyleName = "DetailData1";
             this.tableCell12.StylePriority.UseTextAlignment = false;
@@ -385,8 +385,8 @@ namespace Accounting.Laporan
             // xrTableCell4
             // 
             this.xrTableCell4.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[HEADER]"),
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([HEADER]=\'G\',\'header\' ,? )")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[ISHEADER]"),
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([ISHEADER]=\'G\',\'header\' ,? )")});
             this.xrTableCell4.Multiline = true;
             this.xrTableCell4.Name = "xrTableCell4";
             this.xrTableCell4.StyleName = "DetailData1";
@@ -399,8 +399,8 @@ namespace Accounting.Laporan
             // tableCell13
             // 
             this.tableCell13.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[DEBET]"),
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([HEADER]=\'G\',\'header\' ,? )")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "Iif([POSISI]=\'D\',[NILAI],0)"),
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([ISHEADER]=\'G\',\'header\' ,? )")});
             this.tableCell13.Name = "tableCell13";
             this.tableCell13.StyleName = "DetailData1";
             this.tableCell13.StylePriority.UseTextAlignment = false;
@@ -414,8 +414,8 @@ namespace Accounting.Laporan
             // tableCell14
             // 
             this.tableCell14.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([HEADER]=\'G\',\'header\' ,? )"),
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[KREDIT]")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([ISHEADER]=\'G\',\'header\' ,? )"),
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "Iif([POSISI]=\'K\',[NILAI],0)")});
             this.tableCell14.Name = "tableCell14";
             this.tableCell14.StyleName = "DetailData1";
             this.tableCell14.StylePriority.UseTextAlignment = false;
@@ -724,13 +724,13 @@ namespace Accounting.Laporan
             // jlhdebet
             // 
             this.jlhdebet.DataMember = "SubLabaRugi";
-            this.jlhdebet.Expression = "[][[HEADER]==\'D\'].Sum([DEBET]) \n";
+            this.jlhdebet.Expression = "[][[ISHEADER]==\'D\' And [POSISI]==\'D\'].Sum([NILAI]) \n";
             this.jlhdebet.Name = "jlhdebet";
             // 
             // jlhkredit
             // 
             this.jlhkredit.DataMember = "SubLabaRugi";
-            this.jlhkredit.Expression = "[][[HEADER]==\'D\'].sum([KREDIT])\n";
+            this.jlhkredit.Expression = "[][[ISHEADER]==\'D\' And [POSISI]==\'K\'].sum([NILAI])\n";
             this.jlhkredit.Name = "jlhkredit";
             // 
             // saldodebet
@@ -761,25 +761,25 @@ namespace Accounting.Laporan
             columnExpression3.ColumnName = "NAMAACC";
             columnExpression3.Table = table1;
             column3.Expression = columnExpression3;
-            columnExpression4.ColumnName = "HEADER";
+            columnExpression4.ColumnName = "ISHEADER";
             columnExpression4.Table = table1;
             column4.Expression = columnExpression4;
-            columnExpression5.ColumnName = "DEBET";
+            columnExpression5.ColumnName = "NILAI";
             columnExpression5.Table = table1;
             column5.Expression = columnExpression5;
-            columnExpression6.ColumnName = "KREDIT";
+            columnExpression6.ColumnName = "REPORT_CODE";
             columnExpression6.Table = table1;
             column6.Expression = columnExpression6;
-            columnExpression7.ColumnName = "IDDATA";
+            columnExpression7.ColumnName = "POSISI";
             columnExpression7.Table = table1;
             column7.Expression = columnExpression7;
-            columnExpression8.ColumnName = "GENUSER";
+            columnExpression8.ColumnName = "PARENTACC";
             columnExpression8.Table = table1;
             column8.Expression = columnExpression8;
             columnExpression9.ColumnName = "POSISI";
             columnExpression9.Table = table1;
             column9.Expression = columnExpression9;
-            columnExpression10.ColumnName = "KELOMPOK";
+            columnExpression10.ColumnName = "REPORT_CODE";
             columnExpression10.Table = table1;
             column10.Expression = columnExpression10;
             selectQuery1.Columns.Add(column1);

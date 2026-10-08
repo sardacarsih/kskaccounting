@@ -48,20 +48,9 @@ namespace Accounting.Form
             this.sbubah = new DevExpress.XtraEditors.SimpleButton();
             this.sbhapus = new DevExpress.XtraEditors.SimpleButton();
             this.sbexport = new DevExpress.XtraEditors.SimpleButton();
-            this.labelControl1 = new DevExpress.XtraEditors.LabelControl();
-            this.lookUpEdit1 = new DevExpress.XtraEditors.LookUpEdit();
             this.sidePanel1 = new DevExpress.XtraEditors.SidePanel();
             this.setahun = new DevExpress.XtraEditors.SpinEdit();
             this.cmbbulan = new DevExpress.XtraEditors.ComboBoxEdit();
-            this.cedetail = new DevExpress.XtraEditors.CheckEdit();
-            this.cegroup = new DevExpress.XtraEditors.CheckEdit();
-            this.cetbm = new DevExpress.XtraEditors.CheckEdit();
-            this.cetm = new DevExpress.XtraEditors.CheckEdit();
-            this.CEMUTASI = new DevExpress.XtraEditors.CheckEdit();
-            this.NilaiSaldo = new DevExpress.XtraEditors.CheckEdit();
-            this.AkunLabaRugi = new DevExpress.XtraEditors.CheckEdit();
-            this.AkunNeraca = new DevExpress.XtraEditors.CheckEdit();
-            this.labelControl3 = new DevExpress.XtraEditors.LabelControl();
             this.imageCollection1 = new DevExpress.Utils.ImageCollection(this.components);
             this.panelControl1 = new DevExpress.XtraEditors.PanelControl();
             this.filteredDataSourceHelperComponentBindingSource = new System.Windows.Forms.BindingSource(this.components);
@@ -83,18 +72,9 @@ namespace Accounting.Form
             this.TAHUNTANAM = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridControl2 = new DevExpress.XtraGrid.GridControl();
             this.gridView2 = new DevExpress.XtraGrid.Views.Grid.GridView();
-            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit1.Properties)).BeginInit();
             this.sidePanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.setahun.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.cmbbulan.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cedetail.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cegroup.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cetbm.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cetm.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.CEMUTASI.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.NilaiSaldo.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.AkunLabaRugi.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.AkunNeraca.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.imageCollection1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.panelControl1)).BeginInit();
             this.panelControl1.SuspendLayout();
@@ -202,32 +182,6 @@ namespace Accounting.Form
             this.sbexport.Text = "Export";
             this.sbexport.Click += new System.EventHandler(this.sbexport_Click);
             // 
-            // labelControl1
-            // 
-            this.labelControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelControl1.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.labelControl1.Appearance.Options.UseFont = true;
-            this.labelControl1.Location = new System.Drawing.Point(1290, 18);
-            this.labelControl1.Margin = new System.Windows.Forms.Padding(4);
-            this.labelControl1.Name = "labelControl1";
-            this.labelControl1.Size = new System.Drawing.Size(69, 21);
-            this.labelControl1.TabIndex = 2;
-            this.labelControl1.Text = "Tipe Akun";
-            // 
-            // lookUpEdit1
-            // 
-            this.lookUpEdit1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lookUpEdit1.Location = new System.Drawing.Point(1365, 14);
-            this.lookUpEdit1.Margin = new System.Windows.Forms.Padding(4);
-            this.lookUpEdit1.Name = "lookUpEdit1";
-            this.lookUpEdit1.Properties.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lookUpEdit1.Properties.Appearance.Options.UseFont = true;
-            this.lookUpEdit1.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.lookUpEdit1.Size = new System.Drawing.Size(169, 28);
-            this.lookUpEdit1.TabIndex = 0;
-            this.lookUpEdit1.EditValueChanged += new System.EventHandler(this.lookUpEdit1_EditValueChanged);
-            // 
             // sidePanel1
             // 
             this.sidePanel1.Controls.Add(this.sbexport);
@@ -236,17 +190,6 @@ namespace Accounting.Form
             this.sidePanel1.Controls.Add(this.sbhapus);
             this.sidePanel1.Controls.Add(this.cmbbulan);
             this.sidePanel1.Controls.Add(this.sbadd);
-            this.sidePanel1.Controls.Add(this.cedetail);
-            this.sidePanel1.Controls.Add(this.cegroup);
-            this.sidePanel1.Controls.Add(this.cetbm);
-            this.sidePanel1.Controls.Add(this.cetm);
-            this.sidePanel1.Controls.Add(this.CEMUTASI);
-            this.sidePanel1.Controls.Add(this.NilaiSaldo);
-            this.sidePanel1.Controls.Add(this.AkunLabaRugi);
-            this.sidePanel1.Controls.Add(this.AkunNeraca);
-            this.sidePanel1.Controls.Add(this.lookUpEdit1);
-            this.sidePanel1.Controls.Add(this.labelControl3);
-            this.sidePanel1.Controls.Add(this.labelControl1);
             this.sidePanel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.sidePanel1.Location = new System.Drawing.Point(0, 0);
             this.sidePanel1.Margin = new System.Windows.Forms.Padding(4);
@@ -292,115 +235,6 @@ namespace Accounting.Form
             this.cmbbulan.Size = new System.Drawing.Size(159, 28);
             this.cmbbulan.TabIndex = 4;
             this.cmbbulan.SelectedIndexChanged += new System.EventHandler(this.cmbbulan_SelectedIndexChanged);
-            // 
-            // cedetail
-            // 
-            this.cedetail.Location = new System.Drawing.Point(1182, 29);
-            this.cedetail.Margin = new System.Windows.Forms.Padding(4);
-            this.cedetail.Name = "cedetail";
-            this.cedetail.Properties.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.cedetail.Properties.Appearance.Options.UseFont = true;
-            this.cedetail.Properties.Caption = "Detail";
-            this.cedetail.Size = new System.Drawing.Size(66, 25);
-            this.cedetail.TabIndex = 3;
-            this.cedetail.CheckedChanged += new System.EventHandler(this.cedetail_CheckedChanged);
-            // 
-            // cegroup
-            // 
-            this.cegroup.Location = new System.Drawing.Point(1182, 7);
-            this.cegroup.Margin = new System.Windows.Forms.Padding(4);
-            this.cegroup.Name = "cegroup";
-            this.cegroup.Properties.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.cegroup.Properties.Appearance.Options.UseFont = true;
-            this.cegroup.Properties.Caption = "Group";
-            this.cegroup.Size = new System.Drawing.Size(66, 25);
-            this.cegroup.TabIndex = 3;
-            this.cegroup.CheckedChanged += new System.EventHandler(this.cegroup_CheckedChanged);
-            // 
-            // cetbm
-            // 
-            this.cetbm.Location = new System.Drawing.Point(943, 6);
-            this.cetbm.Margin = new System.Windows.Forms.Padding(4);
-            this.cetbm.Name = "cetbm";
-            this.cetbm.Properties.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.cetbm.Properties.Appearance.Options.UseFont = true;
-            this.cetbm.Properties.Caption = "TBM";
-            this.cetbm.Size = new System.Drawing.Size(66, 25);
-            this.cetbm.TabIndex = 3;
-            this.cetbm.CheckedChanged += new System.EventHandler(this.cetbm_CheckedChanged);
-            this.cetbm.Click += new System.EventHandler(this.cetbm_Click);
-            // 
-            // cetm
-            // 
-            this.cetm.Location = new System.Drawing.Point(944, 29);
-            this.cetm.Margin = new System.Windows.Forms.Padding(4);
-            this.cetm.Name = "cetm";
-            this.cetm.Properties.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.cetm.Properties.Appearance.Options.UseFont = true;
-            this.cetm.Properties.Caption = "TM";
-            this.cetm.Size = new System.Drawing.Size(65, 25);
-            this.cetm.TabIndex = 3;
-            this.cetm.CheckedChanged += new System.EventHandler(this.cetm_CheckedChanged);
-            this.cetm.Click += new System.EventHandler(this.cetm_Click);
-            // 
-            // CEMUTASI
-            // 
-            this.CEMUTASI.Location = new System.Drawing.Point(1049, 7);
-            this.CEMUTASI.Margin = new System.Windows.Forms.Padding(4);
-            this.CEMUTASI.Name = "CEMUTASI";
-            this.CEMUTASI.Properties.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.CEMUTASI.Properties.Appearance.Options.UseFont = true;
-            this.CEMUTASI.Properties.Caption = "Mutasi <>0";
-            this.CEMUTASI.Size = new System.Drawing.Size(116, 25);
-            this.CEMUTASI.TabIndex = 3;
-            this.CEMUTASI.CheckedChanged += new System.EventHandler(this.CEMUTASI_CheckedChanged);
-            // 
-            // NilaiSaldo
-            // 
-            this.NilaiSaldo.Location = new System.Drawing.Point(1049, 29);
-            this.NilaiSaldo.Margin = new System.Windows.Forms.Padding(4);
-            this.NilaiSaldo.Name = "NilaiSaldo";
-            this.NilaiSaldo.Properties.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.NilaiSaldo.Properties.Appearance.Options.UseFont = true;
-            this.NilaiSaldo.Properties.Caption = "Saldo <>0";
-            this.NilaiSaldo.Size = new System.Drawing.Size(134, 25);
-            this.NilaiSaldo.TabIndex = 3;
-            this.NilaiSaldo.CheckedChanged += new System.EventHandler(this.NilaiSaldo_CheckedChanged);
-            // 
-            // AkunLabaRugi
-            // 
-            this.AkunLabaRugi.Location = new System.Drawing.Point(780, 29);
-            this.AkunLabaRugi.Margin = new System.Windows.Forms.Padding(4);
-            this.AkunLabaRugi.Name = "AkunLabaRugi";
-            this.AkunLabaRugi.Properties.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.AkunLabaRugi.Properties.Appearance.Options.UseFont = true;
-            this.AkunLabaRugi.Properties.Caption = "Akun Laba Rugi";
-            this.AkunLabaRugi.Size = new System.Drawing.Size(134, 25);
-            this.AkunLabaRugi.TabIndex = 3;
-            this.AkunLabaRugi.CheckedChanged += new System.EventHandler(this.AkunLabaRugi_CheckedChanged);
-            // 
-            // AkunNeraca
-            // 
-            this.AkunNeraca.Location = new System.Drawing.Point(780, 4);
-            this.AkunNeraca.Margin = new System.Windows.Forms.Padding(4);
-            this.AkunNeraca.Name = "AkunNeraca";
-            this.AkunNeraca.Properties.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.AkunNeraca.Properties.Appearance.Options.UseFont = true;
-            this.AkunNeraca.Properties.Caption = "Akun Neraca";
-            this.AkunNeraca.Size = new System.Drawing.Size(134, 25);
-            this.AkunNeraca.TabIndex = 3;
-            this.AkunNeraca.CheckedChanged += new System.EventHandler(this.AkunNeraca_CheckedChanged);
-            // 
-            // labelControl3
-            // 
-            this.labelControl3.Appearance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.labelControl3.Appearance.Options.UseFont = true;
-            this.labelControl3.Location = new System.Drawing.Point(8, 17);
-            this.labelControl3.Margin = new System.Windows.Forms.Padding(4);
-            this.labelControl3.Name = "labelControl3";
-            this.labelControl3.Size = new System.Drawing.Size(53, 21);
-            this.labelControl3.TabIndex = 2;
-            this.labelControl3.Text = "Periode";
             // 
             // imageCollection1
             // 
@@ -522,7 +356,7 @@ namespace Accounting.Form
             this.gridView1.OptionsClipboard.CopyColumnHeaders = DevExpress.Utils.DefaultBoolean.False;
             this.gridView1.OptionsFind.ShowFindButton = false;
             this.gridView1.OptionsView.FilterCriteriaDisplayStyle = DevExpress.XtraEditors.FilterCriteriaDisplayStyle.Visual;
-            this.gridView1.OptionsView.ShowAutoFilterRow = true;
+            this.gridView1.OptionsView.ShowAutoFilterRow = false;
             this.gridView1.OptionsView.ShowGroupPanel = false;
             this.gridView1.SortInfo.AddRange(new DevExpress.XtraGrid.Columns.GridColumnSortInfo[] {
             new DevExpress.XtraGrid.Columns.GridColumnSortInfo(this.KODE, DevExpress.Data.ColumnSortOrder.Ascending),
@@ -700,19 +534,10 @@ namespace Accounting.Form
             this.Name = "FrmAkunEF_Luas";
             this.Text = "Chart Of Account";
             this.Load += new System.EventHandler(this.FrmAkunEF_Luas_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.lookUpEdit1.Properties)).EndInit();
             this.sidePanel1.ResumeLayout(false);
             this.sidePanel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.setahun.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.cmbbulan.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cedetail.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cegroup.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cetbm.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.cetm.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.CEMUTASI.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.NilaiSaldo.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.AkunLabaRugi.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.AkunNeraca.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.imageCollection1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.panelControl1)).EndInit();
             this.panelControl1.ResumeLayout(false);
@@ -729,20 +554,11 @@ namespace Accounting.Form
         private DevExpress.XtraEditors.SimpleButton sbadd;
         private DevExpress.XtraEditors.SimpleButton sbubah;
         private DevExpress.XtraEditors.SimpleButton sbhapus;
-        private DevExpress.XtraEditors.LabelControl labelControl1;
-        private DevExpress.XtraEditors.LookUpEdit lookUpEdit1;
         private DevExpress.XtraEditors.SidePanel sidePanel1;
         private DevExpress.XtraEditors.SimpleButton sbexport;
-        private DevExpress.XtraEditors.CheckEdit AkunLabaRugi;
-        private DevExpress.XtraEditors.CheckEdit AkunNeraca;
         private DevExpress.XtraEditors.SpinEdit setahun;
         private DevExpress.XtraEditors.ComboBoxEdit cmbbulan;
-        private DevExpress.XtraEditors.LabelControl labelControl3;
         private DevExpress.Utils.ImageCollection imageCollection1;
-        private DevExpress.XtraEditors.CheckEdit NilaiSaldo;
-        private DevExpress.XtraEditors.CheckEdit cetbm;
-        private DevExpress.XtraEditors.CheckEdit cetm;
-        private DevExpress.XtraEditors.CheckEdit CEMUTASI;
         private DevExpress.XtraEditors.PanelControl panelControl1;
         private DevExpress.XtraGrid.GridControl gridControl1;
         private DevExpress.XtraGrid.Views.Grid.GridView gridView1;
@@ -764,8 +580,6 @@ namespace Accounting.Form
         private DevExpress.XtraGrid.Columns.GridColumn DIVISI;
         private DevExpress.XtraGrid.Columns.GridColumn BLOK;
         private DevExpress.XtraGrid.Columns.GridColumn TAHUNTANAM;
-        private DevExpress.XtraEditors.CheckEdit cegroup;
-        private DevExpress.XtraEditors.CheckEdit cedetail;
         private System.Windows.Forms.BindingSource filteredDataSourceHelperComponentBindingSource;
         private DevExpress.XtraGrid.GridControl gridControl2;
         private DevExpress.XtraGrid.Views.Grid.GridView gridView2;

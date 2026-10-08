@@ -125,7 +125,6 @@ namespace Accounting.Form
             gridView1.OptionsFind.AlwaysVisible = true;
             gridView1.OptionsFind.ShowFindButton = false;
             gridView1.OptionsView.ShowGroupPanel = false;
-            gridView1.SortInfo.AddRange(new DevExpress.XtraGrid.Columns.GridColumnSortInfo[] { new DevExpress.XtraGrid.Columns.GridColumnSortInfo(NoJurnal, DevExpress.Data.ColumnSortOrder.Ascending), new DevExpress.XtraGrid.Columns.GridColumnSortInfo(Tanggal, DevExpress.Data.ColumnSortOrder.Ascending) });
             // 
             // NoJurnal
             // 

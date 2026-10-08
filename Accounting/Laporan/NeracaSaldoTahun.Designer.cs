@@ -518,7 +518,7 @@
             // 
             // objectDataSource1
             // 
-            this.objectDataSource1.DataSource = typeof(Accounting.Model.AccountSummary);
+            this.objectDataSource1.DataSource = typeof(Accounting.Model.NeracaSaldoRow);
             this.objectDataSource1.Name = "objectDataSource1";
             // 
             // Title

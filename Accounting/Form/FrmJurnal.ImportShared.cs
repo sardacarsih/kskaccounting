@@ -82,10 +82,7 @@ namespace Accounting.Form
 
         private static List<JurnalDetailDTO> NormalizeJurnalExportOrder(IEnumerable<JurnalDetailDTO> rows)
         {
-            return rows
-                .OrderBy(row => row.NoJurnal)
-                .ThenBy(row => row.BARIS)
-                .ToList();
+            return FrmExportJurnal.NormalizeJurnalOrder(rows);
         }
 
         private List<JurnalDetailDTO> GetActiveDetailRowsForExport()

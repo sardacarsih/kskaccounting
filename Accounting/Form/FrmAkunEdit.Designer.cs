@@ -398,11 +398,8 @@ namespace Accounting
             //
             this.liUpdate.Control = this.sbupdate;
             this.liUpdate.Location = new System.Drawing.Point(271, 240);
-            this.liUpdate.MaxSize = new System.Drawing.Size(84, 30);
-            this.liUpdate.MinSize = new System.Drawing.Size(84, 30);
             this.liUpdate.Name = "liUpdate";
             this.liUpdate.Size = new System.Drawing.Size(84, 30);
-            this.liUpdate.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.liUpdate.TextSize = new System.Drawing.Size(0, 0);
             this.liUpdate.TextVisible = false;
             //
@@ -410,22 +407,19 @@ namespace Accounting
             //
             this.liTutup.Control = this.sbtutup;
             this.liTutup.Location = new System.Drawing.Point(355, 240);
-            this.liTutup.MaxSize = new System.Drawing.Size(85, 30);
-            this.liTutup.MinSize = new System.Drawing.Size(85, 30);
             this.liTutup.Name = "liTutup";
             this.liTutup.Size = new System.Drawing.Size(85, 30);
-            this.liTutup.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.liTutup.TextSize = new System.Drawing.Size(0, 0);
             this.liTutup.TextVisible = false;
             //
             // FrmAkunEdit
             //
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(460, 300);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(640, 410);
             this.ControlBox = false;
             this.Controls.Add(this.layoutControl1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.MaximizeBox = false;
             this.MinimizeBox = false;

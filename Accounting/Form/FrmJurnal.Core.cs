@@ -187,9 +187,10 @@ namespace Accounting.Form
                         {
                             string periodeCek = FormatPeriod(deJurnal.DateTime.Month, deJurnal.DateTime.Year);
                             bool nomorexist = jurnalRepository.CekNoJurnalExist_input(CompanyInfo.IDDATA, NoJurnaltxt.Text.ToUpper(), periodeCek);
+                            Utilities.JurnalDupCheckLog.Write(CompanyInfo.IDDATA, NoJurnaltxt.Text, periodeCek, nomorexist, "deJurnal_KeyDown");
                             if (nomorexist)
                             {
-                                XtraMessageBox.Show("Nomor Jurnal : " + NoJurnaltxt.Text + " Sudah ada...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                XtraMessageBox.Show("Nomor Jurnal : " + NoJurnaltxt.Text + " Sudah ada pada periode " + periodeCek + "...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 NoJurnaltxt.Select();
                                 return;
                             }
@@ -325,21 +326,6 @@ namespace Accounting.Form
             {
                 SendKeys.Send("{TAB}");
             }
-        }
-
-
-
-        private void ribhapus_Click(object sender, EventArgs e)
-        {
-            if (!TryEnsureJurnalAccess(editjurnal
-                    ? AuthorizationService.EnsureCanUpdateJurnal
-                    : AuthorizationService.EnsureCanCreateJurnal))
-            {
-                return;
-            }
-
-            JDgridView.DeleteRow(JDgridView.FocusedRowHandle);
-            XtraMessageBox.Show("Deleted");
         }
         private DataTable PeriodeListAll(string piddata)
         {

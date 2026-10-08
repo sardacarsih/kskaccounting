@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Accounting.DataLayer
@@ -15,7 +16,8 @@ namespace Accounting.DataLayer
         int GenerateSub_LabaRugi(string p_IDDATA, int p_bulan, int p_tahun, string p_kodeacc, string userid, string lap, string posisi);
         // Laba Rugi V2: generate + fetch in a single round-trip via SYS_REFCURSOR (package ACCT_LAPORAN_V2).
         DataSet ViewAccountingReport(string piddata, int pbulan, int ptahun, string userid, string reportCode, string jenisakunting);
-        DataSet ViewAccountingReportDrillDown(string piddata, int pbulan, int ptahun, string reportCode, int sectionId, string kodeacc);
+        DataSet ViewAccountingReportDrillDown(string piddata, int pbulan, int ptahun, string userid, string reportCode, string kodeacc);
+        DataSet ViewCoaDrillDown(string piddata, int pbulan, int ptahun, string userid, string kodeacc);
         DataSet ViewLap_LabaRugi_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
         List<LabaRugiRow> ViewLap_LabaRugiRows_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting);
         DataSet ViewLap_Neraca(string piddata, int p_bulan, int p_tahun, string userid);
@@ -39,6 +41,9 @@ namespace Accounting.DataLayer
             , string DARILAPORAN);
         DataSet View_Jurnal(string piddata, string periode, string kode);
         DataSet ViewLap_NeracaLajur(string piddata, int p_bulan, int p_tahun);
-        List<AccountSummary> NeracaSaldoTahun(string piddata, int p_tahun);
+        Task<IReadOnlyList<NeracaSaldoRow>> GetNeracaSaldoRowsAsync(
+            string idData,
+            int year,
+            CancellationToken cancellationToken);
     }
 }

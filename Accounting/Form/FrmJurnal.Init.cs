@@ -16,6 +16,8 @@ using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid.Views.Grid.ViewInfo;
+using Oracle.ManagedDataAccess.Client;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -82,6 +84,7 @@ namespace Accounting.Form
             repdebet.KeyDown += repdebet_KeyDown;
             repkredit.KeyDown += Repkredit_KeyDown;
             gridViewAISheader.FocusedRowChanged += GridViewAISheader_FocusedRowChanged;
+            gridView_inv_header.FocusedRowChanged += gridView_inv_header_FocusedRowChanged;
             GCJurnal.Resize += GCJurnal_Resize;
             GCJurnal.MouseWheel += GCJurnal_MouseWheel;
         }
@@ -97,6 +100,7 @@ namespace Accounting.Form
             repdebet.KeyDown -= repdebet_KeyDown;
             repkredit.KeyDown -= Repkredit_KeyDown;
             gridViewAISheader.FocusedRowChanged -= GridViewAISheader_FocusedRowChanged;
+            gridView_inv_header.FocusedRowChanged -= gridView_inv_header_FocusedRowChanged;
             GCJurnal.Resize -= GCJurnal_Resize;
             GCJurnal.MouseWheel -= GCJurnal_MouseWheel;
 
@@ -311,25 +315,46 @@ namespace Accounting.Form
 
         private async Task EnsureImportTabLoadedAsync(DevExpress.XtraTab.XtraTabPage page)
         {
-            if (page == xtraTabKasir && !kasirLoaded)
+            try
             {
-                Load_Kode_Kasir();
-                kasirLoaded = true;
+                if (page == xtraTabKasir && !kasirLoaded)
+                {
+                    Load_Kode_Kasir();
+                    kasirLoaded = true;
+                }
+                else if (page == xtraTabAIS && !aisLoaded)
+                {
+                    await Load_Kode_AISAsync();
+                    aisLoaded = true;
+                }
+                else if (page == xtraTabInventori && !inventoryLoaded)
+                {
+                    Load_Kode_Inv();
+                    inventoryLoaded = true;
+                }
+                else if (page == xtraTabHR && !hrisLoaded)
+                {
+                    await Load_Kode_HRISAsync();
+                    hrisLoaded = true;
+                }
             }
-            else if (page == xtraTabAIS && !aisLoaded)
+            catch (OracleException ex) when (ex.Number == 942)
             {
-                await Load_Kode_AISAsync();
-                aisLoaded = true;
+                Log.Error(ex, "Oracle object required by journal import tab {TabName} is unavailable", page?.Name);
+                XtraMessageBox.Show(
+                    "MASTER_ESTATE tidak tersedia pada database. Jalankan GLMigrator terbaru atau periksa hak akses schema, lalu coba kembali.",
+                    "Database Belum Siap",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
-            else if (page == xtraTabInventori && !inventoryLoaded)
+            catch (Exception ex)
             {
-                Load_Kode_Inv();
-                inventoryLoaded = true;
-            }
-            else if (page == xtraTabHR && !hrisLoaded)
-            {
-                await Load_Kode_HRISAsync();
-                hrisLoaded = true;
+                Log.Error(ex, "Failed to load journal import tab {TabName}", page?.Name);
+                XtraMessageBox.Show(
+                    $"Data tab impor gagal dimuat: {ex.Message}",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
