@@ -98,8 +98,7 @@ namespace Accounting.Form
                             GVHeader.Columns["HeaderVersionUtc"].Visible = false;
                         }
                         ApplyDateFormat(GVHeader.Columns["Tanggal"]);
-                        GVHeader.OptionsCustomization.AllowColumnResizing = true;
-                        GVHeader.BestFitColumns();
+                        jurnalDaftarColumnWidthController.Apply(GVHeader);
                     }
 
                     GVHeader.Focus();
@@ -131,6 +130,12 @@ namespace Accounting.Form
                 if (e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.Row)
                 {
                     int rowHandle = e.HitInfo.RowHandle;
+                    if (rowHandle >= 0)
+                    {
+                        view.FocusedRowHandle = rowHandle;
+                        FilterNomorJurnal();
+                    }
+
                     //hapus menu jika ada
                     e.Menu.Items.Clear();
 
@@ -165,25 +170,24 @@ namespace Accounting.Form
                 return;
             }
 
-            List<double> selectedValues = new();
+            IEnumerable<double?> checkedIds = GetSelectedHeaderRowHandles()
+                .Select(TryGetHeaderJurnalId);
+            double? focusedId = GVHeader.FocusedRowHandle >= 0
+                ? TryGetHeaderJurnalId(GVHeader.FocusedRowHandle)
+                : null;
+            List<double> selectedValues = JurnalExportSelection.ResolveJurnalIds(checkedIds, focusedId);
 
-            // Iterate over the selected rows
-            for (int i = 0; i < GVHeader.SelectedRowsCount; i++)
+            if (selectedValues.Count == 0)
             {
-                // Get the selected row handle
-                int rowHandle = GVHeader.GetSelectedRows()[i];
-
-                // Get the value from a specific column (replace "ColumnName" with the actual column name)
-                double value = Convert.ToDouble(GVHeader.GetRowCellValue(rowHandle, "JURNALID").ToString());
-
-                // Add the value to the list
-                selectedValues.Add(value);
+                XtraMessageBox.Show(
+                    "Pilih jurnal yang akan diekspor.",
+                    "Info",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
             }
 
-            if (selectedValues.Any())
-            {
-                ExportJurnalDipilih(selectedValues);
-            }
+            ExportJurnalDipilih(selectedValues);
         }
 
         private void ExportJurnalDipilih(List<double> selectedValues)
@@ -195,11 +199,19 @@ namespace Accounting.Form
 
             try
             {
-                List<JurnalDetailDTO> selectedJurnalItems = (JurnalDetail ?? Enumerable.Empty<JurnalDetailDTO>())
-                    .Where(j => selectedValues.Contains(j.REFFID))
-                    .OrderBy(j => j.NoJurnal)
-                    .ThenBy(j => j.BARIS)
-                    .ToList();
+                List<JurnalDetailDTO> selectedJurnalItems = JurnalExportSelection.FilterDetails(
+                    JurnalDetail ?? Enumerable.Empty<JurnalDetailDTO>(),
+                    selectedValues);
+
+                if (selectedJurnalItems.Count == 0)
+                {
+                    XtraMessageBox.Show(
+                        "Detail jurnal yang dipilih tidak ditemukan.",
+                        "Info",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                    return;
+                }
 
                 jurnalExcelExportService.ExportJurnalDetails(selectedJurnalItems, "JurnalTerpilih");
             }
@@ -219,6 +231,21 @@ namespace Accounting.Form
                 .Where(rowHandle => rowHandle >= 0)
                 .Distinct()
                 .ToList();
+        }
+
+        private double? TryGetHeaderJurnalId(int rowHandle)
+        {
+            if (rowHandle < 0)
+            {
+                return null;
+            }
+
+            object jurnalIdValue = GVHeader.GetRowCellValue(rowHandle, "JURNALID");
+            return jurnalIdValue != null
+                && jurnalIdValue != DBNull.Value
+                && double.TryParse(jurnalIdValue.ToString(), out double jurnalId)
+                    ? jurnalId
+                    : null;
         }
 
         private int? GetSingleHeaderRowHandleForEdit()
@@ -508,9 +535,7 @@ namespace Accounting.Form
                 ApplyNumericSummary(GVDetail.Columns[7], "Kredit");
                 GVDetail.Columns[9].Visible = false;
                 GVDetail.Columns[10].Visible = false;
-                GVDetail.OptionsCustomization.AllowColumnResizing = true;
-
-                GVDetail.BestFitColumns();
+                jurnalDaftarColumnWidthController.Apply(GVDetail);
             }
             catch (Exception ex)
             {

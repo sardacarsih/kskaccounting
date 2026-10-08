@@ -192,8 +192,7 @@ namespace Accounting.BusinessLayer
                           )
                         ORDER BY j.CREATED_DATE, j.JOB_ID
                     )
-                    WHERE ROWNUM <= :candidateLimit
-                    FOR UPDATE SKIP LOCKED";
+                    WHERE ROWNUM <= :candidateLimit";
 
                 const string claimByIdSql = @"UPDATE ACCT_RECALC_JOB
                       SET STATUS = 'RUNNING',

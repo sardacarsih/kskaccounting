@@ -282,6 +282,7 @@ namespace Accounting.BusinessLayer
                         request.IdData,
                         request.Nomor.ToUpperInvariant(),
                         request.Periode);
+                    Utilities.JurnalDupCheckLog.Write(request.IdData, request.Nomor, request.Periode, nomorExist, "SaveJurnal");
                     if (nomorExist)
                     {
                         return JurnalSaveResult.Fail(

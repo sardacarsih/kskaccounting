@@ -23,12 +23,39 @@ namespace Accounting.Form
             InitializeComponent();
         }
 
-        private static List<JurnalDetailDTO> NormalizeJurnalOrder(IEnumerable<JurnalDetailDTO> rows)
+        internal static List<JurnalDetailDTO> NormalizeJurnalOrder(IEnumerable<JurnalDetailDTO> rows)
         {
             return rows
-                .OrderBy(row => row.NoJurnal)
-                .ThenBy(row => row.BARIS)
+                .Select(row => new
+                {
+                    Row = row,
+                    Period = GetPeriodOrder(row.Periode)
+                })
+                .OrderBy(item => item.Period.IsInvalid)
+                .ThenBy(item => item.Period.Year)
+                .ThenBy(item => item.Period.Month)
+                .ThenBy(
+                    item => item.Period.IsInvalid ? item.Row.Periode : string.Empty,
+                    StringComparer.Ordinal)
+                .ThenBy(item => item.Row.NoJurnal, StringComparer.Ordinal)
+                .ThenBy(item => item.Row.BARIS)
+                .Select(item => item.Row)
                 .ToList();
+        }
+
+        private static (bool IsInvalid, int Year, int Month) GetPeriodOrder(string periode)
+        {
+            string[] parts = periode?.Split('/') ?? [];
+            if (parts.Length == 2
+                && int.TryParse(parts[0].Trim(), out int month)
+                && int.TryParse(parts[1].Trim(), out int year)
+                && month is >= 1 and <= 12
+                && year > 0)
+            {
+                return (false, year, month);
+            }
+
+            return (true, int.MaxValue, int.MaxValue);
         }
 
         private static void DisableUserSorting(DevExpress.XtraGrid.Views.Grid.GridView gridView)

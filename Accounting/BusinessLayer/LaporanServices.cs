@@ -6,6 +6,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Accounting.BusinessLayer
 {
@@ -25,9 +26,14 @@ namespace Accounting.BusinessLayer
             return repository.ViewAccountingReport(piddata, p_bulan, p_tahun, p_Userid, reportCode, jenisakunting);
         }
 
-        public static DataSet ViewAccountingReportDrillDown(string piddata, int p_bulan, int p_tahun, string reportCode, int sectionId, string p_kodeacc)
+        public static DataSet ViewAccountingReportDrillDown(string piddata, int p_bulan, int p_tahun, string userid, string reportCode, string p_kodeacc)
         {
-            return repository.ViewAccountingReportDrillDown(piddata, p_bulan, p_tahun, reportCode, sectionId, p_kodeacc);
+            return repository.ViewAccountingReportDrillDown(piddata, p_bulan, p_tahun, userid, reportCode, p_kodeacc);
+        }
+
+        public static DataSet ViewCoaDrillDown(string piddata, int p_bulan, int p_tahun, string userid, string p_kodeacc)
+        {
+            return repository.ViewCoaDrillDown(piddata, p_bulan, p_tahun, userid, p_kodeacc);
         }
 
         // Laba Rugi V2: single round-trip generate + fetch (package ACCT_LAPORAN_V2).
@@ -94,9 +100,12 @@ namespace Accounting.BusinessLayer
         {
             return repository.ViewLap_BukuBesarMultiTahun(P_IDDATA, p_tahundari,p_tahunsampai, p_bulan, p_sampaibulan, DARIKODE, SAMPAIKODE, p_Userid, DARILAPORAN);
         }
-        public static List<AccountSummary> NeracaSaldoTahun(string piddata, int p_tahun)
+        public static Task<IReadOnlyList<NeracaSaldoRow>> GetNeracaSaldoRowsAsync(
+            string idData,
+            int year,
+            CancellationToken cancellationToken = default)
         {
-            return repository.NeracaSaldoTahun( piddata,  p_tahun);
+            return repository.GetNeracaSaldoRowsAsync(idData, year, cancellationToken);
         }
     }
 }

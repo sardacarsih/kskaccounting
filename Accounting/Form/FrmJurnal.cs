@@ -72,8 +72,9 @@ namespace Accounting.Form
         private readonly JurnalExcelExportService jurnalExcelExportService;
         private readonly JurnalImportSelectionService jurnalImportSelectionService;
         private readonly FrmJurnalModuleImportViewModel moduleImportViewModel;
+        private readonly JurnalGridColumnWidthController jurnalDaftarColumnWidthController;
 
-        bool editjurnal, filter = false;
+        bool editjurnal;
         string periodetujuan = string.Empty, p_iddata = string.Empty;
         int pbulan, ptahun;
         decimal selisihD, selisihK, nilai, nilai2;
@@ -136,6 +137,15 @@ namespace Accounting.Form
             moduleImportViewModel = JurnalImportModuleFactory.CreateModuleViewModel(CompanyInfo.IDDATA, LoginInfo.userID);
 
             InitializeComponent();
+            jurnalDaftarColumnWidthController = new JurnalGridColumnWidthController(
+                Properties.Settings.Default.JurnalDaftarColumnWidths,
+                () => DeviceDpi);
+            jurnalDaftarColumnWidthController.Register(GVHeader, "Header");
+            jurnalDaftarColumnWidthController.RegisterWithFill(
+                GVDetail,
+                "Detail",
+                "Keterangan",
+                "BARIS");
             InitializeTabHosts();
 
             InitializeFormState();
@@ -144,6 +154,9 @@ namespace Accounting.Form
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            Properties.Settings.Default.JurnalDaftarColumnWidths = jurnalDaftarColumnWidthController.Serialize();
+            Properties.Settings.Default.Save();
+            jurnalDaftarColumnWidthController.Dispose();
             UnregisterEventHandlers();
             resizeDebounceTimer?.Dispose();
             _player?.Dispose();

@@ -51,7 +51,9 @@ namespace Accounting.Laporan
                 }
 
                 string rowKind = GetString(dataRow.Row, "ROWKIND");
-                if (rowKind == LabaRugiRow.SubtotalRowKind || rowKind == LabaRugiRow.TotalRowKind)
+                string kode = GetString(dataRow.Row, "KODEACC");
+                string isHeader = GetString(dataRow.Row, "ISHEADER");
+                if (!ReportDrillDownPolicy.CanDrillDown(rowKind, isHeader, kode))
                 {
                     return;
                 }
@@ -62,14 +64,12 @@ namespace Accounting.Laporan
                 int ptahun = (int)Parameters["PTAHUN"].Value;
                 string periode = pbulan.ToString("00") + "/" + ptahun;
                 string bulan = BulanIndonesia[pbulan] + "-" + ptahun;
-                string kode = GetString(dataRow.Row, "KODEACC");
-                string tipeAcc = GetString(dataRow.Row, "TIPEACC");
-                string posisi = tipeAcc == "PENDAPATAN" || tipeAcc == "PENDAPATAN DILUAR USAHA" ? "K" : "D";
+                string posisi = GetString(dataRow.Row, "POSISI");
 
                 // Drill the clicked account and its whole COA subtree (header rows have no direct
                 // postings; the tree is linked by PARENTACC, so a code range cannot reach children).
                 DSGL = LaporanServices.ViewLap_BukuBesar_Tree(iddata, ptahun, pbulan, pbulan, kode);
-                XtraReport laporan = posisi == "D"
+                XtraReport laporan = ReportDrillDownPolicy.GetGeneralLedgerSide(posisi) == "D"
                     ? new GeneralLedgerD2 { DataSource = DSGL }
                     : new GeneralLedgerK2 { DataSource = DSGL };
 

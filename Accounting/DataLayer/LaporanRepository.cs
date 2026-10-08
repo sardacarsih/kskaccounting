@@ -3,6 +3,9 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Accounting.DataLayer
 {
@@ -45,11 +48,9 @@ namespace Accounting.DataLayer
             return ds;
         }
 
-        public DataSet ViewAccountingReportDrillDown(string piddata, int pbulan, int ptahun, string reportCode, int sectionId, string kodeacc)
+        public DataSet ViewAccountingReportDrillDown(string piddata, int pbulan, int ptahun, string userid, string reportCode, string kodeacc)
         {
-            string procedureName = reportCode == "NERACA"
-                ? "ACCT_LAPORAN_V2.LAP_NERACA_SUB_V2"
-                : "ACCT_LAPORAN_V2.LAP_LABARUGI_SUB_V2";
+            const string procedureName = "ACCT_REPORT_DRILLDOWN_V1.GET_DRILLDOWN";
 
             using OracleConnection connection = new(LoginInfo.OracleConnString);
             connection.Open();
@@ -63,18 +64,39 @@ namespace Accounting.DataLayer
             cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = pbulan;
             cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = ptahun;
             cmd.Parameters.Add("p_KODEACC", OracleDbType.Varchar2, 30).Value = kodeacc;
-            cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = LoginInfo.userID;
-            if (reportCode != "NERACA")
-            {
-                cmd.Parameters.Add("p_LAP", OracleDbType.Varchar2, 20).Value = reportCode;
-            }
-            cmd.Parameters.Add("p_POSISI", OracleDbType.Varchar2, 20).Value = DBNull.Value;
+            cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = userid;
+            cmd.Parameters.Add("p_REPORT_CODE", OracleDbType.Varchar2, 20).Value = reportCode;
             cmd.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
             using OracleDataAdapter sqlAdapter = new(cmd);
             DataSet ds = new();
             sqlAdapter.Fill(ds, "ReportDrillDown");
+            ReportDrillDownRow.EnsureRequiredColumns(ds.Tables["ReportDrillDown"]!);
             return ds;
+        }
+
+        public DataSet ViewCoaDrillDown(string piddata, int pbulan, int ptahun, string userid, string kodeacc)
+        {
+            using OracleConnection connection = new(LoginInfo.OracleConnString);
+            connection.Open();
+            using OracleCommand cmd = new("ACCT_COA_DRILLDOWN_V1.GET_CHILDREN", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                BindByName = true,
+                CommandTimeout = 180
+            };
+            cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+            cmd.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = pbulan;
+            cmd.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = ptahun;
+            cmd.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = userid;
+            cmd.Parameters.Add("p_KODEACC", OracleDbType.Varchar2, 30).Value = kodeacc;
+            cmd.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using OracleDataAdapter sqlAdapter = new(cmd);
+            DataSet dataSet = new();
+            sqlAdapter.Fill(dataSet, "CoaDrillDown");
+            CoaDrillDownRow.GetRequiredTable(dataSet);
+            return dataSet;
         }
 
         public DataSet ViewLap_LabaRugi_V2(string piddata, int pbulan, int ptahun, string userid, string jenisakunting)
@@ -190,26 +212,7 @@ namespace Accounting.DataLayer
 
         public DataSet ViewSub_Neraca(string piddata, int p_bulan, int p_tahun, string p_kodeacc, string userid, string posisi)
         {
-            using OracleConnection connection = new(LoginInfo.OracleConnString);
-            connection.Open();
-            using OracleCommand _command = new("ACCT_LAPORAN_V2.LAP_NERACA_SUB_V2", connection)
-            {
-                CommandType = CommandType.StoredProcedure,
-                BindByName = true,
-                CommandTimeout = 180
-            };
-            _command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-            _command.Parameters.Add("p_BULAN", OracleDbType.Int16).Value = p_bulan;
-            _command.Parameters.Add("p_TAHUN", OracleDbType.Int16).Value = p_tahun;
-            _command.Parameters.Add("p_KODEACC", OracleDbType.Varchar2, 30).Value = p_kodeacc;
-            _command.Parameters.Add("p_USERID", OracleDbType.Varchar2, 20).Value = userid;
-            _command.Parameters.Add("p_POSISI", OracleDbType.Varchar2, 20).Value = posisi;
-            _command.Parameters.Add("p_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-            using OracleDataAdapter sqlAdapter = new(_command);
-            DataSet ds = new();
-            sqlAdapter.Fill(ds, "Neraca");
-            return ds;
+            return ViewAccountingReportDrillDown(piddata, p_bulan, p_tahun, userid, "NERACA", p_kodeacc);
         }
 
         public DataSet ViewSub_LabaRugi(string piddata, string userid)
@@ -330,40 +333,9 @@ namespace Accounting.DataLayer
         {
             return ViewLap_BukuBesarDirect(P_IDDATA, p_tahun, p_tahun, p_bulan, p_sampaibulan, DARIKODE, SAMPAIKODE);
         }
-        // Hierarchy-aware general ledger for Laba Rugi drill-down: returns acct_jurnal_dtl
-        // transactions for the clicked account AND all its descendant leaf accounts (the COA
-        // tree is linked by PARENTACC, not code prefix, so a code range cannot capture children).
-        // Same column shape as the Laba Rugi general-ledger branch, so the
-        // GeneralLedgerD2/K2 reports render it unchanged.
         public DataSet ViewLap_BukuBesar_Tree(string P_IDDATA, int p_tahun, int p_bulan, int p_sampaibulan, string p_kode)
         {
-            using OracleConnection connection = new(LoginInfo.OracleConnString);
-            connection.Open();
-            using OracleCommand _command = new(
-                @"SELECT periode, kode, rekening, nojurnal, tanggal, keterangan, debet, kredit
-                    FROM acct_jurnal_dtl
-                   WHERE IDDATA = :p_iddata AND glyear = :p_tahun
-                     AND glmonth BETWEEN :p_bulan AND :p_sampaibulan
-                     AND KODE IN (
-                          SELECT KODEACC FROM ACCT_COA
-                           WHERE IDDATA = :p_iddata AND TAHUN = :p_tahun
-                           START WITH KODEACC = :p_kode
-                           CONNECT BY NOCYCLE PRIOR KODEACC = PARENTACC)
-                   ORDER BY kode, tanggal, nojurnal ASC", connection)
-            {
-                CommandType = CommandType.Text,
-                BindByName = true,
-                CommandTimeout = 180
-            };
-            _command.Parameters.Add(":p_iddata", OracleDbType.Varchar2, 20).Value = P_IDDATA;
-            _command.Parameters.Add(":p_tahun", OracleDbType.Int16).Value = p_tahun;
-            _command.Parameters.Add(":p_bulan", OracleDbType.Int16).Value = p_bulan;
-            _command.Parameters.Add(":p_sampaibulan", OracleDbType.Int16).Value = p_sampaibulan;
-            _command.Parameters.Add(":p_kode", OracleDbType.Varchar2, 30).Value = p_kode;
-            using OracleDataAdapter sqlAdapter = new(_command);
-            DataSet _ds = new();
-            sqlAdapter.Fill(_ds, "BukuBesar");
-            return _ds;
+            return ViewLap_BukuBesarDirect(P_IDDATA, p_tahun, p_tahun, p_bulan, p_sampaibulan, p_kode, p_kode);
         }
 
         public DataSet ViewLap_BukuBesarMultiTahun(string P_IDDATA, int p_tahundari, int p_tahunsampai, int p_bulan, int p_sampaibulan, string DARIKODE, string SAMPAIKODE
@@ -394,6 +366,7 @@ namespace Accounting.DataLayer
             using OracleDataAdapter sqlAdapter = new(command);
             DataSet ds = new();
             sqlAdapter.Fill(ds, "BukuBesar");
+            GeneralLedgerRow.GetRequiredTable(ds);
             return ds;
         }
         public DataSet ViewLap_NeracaLajur(string piddata, int p_bulan, int p_tahun)
@@ -458,51 +431,59 @@ namespace Accounting.DataLayer
                 : Convert.ToDecimal(result);
         }
 
-        public List<AccountSummary> NeracaSaldoTahun(string piddata, int p_tahun)
+        public async Task<IReadOnlyList<NeracaSaldoRow>> GetNeracaSaldoRowsAsync(
+            string idData,
+            int year,
+            CancellationToken cancellationToken)
         {
-            List<AccountSummary> accountDataList = new();
+            List<NeracaSaldoRow> rows = [];
 
             using OracleConnection connection = new(LoginInfo.OracleConnString);
-            connection.Open();
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            string sqlQuery = @"
-                SELECT KODEACC, NAMAACC, LVL, SALDOAWAL,
-                ""1S"" AS JAN, ""2S"" AS FEB, ""3S"" AS MAR, ""4S"" AS APR,
-                ""5S"" AS MAY, ""6S"" AS JUN, ""7S"" AS JUL, ""8S"" AS AUG,
-                ""9S"" AS SEP, ""10S"" AS OCT, ""11S"" AS NOV, ""12S"" AS DEC
+            const string sqlQuery = @"
+                SELECT KODEACC,
+                       NAMAACC,
+                       NVL(PARENTACC, '') AS PARENTACC,
+                       NVL(LVL, 0) AS LVL,
+                       NVL(ISHEADER, 'D') AS ISHEADER,
+                       NVL(ISAKTIF, 'Y') AS ISAKTIF,
+                       NVL(SALDOAWAL, 0) AS SALDOAWAL,
+                       NVL(""1S"", 0) AS JAN,
+                       NVL(""2S"", 0) AS FEB,
+                       NVL(""3S"", 0) AS MAR,
+                       NVL(""4S"", 0) AS APR,
+                       NVL(""5S"", 0) AS MEI,
+                       NVL(""6S"", 0) AS JUN,
+                       NVL(""7S"", 0) AS JUL,
+                       NVL(""8S"", 0) AS AGU,
+                       NVL(""9S"", 0) AS SEP,
+                       NVL(""10S"", 0) AS OKT,
+                       NVL(""11S"", 0) AS NOV,
+                       NVL(""12S"", 0) AS DES
                 FROM ACCT_COA
-                WHERE IDDATA = :piddata AND TAHUN = :p_tahun
+                WHERE IDDATA = :p_IDDATA
+                  AND TAHUN = :p_TAHUN
                 ORDER BY KODEACC";
 
-            using OracleCommand command = new(sqlQuery, connection);
-            command.Parameters.Add(new OracleParameter(":piddata", OracleDbType.Varchar2)).Value = piddata;
-            command.Parameters.Add(new OracleParameter(":p_tahun", OracleDbType.Int32)).Value = p_tahun;
-
-            using OracleDataReader reader = command.ExecuteReader();
-            while (reader.Read())
+            using OracleCommand command = new(sqlQuery, connection)
             {
-                AccountSummary accountData = new()
-                {
-                    KODEACC = reader["KODEACC"].ToString(),
-                    NAMAACC = reader["NAMAACC"].ToString(),
-                    LVL = Convert.ToInt32(reader["LVL"]),
-                    SALDOAWAL = Convert.ToDecimal(reader["SALDOAWAL"]),
-                    JAN = Convert.ToDecimal(reader["JAN"]),
-                    FEB = Convert.ToDecimal(reader["FEB"]),
-                    MAR = Convert.ToDecimal(reader["MAR"]),
-                    APR = Convert.ToDecimal(reader["APR"]),
-                    MAY = Convert.ToDecimal(reader["MAY"]),
-                    JUN = Convert.ToDecimal(reader["JUN"]),
-                    JUL = Convert.ToDecimal(reader["JUL"]),
-                    AUG = Convert.ToDecimal(reader["AUG"]),
-                    SEP = Convert.ToDecimal(reader["SEP"]),
-                    OCT = Convert.ToDecimal(reader["OCT"]),
-                    NOV = Convert.ToDecimal(reader["NOV"]),
-                    DEC = Convert.ToDecimal(reader["DEC"])
-                };
-                accountDataList.Add(accountData);
+                BindByName = true,
+                CommandType = CommandType.Text,
+                CommandTimeout = 180
+            };
+            command.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = idData;
+            command.Parameters.Add("p_TAHUN", OracleDbType.Int32).Value = year;
+
+            using DbDataReader reader = await command
+                .ExecuteReaderAsync(cancellationToken)
+                .ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                rows.Add(NeracaSaldoRow.FromDataRecord(reader));
             }
-            return accountDataList;
+
+            return rows;
         }
     }
 

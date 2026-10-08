@@ -8,6 +8,7 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid.Views.Grid.ViewInfo;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -480,29 +481,32 @@ namespace Accounting.DataLayer
 
         public bool CekNoJurnalExist_input(string piddata, string nojurnal, string periode)
         {
-            bool result = false;
             using OracleCommand cmd = new("ACCT_JURNAL_V2.CekNoJurnalExist_input", conn)
             {
-                CommandType = CommandType.StoredProcedure
+                CommandType = CommandType.StoredProcedure,
+                BindByName = true
             };
-
             if (conn.State != ConnectionState.Open)
             {
                 conn.Open();
             }
-            cmd.Parameters.Add("NoJurnalExist", OracleDbType.Varchar2, 20).Direction = ParameterDirection.ReturnValue;
-            cmd.Parameters.Add(":p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
-            cmd.Parameters.Add(":nojurnal", OracleDbType.Varchar2, 30).Value = nojurnal;
-            cmd.Parameters.Add(":p_periode", OracleDbType.Varchar2, 7).Value = periode;
-            cmd.ExecuteReader();
-
-            int ada = Convert.ToInt32(cmd.Parameters["NoJurnalExist"].Value.ToString());
-            if (ada == 1)
+            try
             {
-                result = true;
+                cmd.Parameters.Add("NoJurnalExist", OracleDbType.Int32).Direction = ParameterDirection.ReturnValue;
+                cmd.Parameters.Add("p_IDDATA", OracleDbType.Varchar2, 20).Value = piddata;
+                cmd.Parameters.Add("nojurnal", OracleDbType.Varchar2, 30).Value = nojurnal;
+                cmd.Parameters.Add("p_periode", OracleDbType.Varchar2, 7).Value = periode;
+                cmd.ExecuteNonQuery();
+
+                object returnValue = cmd.Parameters["NoJurnalExist"].Value;
+                return returnValue is OracleDecimal oracleValue
+                    ? !oracleValue.IsNull && oracleValue.ToInt32() == 1
+                    : Convert.ToInt32(returnValue, CultureInfo.InvariantCulture) == 1;
             }
-            conn.Close();
-            return result;
+            finally
+            {
+                conn.Close();
+            }
         }
 
         public bool CekNoJurnalExistExceptJurnalId(string piddata, string nojurnal, string periode, double exceptJurnalId)

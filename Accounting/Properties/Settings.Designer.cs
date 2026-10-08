@@ -46,5 +46,17 @@ namespace Accounting.Properties {
                 this["Palette"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string JurnalDaftarColumnWidths {
+            get {
+                return ((string)(this["JurnalDaftarColumnWidths"]));
+            }
+            set {
+                this["JurnalDaftarColumnWidths"] = value;
+            }
+        }
     }
 }

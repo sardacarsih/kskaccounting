@@ -42,8 +42,6 @@ namespace Accounting.Form
                 };
 
                 MonthlySearchResult result = jurnalDaftarCariService.SearchMonthly(jurnalRepository, request);
-                filter = true;
-
                 if (result.IsFiltered)
                 {
                     lblrecordbulan.Visible = true;
@@ -199,7 +197,7 @@ namespace Accounting.Form
             DisableUserSorting(GVHeader);
             GVHeader.Columns["JURNALID"].Visible = false;
             ApplyDateFormat(GVHeader.Columns["Tanggal"]);
-            GVHeader.BestFitColumns();
+            jurnalDaftarColumnWidthController.Apply(GVHeader);
         }
 
         private void ApplyCariGridFormat()
@@ -330,41 +328,7 @@ namespace Accounting.Form
 
         private void Sbfilterexport_Click(object sender, EventArgs e)
         {
-            using var loadingScope = BeginGlobalLoadingScope();
-            try
-            {
-                if (filter)
-                {
-                    List<JurnalDetailDTO> exportRows = GetActiveDetailRowsForExport();
-                    if (!exportRows.Any())
-                    {
-                        exportRows = jurnalDaftarCariService.BuildMonthlyExportRows(
-                            cefilterlengkap.Checked,
-                            PencarianJurnal_Bulan.ToList(),
-                            JurnalDetail ?? Enumerable.Empty<JurnalDetailDTO>(),
-                            JurnalHeader_Filtered);
-                    }
-
-                    exportRows = NormalizeJurnalExportOrder(exportRows);
-
-                    ExportPencarian_Bulan = exportRows;
-                    jurnalExcelExportService.ExportJurnalDetails(exportRows, "JurnalFilterPeriode");
-                }
-                else
-                {
-                    ExportJurnal_Periode();
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                XtraMessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-            }
-
+            OnExportClick(sender, e);
         }
 
 
@@ -458,7 +422,6 @@ namespace Accounting.Form
                 txtfilterjumlah.Text = "0";
                 txtfilterketerangan.Text = "";
                 lblrecordbulan.Visible = false;
-                filter = false;
                 PencarianJurnal_Bulan = Enumerable.Empty<JurnalDetailDTO>();
                 ExportPencarian_Bulan = Enumerable.Empty<JurnalDetailDTO>();
                 // GCHeader.DataSource = JurnalHeader;

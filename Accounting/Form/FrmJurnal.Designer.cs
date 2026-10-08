@@ -497,7 +497,7 @@ namespace Accounting.Form
             Hapus.ColumnEdit = ribhapus;
             Hapus.MinWidth = 19;
             Hapus.Name = "Hapus";
-            Hapus.OptionsColumn.AllowFocus = false;
+            Hapus.OptionsColumn.AllowFocus = true;
             Hapus.OptionsColumn.AllowMove = false;
             Hapus.OptionsColumn.AllowSize = false;
             Hapus.OptionsColumn.TabStop = false;
@@ -512,7 +512,7 @@ namespace Accounting.Form
             ribhapus.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Delete) });
             ribhapus.Name = "ribhapus";
             ribhapus.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.HideTextEditor;
-            ribhapus.Click += ribhapus_Click;
+            ribhapus.ButtonClick += ribhapus_ButtonClick;
             // 
             // repositoryItemGridLookUpEditkode
             // 
@@ -1956,7 +1956,6 @@ namespace Accounting.Form
             gc_inv_header.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
             gc_inv_header.TabIndex = 39;
             gc_inv_header.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView_inv_header });
-            gc_inv_header.Click += gc_inv_header_Click;
             // 
             // gridView_inv_header
             // 
@@ -1968,7 +1967,6 @@ namespace Accounting.Form
             gridView_inv_header.OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.CheckBoxRowSelect;
             gridView_inv_header.OptionsView.ShowGroupPanel = false;
             gridView_inv_header.PopupMenuShowing += gridView_inv_header_PopupMenuShowing;
-            gridView_inv_header.KeyUp += gridView_inv_header_KeyUp;
             // 
             // LBLTOTALTRANSAKSI
             // 

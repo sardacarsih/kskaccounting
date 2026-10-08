@@ -211,6 +211,30 @@ public sealed class LabaRugiReportTests
         Assert.DoesNotContain(rows, row => row.Sub1 == "LABA SETELAH PAJAK");
     }
 
+    [Fact]
+    public void AddComputedTotals_WhenPksSections_UsesLegacyPksResultLabels()
+    {
+        LabaRugiRow penjualan = CreateRow("PENJUALAN", "PKS_P1", "Penjualan", 10, 1000m, 12000m, "K");
+        LabaRugiRow hpp = CreateRow("HARGA POKOK PENJUALAN", "PKS_HPP", "HPP", 20, 300m, 3600m, "D");
+        LabaRugiRow biayaPenjualan = CreateRow("BIAYA PENJUALAN", "PKS_B1", "Biaya Penjualan", 30, 100m, 1200m, "D");
+        LabaRugiRow biayaTanki = CreateRow("BIAYA OPERASIONAL TANKI TIMBUN", "PKS_B5", "Biaya Tanki", 40, 50m, 600m, "D");
+        LabaRugiRow pendapatanLuar = CreateRow("PENDAPATAN DILUAR USAHA", "PKS_P2", "Pendapatan Luar", 50, 40m, 480m, "K");
+        LabaRugiRow biayaLuar = CreateRow("BIAYA DILUAR USAHA", "PKS_B6", "Biaya Luar", 60, 20m, 240m, "D");
+        LabaRugiRow bunga = CreateRow("BIAYA BUNGA", "PKS_B3", "Bunga", 70, 10m, 120m, "D");
+        LabaRugiRow pph = CreateRow("PPH BADAN", "PKS_PPH", "PPH", 80, 5m, 60m, "D");
+
+        List<LabaRugiRow> rows = LabaRugiReportDataAdapter.BuildReportRows(
+            [penjualan, hpp, biayaPenjualan, biayaTanki, pendapatanLuar, biayaLuar, bunga, pph]);
+
+        Assert.Equal(700m, Assert.Single(rows, row => row.Sub1 == "LABA KOTOR USAHA").BulanIni);
+        Assert.Equal(550m, Assert.Single(rows, row => row.Sub1 == "LABA BERSIH USAHA").BulanIni);
+        Assert.Equal(570m, Assert.Single(rows, row => row.Sub1 == "LABA BERSIH SEBELUM BUNGA DAN PAJAK").BulanIni);
+        Assert.Equal(560m, Assert.Single(rows, row => row.Sub1 == "LABA BERSIH SEBELUM PAJAK").BulanIni);
+        Assert.Equal(555m, Assert.Single(rows, row => row.Sub1 == "LABA / RUGI BERSIH").BulanIni);
+        Assert.DoesNotContain(rows, row => row.Sub1 == "LABA KOTOR");
+        Assert.DoesNotContain(rows, row => row.Sub1 == "LABA BERSIH");
+    }
+
     private static LabaRugiRow CreateRow(string sectionName, string setSub, string label, int urut, decimal bulanIni, decimal tahunIni, string posisi)
     {
         LabaRugiRow row = CreateRow(sectionName, setSub, label, urut, bulanIni, tahunIni);

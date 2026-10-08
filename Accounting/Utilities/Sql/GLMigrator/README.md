@@ -78,5 +78,6 @@ powershell -ExecutionPolicy Bypass -File .\Accounting\Utilities\Sql\GLMigrator\B
 - Migration state is tracked in `GL_MIGRATION_HISTORY`
 - The executable uses embedded manifest/bootstrap/migration SQL resources by default
 - SQL execution logs are written to the `logs` folder beside the executable unless `--log-dir` is provided
+- Diagnostic migration `20260713_002_report_section_level_gap_audit` is intentionally excluded from the active manifest because its unscoped full-history `ACCT_COA` hierarchy scan can exceed the SQL timeout. Use **Validate Section** in `FrmSettingRL`, which validates the active company and fiscal year. Existing history rows for this diagnostic migration may remain; do not rebaseline its checksum or delete them.
 - RBAC migrations are additive through `20260413_004_standard_role_catalog_alignment`. The destructive legacy RBAC cleanup migration is intentionally excluded from the active manifest so legacy roles (`MANAGER`, `KABAG`, `ASISTEN`, `TAMU`, `AUDIT`) and the legacy `ACCOUNTING/ALL` permission remain available during coexistence.
 - If an environment already applied `20260413_005_remove_legacy_rbac_data`, restore legacy RBAC data with the rollback script or a controlled data restore before deploying this package. Do not re-add the cleanup entry to the manifest unless every legacy user has been remapped.

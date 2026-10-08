@@ -1,8 +1,10 @@
+using Accounting.BusinessLayer;
 using Accounting.Model;
 using Accounting.Utilities;
 using DevExpress.Data;
 using DevExpress.Utils.Menu;
 using DevExpress.XtraEditors;
+using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
@@ -22,6 +24,8 @@ namespace Accounting.Form
 {
     public partial class FrmJurnal
     {
+        private bool isRefreshingInventoryData;
+
         private bool UseInventoryBaruSource => ConnectionManager.UseInventoryBaruImport();
 
         private void lookUpEditINV_EditValueChanged(object sender, EventArgs e)
@@ -89,16 +93,6 @@ namespace Accounting.Form
                 : jurnalRepository.Jurnal_Inventori(p_periode_int, p_ptlokasi, p_iddata, "True", p_periode_str, LoginInfo.userID, ptahun, pbulan);
 
             LBLTOTALTRANSAKSI.Text = string.Format("{0:#,##}", CalculateInventoryTotal(dtJurnalInventory));
-
-            if (gridView_inv_header.RowCount > 0)
-            {
-                gridView_inv_header.FocusedRowHandle = 0;
-                LoadDataInventoryDetail();
-            }
-            else
-            {
-                GC_INV.DataSource = null;
-            }
         }
 
 
@@ -327,35 +321,33 @@ namespace Accounting.Form
         }
 
 
-        private void gc_inv_header_Click(object sender, EventArgs e)
+        private void gridView_inv_header_FocusedRowChanged(object sender, FocusedRowChangedEventArgs e)
         {
-            LoadDataInventoryDetail();
-        }
-
-
-        private void gridView_inv_header_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Up | e.KeyCode == Keys.Down)
+            if (!isRefreshingInventoryData)
             {
-                LoadDataInventoryDetail();
+                LoadDataInventoryDetail(e.FocusedRowHandle);
             }
         }
 
 
-        private void LoadDataInventoryDetail()
+        private void LoadDataInventoryDetail(int rowHandle)
         {
             try
             {
-                string filter = Convert.ToString(gridView_inv_header.GetRowCellValue(gridView_inv_header.FocusedRowHandle, "NOMOR")) ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(filter) || dtJurnalInventory.Rows.Count == 0)
+                if (!gridView_inv_header.IsDataRow(rowHandle) || dtJurnalInventory.Rows.Count == 0)
                 {
                     GC_INV.DataSource = null;
                     return;
                 }
 
-                IEnumerable<DataRow> filteredRows = dtJurnalInventory.AsEnumerable()
-                    .Where(row => string.Equals(row.Field<string>("NOJURNAL"), filter, StringComparison.OrdinalIgnoreCase));
-                DataTable filtered = filteredRows.Any() ? filteredRows.CopyToDataTable() : dtJurnalInventory.Clone();
+                string journalNumber = Convert.ToString(gridView_inv_header.GetRowCellValue(rowHandle, "NOMOR")) ?? string.Empty;
+                DataTable filtered = JurnalImportSelectionService.FilterDetailsByJournalNumber(dtJurnalInventory, journalNumber);
+                if (filtered.Rows.Count == 0)
+                {
+                    GC_INV.DataSource = null;
+                    return;
+                }
+
                 GC_INV.DataSource = filtered;
                 if (gridView_INVDetails.Columns.Count == 0)
                 {
@@ -375,7 +367,7 @@ namespace Accounting.Form
                 ApplyNumericFormat(gridView_INVDetails.Columns[6]);
                 ApplyNumericSummary(gridView_INVDetails.Columns[5], "DEBET");
                 ApplyNumericSummary(gridView_INVDetails.Columns[6], "KREDIT");
-                gridView_INVDetails.BestFitColumns();
+                ApplyContentBestFit(GC_INV, gridView_INVDetails);
             }
             catch (Exception ex)
             {
@@ -385,8 +377,23 @@ namespace Accounting.Form
 
         private void RefreshInventoryData()
         {
-            Load_inv_header();
-            Load_Jurnal_INV();
+            isRefreshingInventoryData = true;
+            try
+            {
+                Load_inv_header();
+                Load_Jurnal_INV();
+
+                if (gridView_inv_header.RowCount > 0)
+                {
+                    gridView_inv_header.FocusedRowHandle = gridView_inv_header.GetVisibleRowHandle(0);
+                }
+            }
+            finally
+            {
+                isRefreshingInventoryData = false;
+            }
+
+            LoadDataInventoryDetail(gridView_inv_header.FocusedRowHandle);
         }
 
         private bool TryGetInventoryContext(out int ptahun, out int pbulan, out string p_ptlokasi)
@@ -422,8 +429,20 @@ namespace Accounting.Form
             LBLTOTALTRANSAKSI.Text = "0";
         }
 
+        // Kolom kedua grid inventory di-generate runtime dari DataSource, jadi ForceInitialize wajib
+        // sebelum kolomnya diakses. ColumnAutoWidth harus false sebelum BestFitColumns, kalau tidak
+        // DevExpress menskalakan ulang hasil best-fit agar total lebarnya persis mengisi viewport.
+        private static void ApplyContentBestFit(GridControl grid, GridView view)
+        {
+            grid.ForceInitialize();
+            view.OptionsView.ColumnAutoWidth = false;
+            view.BestFitMaxRowCount = 100;
+            view.BestFitColumns();
+        }
+
         private void ApplyInventoryHeaderFilter()
         {
+            gc_inv_header.ForceInitialize();
             GridColumn? nomorColumn = gridView_inv_header.Columns["NOMOR"];
             if (nomorColumn == null)
             {
@@ -435,14 +454,14 @@ namespace Accounting.Form
             {
                 ColumnFilterInfo filter = new("Contains([NOMOR], '/LT')", string.Empty);
                 gridView_inv_header.ActiveFilter.Add(nomorColumn, filter);
-                return;
             }
-
-            if (checkEditlk.Checked)
+            else if (checkEditlk.Checked)
             {
                 ColumnFilterInfo filter = new("Contains([NOMOR], '/LK')", string.Empty);
                 gridView_inv_header.ActiveFilter.Add(nomorColumn, filter);
             }
+
+            ApplyContentBestFit(gc_inv_header, gridView_inv_header);
         }
 
         private DataTable GetFilteredInventoryData()

@@ -411,12 +411,12 @@ namespace Accounting.DataLayer
                     WHERE COA.KODEACC = IR.""CreditAccountNumber""
                       AND COA.IDDATA = :p_iddata
                       AND COA.TAHUN = :p_glyear) AS CREDIT_ACCOUNT_NAME,
-                   NVL(IIT.""CreditAccountNumber"",
+                   NVL(ILT.""CreditAccountNumber"",
                        (SELECT MAX(AD.kodeacc) FROM ACCT_DEFAULT AD
                         WHERE AD.nama = 'PERSEDIAAN' AND AD.iddata = :p_iddata)) AS DEBIT_ACCOUNT,
                    (SELECT MAX(COA.NAMAACC)
                     FROM ACCT_COA COA
-                    WHERE COA.KODEACC = NVL(IIT.""CreditAccountNumber"",
+                    WHERE COA.KODEACC = NVL(ILT.""CreditAccountNumber"",
                             (SELECT MAX(AD.kodeacc) FROM ACCT_DEFAULT AD
                              WHERE AD.nama = 'PERSEDIAAN' AND AD.iddata = :p_iddata))
                       AND COA.IDDATA = :p_iddata
@@ -430,6 +430,9 @@ namespace Accounting.DataLayer
             LEFT JOIN ""InvItems"" II ON II.""Id"" = IRI.""ItemId""
             LEFT JOIN ""InvUnits"" IU ON IU.""Id"" = II.""UnitId""
             LEFT JOIN ""InvItemTypes"" IIT ON IIT.""Id"" = II.""ItemTypeId""
+            LEFT JOIN ""InvLocationItemTypes"" ILT
+              ON ILT.""ItemTypeId"" = II.""ItemTypeId""
+             AND ILT.""LocationId"" = IR.""LocationId""
             JOIN ""InvLocations"" IL ON IL.""Id"" = IR.""LocationId""
             WHERE IR.""ReceptionDate"" >= :p_dari AND IR.""ReceptionDate"" < :p_next_month
               AND IL.""Name"" = :p_iddata
@@ -439,17 +442,17 @@ namespace Accounting.DataLayer
                    IUS.""Date"" AS TANGGAL,
                    NVL((SELECT MAX(COA.KODEACC) FROM ACCT_COA COA
                         WHERE COA.ACCTCOAID = IUSI.""ACCTCOAID""
-                          AND COA.IDDATA = :p_iddata AND COA.TAHUN = :p_glyear),
-                       IUSI.""UsageDebitAccountNumber"") AS DEBIT_ACCOUNT,
+                          AND COA.IDDATA = :p_iddata),
+                       IIT.""DebitAccountNumber"") AS DEBIT_ACCOUNT,
                    (SELECT MAX(COA.NAMAACC)
                     FROM ACCT_COA COA
                     WHERE COA.KODEACC = NVL((SELECT MAX(C2.KODEACC) FROM ACCT_COA C2
                                             WHERE C2.ACCTCOAID = IUSI.""ACCTCOAID""
-                                              AND C2.IDDATA = :p_iddata AND C2.TAHUN = :p_glyear),
-                                           IUSI.""UsageDebitAccountNumber"")
+                                              AND C2.IDDATA = :p_iddata),
+                                           IIT.""DebitAccountNumber"")
                       AND COA.IDDATA = :p_iddata
                       AND COA.TAHUN = :p_glyear) AS DEBIT_ACCOUNT_NAME,
-                   IIT.""CreditAccountNumber"" AS CREDIT_ACCOUNT,
+                   ILT.""CreditAccountNumber"" AS CREDIT_ACCOUNT,
                    IIT.""Name"" AS CREDIT_ACCOUNT_NAME,
                    II.""Name"" AS ITEM_NAME,
                    IU.""Name"" AS UNIT_NAME,
@@ -462,6 +465,9 @@ namespace Accounting.DataLayer
             LEFT JOIN ""InvItems"" II ON II.""Id"" = IUSI.""ItemId""
             LEFT JOIN ""InvUnits"" IU ON IU.""Id"" = IUSI.""UnitId""
             LEFT JOIN ""InvItemTypes"" IIT ON IIT.""Id"" = II.""ItemTypeId""
+            LEFT JOIN ""InvLocationItemTypes"" ILT
+              ON ILT.""ItemTypeId"" = II.""ItemTypeId""
+             AND ILT.""LocationId"" = IUS.""LocationId""
             JOIN ""InvLocations"" IL ON IL.""Id"" = IUS.""LocationId""
             WHERE IUS.""Date"" >= :p_dari AND IUS.""Date"" < :p_next_month
               AND IL.""Name"" = :p_iddata
@@ -512,11 +518,12 @@ namespace Accounting.DataLayer
                    CASE
                        WHEN LK.IS_AGRONOMY = 1 THEN CAST(LK.NOTES AS NVARCHAR2(200))
                        ELSE CAST(
-                           CASE WHEN LK.NOTES IS NULL THEN N''
-                                ELSE TO_NCHAR(LK.NOTES) || N', '
-                           END
-                           || TO_NCHAR(LK.ITEM_NAME) || N' = '
+                           TO_NCHAR(LK.ITEM_NAME) || N' = '
                            || TO_NCHAR(LK.QUANTITY) || N' ' || TO_NCHAR(LK.UNIT_NAME)
+                           || CASE
+                                  WHEN LK.NOTES IS NULL OR TRIM(LK.NOTES) IS NULL THEN N''
+                                  ELSE N', ' || TO_NCHAR(LK.NOTES)
+                              END
                            AS NVARCHAR2(200))
                    END AS KETERANGAN,
                    3 AS SORT_ORDER

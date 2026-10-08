@@ -455,17 +455,21 @@ namespace Accounting.Laporan
             // 
             // tableCell13
             // 
+            this.tableCell13.CanGrow = false;
             this.tableCell13.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "Iif([DEBET]=0,\'-\' ,[DEBET] )")});
             this.tableCell13.Name = "tableCell13";
             this.tableCell13.StyleName = "DetailData1";
             this.tableCell13.StylePriority.UseTextAlignment = false;
             this.tableCell13.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
+            this.tableCell13.TextFitMode = DevExpress.XtraReports.UI.TextFitMode.ShrinkOnly;
             this.tableCell13.TextFormatString = "{0:N2}";
             this.tableCell13.Weight = 0.13789060973612949D;
+            this.tableCell13.WordWrap = false;
             // 
             // tableCell14
             // 
+            this.tableCell14.CanGrow = false;
             this.tableCell14.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "Iif([KREDIT]=0,\'-\' , [KREDIT])"),
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "StyleName", "Iif([KETERANGAN]=\'SALDO AWAL\',\'SaldoAwal\' ,? )\n")});
@@ -473,8 +477,10 @@ namespace Accounting.Laporan
             this.tableCell14.StyleName = "DetailData1";
             this.tableCell14.StylePriority.UseTextAlignment = false;
             this.tableCell14.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
+            this.tableCell14.TextFitMode = DevExpress.XtraReports.UI.TextFitMode.ShrinkOnly;
             this.tableCell14.TextFormatString = "{0:N2}";
             this.tableCell14.Weight = 0.13789083109105116D;
+            this.tableCell14.WordWrap = false;
             // 
             // GroupFooter1
             // 
@@ -514,6 +520,7 @@ namespace Accounting.Laporan
             this.xrLabel6.Summary = xrSummary1;
             this.xrLabel6.Text = "SALDOAKHIR";
             this.xrLabel6.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
+            this.xrLabel6.TextFitMode = DevExpress.XtraReports.UI.TextFitMode.ShrinkOnly;
             this.xrLabel6.TextFormatString = "{0:N2}";
             this.xrLabel6.WordWrap = false;
             // 
@@ -537,6 +544,7 @@ namespace Accounting.Laporan
             this.xrLabel2.StylePriority.UseTextAlignment = false;
             this.xrLabel2.Text = "-";
             this.xrLabel2.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
+            this.xrLabel2.TextFitMode = DevExpress.XtraReports.UI.TextFitMode.ShrinkOnly;
             this.xrLabel2.WordWrap = false;
             // 
             // xrLabel1
@@ -564,6 +572,7 @@ namespace Accounting.Laporan
             xrSummary2.Running = DevExpress.XtraReports.UI.SummaryRunning.Group;
             this.label4.Summary = xrSummary2;
             this.label4.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
+            this.label4.TextFitMode = DevExpress.XtraReports.UI.TextFitMode.ShrinkOnly;
             this.label4.TextFormatString = "{0:N2}";
             this.label4.WordWrap = false;
             // 
@@ -580,6 +589,7 @@ namespace Accounting.Laporan
             xrSummary3.Running = DevExpress.XtraReports.UI.SummaryRunning.Group;
             this.label6.Summary = xrSummary3;
             this.label6.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
+            this.label6.TextFitMode = DevExpress.XtraReports.UI.TextFitMode.ShrinkOnly;
             this.label6.TextFormatString = "{0:N2}";
             this.label6.WordWrap = false;
             // 

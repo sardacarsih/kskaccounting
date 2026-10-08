@@ -142,10 +142,8 @@
             new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "Neraca"),
             new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "Neraca (Skontro)"),
             new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "Neraca Saldo"),
-            new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "Neraca ( Semester 2 )"),
-            new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "Neraca Konsolidasi"),
             new DevExpress.XtraEditors.Controls.RadioGroupItem(null, "Buku Besar")});
-            this.radioGroup1.Size = new System.Drawing.Size(181, 269);
+            this.radioGroup1.Size = new System.Drawing.Size(181, 192);
             this.radioGroup1.TabIndex = 10;
             this.radioGroup1.SelectedIndexChanged += new System.EventHandler(this.radioGroup1_SelectedIndexChanged);
             // 
