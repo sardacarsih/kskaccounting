@@ -49,8 +49,9 @@ public sealed class InventoryJournalSqlTests
         string sql = NormalizeWhitespace(GetInventoryBaruDetailSql());
 
         Assert.Contains(
-            "TO_NCHAR(LK.ITEM_NAME) || N' = ' || TO_NCHAR(LK.QUANTITY) || N' ' || TO_NCHAR(LK.UNIT_NAME) || CASE",
+            "TO_NCHAR(LK.ITEM_NAME) || N' = ' || RTRIM(TO_NCHAR(LK.QUANTITY, 'FM99999999999990.9999999999'), N'.,') || N' ' || TO_NCHAR(LK.UNIT_NAME) || CASE",
             sql);
+        Assert.Contains("RTRIM(TO_NCHAR(LT.QUANTITY, 'FM99999999999990.9999999999'), N'.,')", sql);
         Assert.Contains(
             "WHEN LK.NOTES IS NULL OR TRIM(LK.NOTES) IS NULL THEN N'' ELSE N', ' || TO_NCHAR(LK.NOTES)",
             sql);
