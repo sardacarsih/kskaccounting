@@ -494,7 +494,7 @@ namespace Accounting.DataLayer
                    LT.AMOUNT AS DEBET,
                    ROUND(0, 2) AS KREDIT,
                    TO_NCHAR(LT.REFERENCE_NUMBER) || N', ' || TO_NCHAR(LT.ITEM_NAME) || N' = '
-                       || TO_NCHAR(LT.QUANTITY) || N' ' || TO_NCHAR(LT.UNIT_NAME) AS KETERANGAN,
+                       || RTRIM(TO_NCHAR(LT.QUANTITY, 'FM99999999999990.9999999999'), N'.,') || N' ' || TO_NCHAR(LT.UNIT_NAME) AS KETERANGAN,
                    1 AS SORT_ORDER
             FROM LT_BASE LT
             UNION ALL
@@ -519,7 +519,7 @@ namespace Accounting.DataLayer
                        WHEN LK.IS_AGRONOMY = 1 THEN CAST(LK.NOTES AS NVARCHAR2(200))
                        ELSE CAST(
                            TO_NCHAR(LK.ITEM_NAME) || N' = '
-                           || TO_NCHAR(LK.QUANTITY) || N' ' || TO_NCHAR(LK.UNIT_NAME)
+                           || RTRIM(TO_NCHAR(LK.QUANTITY, 'FM99999999999990.9999999999'), N'.,') || N' ' || TO_NCHAR(LK.UNIT_NAME)
                            || CASE
                                   WHEN LK.NOTES IS NULL OR TRIM(LK.NOTES) IS NULL THEN N''
                                   ELSE N', ' || TO_NCHAR(LK.NOTES)
