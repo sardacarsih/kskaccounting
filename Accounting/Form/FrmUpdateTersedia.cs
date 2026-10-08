@@ -104,8 +104,12 @@ namespace Accounting.Form
                 WrapContents = false,
                 Margin = new Padding(0, 8, 0, 0)
             };
-            btnUpdate.Size = new Size(170, 30);
-            btnNanti.Size = new Size(100, 30);
+            btnUpdate.Size = new Size(180, 32);
+            btnNanti.Size = new Size(110, 32);
+            btnUpdate.ImageOptions.Image = Properties.Resources.updatefield_16x16;
+            btnUpdate.ImageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.LeftCenter;
+            btnNanti.ImageOptions.Image = Properties.Resources.cancel_16x16;
+            btnNanti.ImageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.LeftCenter;
             buttons.Controls.AddRange(new Control[] { btnNanti, btnUpdate });
 
             var table = new TableLayoutPanel { AutoSize = true, ColumnCount = 1, Dock = DockStyle.Fill };
