@@ -1,6 +1,6 @@
 # Server Update Accounting (Apache di grahafajar + Cloudflare Tunnel)
 
-Menyajikan `https://update.kskgroup.web.id/accounting/latest.json` yang dibaca `UpdateCheckService`.
+Menyajikan `https://update.kskgroup.web.id/accounting/latest.json` yang dibaca `UpdateService` (lihat [docs/auto-update.md](../../docs/auto-update.md)).
 Pola sama dengan Finance: menumpang di vhost `update.kskgroup.web.id` yang sudah ada
 (ingress cloudflared tidak diubah, Apache hanya reload graceful).
 
@@ -22,7 +22,7 @@ Script idempotent: membuat folder (label SELinux `httpd_sys_content_t`), memasan
 ## Rilis
 Otomatis lewat skrip (membuat ZIP + `latest.json`, upload ZIP dulu, cek SHA-256 di server, baru `latest.json`):
 ```powershell
-.	ools\publish-update.ps1 -NotesFile .\catatan.txt -UploadTarget dharyadi@ssh.kskgroup.web.id
+.\tools\publish-update.ps1 -NotesFile .\catatan.txt -UploadTarget dharyadi@ssh.kskgroup.web.id
 ```
 Detail alur dan format manifest: [docs/auto-update.md](../../docs/auto-update.md).
 

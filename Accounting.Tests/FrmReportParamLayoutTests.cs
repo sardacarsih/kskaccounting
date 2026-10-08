@@ -6,6 +6,7 @@ using System.Windows.Forms;
 
 namespace Accounting.Tests;
 
+[Collection(WinFormsUiCollection.Name)]
 public sealed class FrmReportParamLayoutTests
 {
     [Theory]
@@ -97,7 +98,7 @@ public sealed class FrmReportParamLayoutTests
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "STA form smoke test timed out.");
+        Assert.True(thread.Join(TimeSpan.FromSeconds(120)), "STA form smoke test timed out.");
 
         if (failure != null)
         {

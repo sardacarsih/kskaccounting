@@ -73,6 +73,18 @@ For self-contained single-file build:
 powershell -ExecutionPolicy Bypass -File .\Accounting\Utilities\Sql\GLMigrator\Build-GLMigratorExePackage.ps1 -SelfContained -Runtime win-x64
 ```
 
+## Migrasi yang hanya berlaku untuk database tertentu
+
+Entri manifest boleh punya `applicableScript`: skrip SQL read-only yang mencetak `APPLICABLE` atau
+`NOT_APPLICABLE: alasan`. Migrasi yang belum diterapkan dan `NOT_APPLICABLE` dilewati oleh `up`, `status`
+(`[N/A]`), dan `verify`, tanpa menulis `GL_MIGRATION_HISTORY`; ia dievaluasi ulang tiap run. Tanpa marker, migrasi
+dianggap berlaku. Dipakai oleh dua migrasi PKS (`20260729_001/002`, gate `A20260729_001__pks_scope_applicable.sql`)
+supaya database kebun tanpa data PKS tidak gagal di baseline PKS (ORA-20866). Skrip migrasi yang sudah diterapkan
+tidak diubah, jadi checksum server lama tetap sama.
+
+`--mode verify` mengompilasi ulang objek INVALID di schema (`DBMS_UTILITY.COMPILE_SCHEMA`, hanya yang invalid)
+sebelum menjalankan check, karena DDL migrasi sebelumnya membuat paket dependen INVALID sampai dipakai.
+
 ## Notes
 
 - Migration state is tracked in `GL_MIGRATION_HISTORY`

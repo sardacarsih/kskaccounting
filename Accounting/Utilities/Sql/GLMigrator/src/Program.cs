@@ -104,6 +104,12 @@ internal static class Program
                 continue;
             }
 
+            if (!IsApplicable(options, migration, out string notApplicableReason))
+            {
+                Console.WriteLine($"[N/A]   {migration.Id} - {notApplicableReason}");
+                continue;
+            }
+
             Console.WriteLine($"[APPLY] {migration.Id} -> {migration.Script}");
             Stopwatch sw = Stopwatch.StartNew();
             ExecuteSqlAsset(options, script, $"up_{migration.Id}");
@@ -152,6 +158,10 @@ internal static class Program
             {
                 Console.WriteLine($"[APPLIED] {migration.Id} at {existing.AppliedAt}");
             }
+            else if (!IsApplicable(options, migration, out string notApplicableReason))
+            {
+                Console.WriteLine($"[N/A] {migration.Id} - {notApplicableReason}");
+            }
             else
             {
                 Console.WriteLine($"[PENDING] {migration.Id}");
@@ -161,12 +171,76 @@ internal static class Program
 
     private static void RunVerify(AppOptions options, Manifest manifest)
     {
+        RecompileInvalidObjects(options);
+
+        Dictionary<string, AppliedMigration> applied = GetAppliedMigrations(options);
         foreach (MigrationItem migration in manifest.Migrations.OrderBy(m => m.Order))
         {
+            // A migration that was never applied and does not apply to this database has nothing to verify.
+            if (!applied.ContainsKey(migration.Id) && !IsApplicable(options, migration, out string notApplicableReason))
+            {
+                Console.WriteLine($"[N/A]    {migration.Id} - {notApplicableReason} (verification skipped)");
+                continue;
+            }
+
             ExecuteMigrationCheckIfPresent(options, migration, $"verify_{migration.Id}");
         }
 
         Console.WriteLine("[OK] Verification scripts completed.");
+    }
+
+    /// <summary>
+    /// DDL from earlier migrations (ALTER TABLE, CREATE OR REPLACE) leaves dependent packages INVALID until
+    /// something uses them, and the check scripts read the status as-is. Recompiling first keeps verify from
+    /// failing on objects that are merely stale. Objects that still do not compile are reported by the checks.
+    /// </summary>
+    private static void RecompileInvalidObjects(AppOptions options)
+    {
+        const string sql = """
+SET SERVEROUTPUT ON
+BEGIN
+    DBMS_UTILITY.COMPILE_SCHEMA(schema => USER, compile_all => FALSE);
+END;
+/
+EXIT
+""";
+
+        Console.WriteLine("[INFO] Recompiling invalid objects before verification...");
+        ExecuteSqlInline(options, sql, "recompile_invalid_objects");
+    }
+
+    /// <summary>
+    /// Runs the migration's applicability script. No script, or no recognizable marker, means applicable,
+    /// so existing migrations keep their behavior.
+    /// </summary>
+    private static bool IsApplicable(AppOptions options, MigrationItem migration, out string reason)
+    {
+        reason = string.Empty;
+        if (string.IsNullOrWhiteSpace(migration.ApplicableScript))
+        {
+            return true;
+        }
+
+        AssetContent asset = ResolveAsset(options, migration.ApplicableScript!);
+        SqlExecutionResult result = ExecuteSqlAsset(options, asset, $"applicable_{migration.Id}");
+
+        foreach (string rawLine in result.Output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            string line = rawLine.Trim();
+            if (line.StartsWith("NOT_APPLICABLE", StringComparison.Ordinal))
+            {
+                int colon = line.IndexOf(':');
+                reason = colon >= 0 && colon + 1 < line.Length ? line[(colon + 1)..].Trim() : "not applicable to this database";
+                return false;
+            }
+
+            if (line.Equals("APPLICABLE", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return true;
     }
 
     private static void ExecuteMigrationCheckIfPresent(AppOptions options, MigrationItem migration, string logPrefix)
@@ -1773,6 +1847,13 @@ internal sealed class MigrationItem
     public string Script { get; set; } = string.Empty;
     public string? RollbackScript { get; set; }
     public string? CheckScript { get; set; }
+
+    /// <summary>
+    /// Optional asset that prints <c>APPLICABLE</c> or <c>NOT_APPLICABLE: reason</c>. A migration that is not
+    /// applied yet and reports NOT_APPLICABLE (e.g. a PKS-only data migration on a plantation database) is skipped
+    /// by up/status/verify without being registered in GL_MIGRATION_HISTORY.
+    /// </summary>
+    public string? ApplicableScript { get; set; }
 }
 
 internal sealed class EmbeddedAssetStore
