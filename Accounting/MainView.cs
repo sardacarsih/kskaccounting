@@ -1,4 +1,4 @@
-﻿using Accounting._3.Services;
+using Accounting._3.Services;
 using Accounting.BusinessLayer;
 using Accounting.Form;
 using Accounting.Laporan;
@@ -298,6 +298,7 @@ namespace Accounting
 
         private void FrmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
+            StopUpdateChecks();
             SavePalette();
             Application.Exit();
 
@@ -1050,28 +1051,9 @@ namespace Accounting
             OpenMDI<FrmSetAkunAgronomy>(false);
         }
 
-        private async void CheckForUpdateAsync()
-        {
-            var info = await UpdateCheckService.CheckAsync();
-            if (info == null || IsDisposed) return;
-
-            string msg = $"Versi baru tersedia: {info.LatestVersion} (terpasang: {info.CurrentVersion})."
-                + (string.IsNullOrWhiteSpace(info.ReleaseNotes) ? "" : $"\n\n{info.ReleaseNotes}");
-            if (info.DownloadUrl == null)
-            {
-                XtraMessageBox.Show(this, msg, "Update Tersedia", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            var result = XtraMessageBox.Show(this, msg + "\n\nBuka halaman unduhan sekarang?", "Update Tersedia",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-            if (result == DialogResult.Yes)
-                Process.Start(new ProcessStartInfo(info.DownloadUrl) { UseShellExecute = true });
-        }
-
         private void MainView_Load(object sender, EventArgs e)
         {
-            CheckForUpdateAsync();
+            StartUpdateChecks();
             try
             {
                 ribbonControl1.Minimized = true;

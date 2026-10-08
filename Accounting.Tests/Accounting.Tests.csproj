@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Accounting\Accounting.csproj" />
+    <ProjectReference Include="..\Accounting\Accounting.Updater\Accounting.Updater.csproj" />
   </ItemGroup>
 
 </Project>

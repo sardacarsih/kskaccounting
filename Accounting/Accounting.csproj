@@ -9,12 +9,16 @@
     <PackageIcon>gl1_9S6_2.ico</PackageIcon>
     <Platforms>AnyCPU;x64</Platforms>
     <Nullable>annotations</Nullable>
-    <AssemblyVersion></AssemblyVersion>
-    <FileVersion>2.0.0</FileVersion>
+    <Version>2.1.0.0</Version>
+    <AssemblyVersion>2.1.0.0</AssemblyVersion>
+    <FileVersion>2.1.0.0</FileVersion>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Accounting.Updater\**" />
+    <EmbeddedResource Remove="Accounting.Updater\**" />
+    <None Remove="Accounting.Updater\**" />
     <Compile Remove="Form\FrmloginOld.cs" />
     <Compile Remove="Form\FrmloginOld.designer.cs" />
     <Compile Remove="Utilities\ConnectionManager OLD.cs" />
@@ -186,5 +190,26 @@
   <ItemGroup>
     <Folder Include="Views\" />
   </ItemGroup>
+
+  <!-- Accounting.Updater.exe ships beside Accounting.exe so the app can install downloaded updates. -->
+  <Target Name="BuildAccountingUpdater" BeforeTargets="CopyFilesToOutputDirectory">
+    <MSBuild Projects="Accounting.Updater\Accounting.Updater.csproj" Targets="Build" Properties="Configuration=$(Configuration)" RemoveProperties="RuntimeIdentifier;SelfContained;PublishDir;Platform;TargetFramework">
+      <Output TaskParameter="TargetOutputs" ItemName="_AccountingUpdaterTargetPath" />
+    </MSBuild>
+    <PropertyGroup>
+      <_AccountingUpdaterDir>@(_AccountingUpdaterTargetPath->'%(RootDir)%(Directory)')</_AccountingUpdaterDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AccountingUpdaterFiles Include="$(_AccountingUpdaterDir)Accounting.Updater.dll;$(_AccountingUpdaterDir)Accounting.Updater.exe;$(_AccountingUpdaterDir)Accounting.Updater.runtimeconfig.json;$(_AccountingUpdaterDir)Accounting.Updater.deps.json" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyAccountingUpdaterToOutput" AfterTargets="CopyFilesToOutputDirectory" DependsOnTargets="BuildAccountingUpdater">
+    <Copy SourceFiles="@(_AccountingUpdaterFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopyAccountingUpdaterToPublish" AfterTargets="Publish" DependsOnTargets="BuildAccountingUpdater">
+    <Copy SourceFiles="@(_AccountingUpdaterFiles)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="false" />
+  </Target>
 
 </Project>
