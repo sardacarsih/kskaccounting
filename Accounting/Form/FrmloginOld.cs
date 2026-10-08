@@ -66,16 +66,14 @@ namespace Accounting.Form
                 using var handle = SplashScreenManager.ShowOverlayForm(this);
                 if (string.IsNullOrEmpty(txtuserid.Text) | (string.IsNullOrEmpty(txtpwd.Text)))
                 {
-                    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\userid.wav";
-                    this.Player.Play();
+                    global::Accounting.Utilities.AppSound.Play(this.Player, "userid.wav");
                     MessageBox.Show("UserID atau Password belum diisi", "Konfirmasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 if (kesempatan == 0)
                 {
-                    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\hub_manager.wav";
-                    this.Player.Play();
+                    global::Accounting.Utilities.AppSound.Play(this.Player, "hub_manager.wav");
                     XtraMessageBox.Show("3 Kesempatan Gagal digunakan - Hubungi Manager Anda", "Info",MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
@@ -150,8 +148,7 @@ namespace Accounting.Form
                     }
                     else
                     {
-                        this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\nore_userid.wav";
-                        this.Player.Play();
+                        global::Accounting.Utilities.AppSound.Play(this.Player, "nore_userid.wav");
 
                         XtraMessageBox.Show("UserID tidak terdaftar. " +
                             "\nAnda Memiliki " + Convert.ToString(kesempatan) + "X Kesempatan untuk Mencoba", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);

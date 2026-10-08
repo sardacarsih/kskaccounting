@@ -130,8 +130,7 @@ namespace Accounting.Form
             bool akses = LevelAksesServices.CetakExport(15, LoginInfo.userID);
             if (akses == false)
             {
-                this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                this.Player.Play();
+                global::Accounting.Utilities.AppSound.Play(this.Player, "maaf_noakses.wav");
                 XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -240,8 +239,7 @@ namespace Accounting.Form
             bool akses = LevelAksesServices.CetakExport(15, LoginInfo.userID);
             if (akses == false)
             {
-                this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\maaf_noakses.wav";
-                this.Player.Play();
+                global::Accounting.Utilities.AppSound.Play(this.Player, "maaf_noakses.wav");
                 XtraMessageBox.Show("UserID : " + LoginInfo.userID + "\nAnda Tidak memiliki Akses...!!!", "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }

@@ -175,8 +175,7 @@ namespace Accounting.Form
                     return;
                 }
 
-                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\jurnal_selesai.wav";
-                Player.Play();
+                global::Accounting.Utilities.AppSound.Play(Player, "jurnal_selesai.wav");
                 XtraMessageBox.Show("Import Jurnal Selesai \n " + FormatElapsed(result.Elapsed), "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 ResetImportProgress();
             }
@@ -235,8 +234,7 @@ namespace Accounting.Form
 
             if (!string.IsNullOrWhiteSpace(sound))
             {
-                Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\" + sound;
-                Player.Play();
+                global::Accounting.Utilities.AppSound.Play(Player, sound);
             }
         }
 

@@ -83,8 +83,7 @@ namespace Accounting.Form
                 bulan = cmbbulan.Text + " - " + setahun.Value.ToString();
                 if (Acct.KunciPeriode == "Y")
                 {
-                    this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\akhir_bulan_kunci.wav";
-                    this.Player.Play();
+                    global::Accounting.Utilities.AppSound.Play(this.Player, "akhir_bulan_kunci.wav");
                     XtraMessageBox.Show("Proses Closing diBatalkan...!!!\nPeriode Akuntansi : " + bulan + " Telah Dikunci.", "Error Closing", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                     return;
@@ -247,8 +246,7 @@ namespace Accounting.Form
                     var selisih = LaporanServices.Balanced_Check(CompanyInfo.IDDATA, p_bulan, p_tahun);
                     if (selisih != 0)
                     {
-                        this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\neraca_error.wav";
-                        this.Player.Play();
+                        global::Accounting.Utilities.AppSound.Play(this.Player, "neraca_error.wav");
                         BalancedError f = new BalancedError
                         {
                             Myperiode = periode,
@@ -264,8 +262,7 @@ namespace Accounting.Form
                 TimeSpan timeSpan = watch.Elapsed;
                 string waktuproses = string.Format("Waktu Proses : {0}h {1}m {2}s {3}ms", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
 
-                this.Player.SoundLocation = Environment.CurrentDirectory + "\\wav\\closing_month.wav";
-                this.Player.Play();
+                global::Accounting.Utilities.AppSound.Play(this.Player, "closing_month.wav");
                 XtraMessageBox.Show("Proses Tutup buku Bulanan telah Selesai\n\n" +
                     "Periode Akuntansi : " + bulan + "\nLokasi Data : " +CompanyInfo.IDDATA + "\n" + waktuproses, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
