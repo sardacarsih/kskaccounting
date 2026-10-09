@@ -177,6 +177,7 @@ internal static class Program
         RecompileInvalidObjects(options);
 
         Dictionary<string, AppliedMigration> applied = GetAppliedMigrations(options);
+        List<string> failed = [];
         foreach (MigrationItem migration in manifest.Migrations.OrderBy(m => m.Order))
         {
             // A migration that was never applied and does not apply to this database has nothing to verify.
@@ -186,7 +187,25 @@ internal static class Program
                 continue;
             }
 
-            ExecuteMigrationCheckIfPresent(options, migration, $"verify_{migration.Id}");
+            IReadOnlyList<string> failures = ExecuteMigrationCheckIfPresent(options, migration, $"verify_{migration.Id}");
+            if (failures.Count == 0)
+            {
+                continue;
+            }
+
+            if (SupersededChecks.Contains(migration.Id))
+            {
+                Console.WriteLine($"[SUPERSEDED] {migration.Id}: {failures.Count} check(s) obsolete (replaced by a later migration), ignored.");
+                continue;
+            }
+
+            failed.Add($"{migration.Id}: {failures.Count} check(s) failed");
+        }
+
+        if (failed.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "Verification FAILED for " + string.Join("; ", failed) + ". See the [FAIL] lines above and the logs folder.");
         }
 
         Console.WriteLine("[OK] Verification scripts completed.");
@@ -246,17 +265,44 @@ EXIT
         return true;
     }
 
-    private static void ExecuteMigrationCheckIfPresent(AppOptions options, MigrationItem migration, string logPrefix)
+    /// <summary>
+    /// Runs the migration's check script and returns the "[FAIL] ..." lines it printed (empty when it passed).
+    /// The check scripts report problems on DBMS_OUTPUT instead of raising, so the exit code alone says nothing.
+    /// </summary>
+    private static IReadOnlyList<string> ExecuteMigrationCheckIfPresent(AppOptions options, MigrationItem migration, string logPrefix)
     {
         if (string.IsNullOrWhiteSpace(migration.CheckScript))
         {
-            return;
+            return [];
         }
 
         AssetContent check = ResolveAsset(options, migration.CheckScript!);
         Console.WriteLine($"[VERIFY] {migration.Id} -> {migration.CheckScript}");
-        ExecuteSqlAsset(options, check, logPrefix);
+        SqlExecutionResult result = ExecuteSqlAsset(options, check, logPrefix);
+
+        List<string> failures = result.Output
+            .Split((char)10, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.StartsWith("[FAIL]", StringComparison.Ordinal))
+            .ToList();
+        foreach (string failure in failures)
+        {
+            Console.WriteLine($"         {failure}");
+        }
+
+        return failures;
     }
+
+    /// <summary>
+    /// Check scripts of migrations whose subject was deliberately replaced by a later migration, so they can no
+    /// longer pass on an up-to-date database: 20260626_002 rewrote the recalc V2 body (no ApplyMutasiByMonth any
+    /// more) and 20260626_003 dropped the legacy UPDATE_COA_FROM_* triggers. Their failures are reported as
+    /// [SUPERSEDED] and do not fail verify.
+    /// </summary>
+    private static readonly HashSet<string> SupersededChecks = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "20260319_006_recalc_v2_atomic_body",
+        "20260320_002_jurnal_trigger_bypass_async_recalc"
+    };
 
     private static void ReconcileHistory(AppOptions options, Manifest manifest)
     {
