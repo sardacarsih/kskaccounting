@@ -71,6 +71,9 @@ internal static class Program
                 case MigrationMode.FindJurnal:
                     FindJurnal(options);
                     break;
+                case MigrationMode.PksCheck:
+                    PksCheck(options);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unsupported mode: {options.Mode}");
             }
@@ -800,6 +803,47 @@ EXIT
         Console.WriteLine(string.IsNullOrWhiteSpace(output)
             ? $"[INFO] Tidak ada jurnal dengan NOJURNAL '{options.NoJurnal.Trim().ToUpperInvariant()}' pada filter tersebut."
             : output);
+    }
+
+    // Read-only: shows which companies are PKS (MASTER_PT_DTL.JENIS_AKUNTANSI) and how many PKS report mappings exist.
+    private static void PksCheck(AppOptions options)
+    {
+        const string sql = """
+SET HEADING ON
+SET FEEDBACK OFF
+SET LINESIZE 200
+SET PAGESIZE 200
+SET DEFINE OFF
+COLUMN IDDATA FORMAT A14;
+COLUMN JENIS_AKUNTANSI FORMAT A18;
+COLUMN WILAYAH FORMAT A20;
+COLUMN JENIS_AKUNTING FORMAT A16;
+COLUMN REPORT_CODE FORMAT A10;
+COLUMN IDDATA_SCOPE FORMAT A14;
+PROMPT === MASTER_PT_DTL: jenis akunting per perusahaan ===
+SELECT IDDATA, JENIS_AKUNTANSI, WILAYAH FROM MASTER_PT_DTL ORDER BY IDDATA;
+PROMPT === ACCT_REPORT_SECTION_ACCOUNT: pemetaan per JENIS_AKUNTING / IDDATA ===
+SELECT s.REPORT_CODE,
+       a.JENIS_AKUNTING,
+       NVL(TRIM(a.IDDATA), '(global)') AS IDDATA_SCOPE,
+       COUNT(*) AS JUMLAH,
+       COUNT(CASE WHEN a.IS_ACTIVE = 'Y' THEN 1 END) AS AKTIF
+  FROM ACCT_REPORT_SECTION_ACCOUNT a
+  JOIN ACCT_REPORT_SECTION s ON s.SECTION_ID = a.SECTION_ID
+ GROUP BY s.REPORT_CODE, a.JENIS_AKUNTING, NVL(TRIM(a.IDDATA), '(global)')
+ ORDER BY 1, 2, 3;
+PROMPT === ACCT_REPORT_SECTION: bagian PKS_% ===
+SELECT REPORT_CODE, COUNT(*) AS JUMLAH_BAGIAN_PKS
+  FROM ACCT_REPORT_SECTION
+ WHERE SUBSTR(SECTION_CODE, 1, 4) = 'PKS_'
+ GROUP BY REPORT_CODE;
+PROMPT === Cadangan migrasi PKS (ACCT_RPT_PKS_SCOPE_BAK) ===
+SELECT COUNT(*) AS TABEL_ADA FROM USER_TABLES WHERE TABLE_NAME = 'ACCT_RPT_PKS_SCOPE_BAK';
+EXIT
+""";
+
+        SqlExecutionResult result = ExecuteSqlInline(options, sql, "pks_check");
+        Console.WriteLine(result.Output.Trim());
     }
 
     private static void RepairMissingCoa(AppOptions options)
@@ -1567,7 +1611,8 @@ internal enum MigrationMode
     ReconcileCoa,
     ShowSource,
     RepairMissingCoa,
-    FindJurnal
+    FindJurnal,
+    PksCheck
 }
 
 internal sealed class AppOptions
@@ -1605,7 +1650,7 @@ Options:
   --config       Optional config.json path. If omitted, the executable probes common config.json locations.
   --server-key   Optional server key override for config.json resolution
   --mode         up (default), down, status, verify, checkconn, reconcilehistory, rebaselinechecksum,
-                  showcompileerrors, reconcilecoa
+                  showcompileerrors, reconcilecoa, pkscheck (read-only: PKS companies + PKS report mappings)
   --migration-id Required for --mode rebaselinechecksum: the manifest id whose recorded checksum should be
                   updated to match the current script content (no SQL is re-executed unless --reexecute is
                   also given; use only when the script content change is a confirmed no-op on this server).
@@ -1695,7 +1740,7 @@ Default behavior:
         {
             if (!Enum.TryParse(modeArg, true, out mode))
             {
-                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors, reconcilecoa, showsource, repairmissingcoa, findjurnal.");
+                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors, reconcilecoa, showsource, repairmissingcoa, findjurnal, pkscheck.");
             }
         }
 
