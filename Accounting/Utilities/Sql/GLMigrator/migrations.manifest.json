@@ -522,6 +522,14 @@
       "rollbackScript": "migrations/R20260729_002__pks_global_labarugi_repair.sql",
       "checkScript": "migrations/C20260729_002__pks_global_labarugi_repair_check.sql",
       "applicableScript": "migrations/A20260729_001__pks_scope_applicable.sql"
+    },
+    {
+      "id": "20261120_001_acct_tools_blok_keep_key",
+      "order": 70,
+      "description": "AddorUpdateBlok no longer rewrites MASTER_BLOK.BLOKID/DIVISIID on UPDATE (fixes ORA-02292 AIS_BKMDETAIL_FK2 for legacy block ids).",
+      "script": "migrations/V20261120_001__acct_tools_blok_keep_key.sql",
+      "rollbackScript": "migrations/R20261120_001__acct_tools_blok_keep_key.sql",
+      "checkScript": "migrations/C20261120_001__acct_tools_blok_keep_key_check.sql"
     }
   ]
 }
