@@ -20,8 +20,6 @@ namespace Accounting.Form
 {
     public partial class FrmJurnal
     {
-        private string noAIS_Bukti = string.Empty;
-
 	private void sbbuatjurnalAIS_Click(object sender, EventArgs e)
 	{
 		BuatJurnalAIS();
@@ -172,10 +170,23 @@ namespace Accounting.Form
 
 	private void BuatJurnalAIS()
 	{
+		// Build from the focused division at click time, never from a cached preview.
+		RebuildAisPreview();
 		if (jurnalfinalAIS != null && jurnalfinalAIS.Any())
 		{
-			string text = (gridViewAISheader.GetFocusedRow() as Division)?.NOMOR ?? string.Empty;
-			noAIS_Bukti = text;
+			Division? focusedDivision = gridViewAISheader.GetFocusedRow() as Division;
+			if (!string.IsNullOrWhiteSpace(focusedDivision?.NOJURNAL)
+				&& XtraMessageBox.Show(
+					$"Divisi {focusedDivision.DIVISI} untuk remise dan periode ini sudah dijurnal dengan nomor {focusedDivision.NOJURNAL}.\nTetap buat jurnal baru?",
+					"Sudah Dijurnal",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Warning,
+					MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+			{
+				return;
+			}
+
+			string text = focusedDivision?.NOMOR ?? string.Empty;
 			importModule = ImportModule.AIS;
 			string text2 = lookUpEditEstate.EditValue?.ToString() ?? string.Empty;
 			short num = Convert.ToInt16(leremiseAIS.EditValue?.ToString());
@@ -203,11 +214,59 @@ namespace Accounting.Form
 			InputJurnalDetail.AllowNew = true;
 			TABJurnal.SelectedTabPage = xtraTabPage1;
 			x = InputJurnalDetail.Count - 1;
+			WarnAisJurnalIssues(NoJurnaltxt.Text, year);
 		}
 		else
 		{
-			string text4 = ((jurnalfinalAIS == null) ? "Pilih Nomor untuk membuat Jurnal MK-AGRO" : "Tidak ada transaksi untuk dibuat jurnal");
+			string text4 = ((gridViewAISheader.GetFocusedRow() is not Division) ? "Pilih Nomor untuk membuat Jurnal MK-AGRO" : "Tidak ada transaksi untuk dibuat jurnal");
 			XtraMessageBox.Show(text4, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+		}
+	}
+
+	/// <summary>
+	/// Warns, before the user tries to save, about problems the save validation would only report later (or not at all).
+	/// </summary>
+	private void WarnAisJurnalIssues(string nomor, int year)
+	{
+		List<string> warnings = [];
+
+		// Same limit as JurnalInputOperationService.Save.
+		if (nomor.Length > 30)
+		{
+			warnings.Add($"Nomor Jurnal MAX 30 Karakter, panjang karakter sekarang : {nomor.Length}. Sesuaikan nomor sebelum simpan.");
+		}
+
+		List<string> missingCoa = jurnalfinalAIS
+			.Where(row => !string.IsNullOrWhiteSpace(row.KODE) && string.IsNullOrWhiteSpace(row.REKENING))
+			.Select(row => row.KODE)
+			.Distinct()
+			.ToList();
+		if (missingCoa.Count > 0)
+		{
+			warnings.Add($"Kode akun berikut belum ada di Daftar Perkiraan (COA) tahun {year}:\n{string.Join("\n", missingCoa)}\nTambahkan ke COA agar laporan tetap balance.");
+		}
+
+		List<string> komponenTanpaAkun = jurnalfinalAIS
+			.Where(row => string.IsNullOrWhiteSpace(row.KODE) && (row.DEBET != 0 || row.KREDIT != 0))
+			.Select(row => row.KETERANGAN)
+			.Distinct()
+			.ToList();
+		if (komponenTanpaAkun.Count > 0)
+		{
+			warnings.Add(
+				$"Baris komponen berikut belum punya kode akun:\n{string.Join("\n", komponenTanpaAkun)}\n" +
+				$"Isi kode di grid, atau daftarkan sekali di ACCT_DEFAULT dengan NAMA = {AisJournalBuilder.KomponenAccountKeyPrefix}<KETERANGAN> (contoh {AisJournalBuilder.KomponenAccountKey("BPJS JHT")}).");
+		}
+
+		if (warnings.Count == 0)
+		{
+			return;
+		}
+
+		XtraMessageBox.Show(string.Join("\n\n", warnings), "Perhatian", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+		if (nomor.Length > 30)
+		{
+			NoJurnaltxt.Focus();
 		}
 	}
 
@@ -228,14 +287,29 @@ namespace Accounting.Form
 			string p_iddata = CompanyInfo.IDDATA;
 			List<Division> divisions = await jurnalRepository.GetDivisionsAsync(p_iddata, p_estate, p_periode_int, p_remise);
 			cancellationToken.ThrowIfCancellationRequested();
+			if (divisions != null && TryCreateAisJournalBuildContext(out AisJournalBuildContext context))
+			{
+				Dictionary<string, string> journaled = await jurnalRepository.GetJournaledAisMarkersAsync(p_iddata, context.PeriodString);
+				cancellationToken.ThrowIfCancellationRequested();
+				foreach (Division division in divisions)
+				{
+					division.NOJURNAL = journaled.TryGetValue(AisJournalBuilder.GetJournaledMarker(division, context), out string? noJurnal)
+						? noJurnal
+						: string.Empty;
+				}
+			}
+
 			if (divisions != null)
 			{
 				gcAISheader.DataSource = divisions;
 				gridViewAISheader.Columns["ISBORONGAN"].Visible = false;
 				gridViewAISheader.Columns["DIVISIID"].Visible = false;
+				if (gridViewAISheader.Columns["NOJURNAL"] != null)
+				{
+					gridViewAISheader.Columns["NOJURNAL"].Caption = "Sudah Dijurnal (No.)";
+				}
 				gridViewAISheader.BestFitColumns();
 				gridViewhris.BestFitColumns();
-				gcAISdetail.DataSource = null;
 			}
 			else
 			{
@@ -290,9 +364,16 @@ namespace Accounting.Form
 				loadingScope = BeginGlobalLoadingScope();
 			}
 
+			// Drop the previous filter's data so a focus change fired mid-load cannot build a journal from it.
+			aisJurnal = [];
+			komponenjurnal = [];
+			jurnalfinalAIS = [];
+
 			await Task.WhenAll(
 				LoadDivisionsAsync(cancellationToken),
 				LoadJurnalAISPeriodeAsync(cancellationToken));
+
+			RebuildAisPreview();
 
 			divisionCount = (gcAISheader.DataSource as IEnumerable<Division>)?.Count() ?? 0;
 			aisCount = aisJurnal?.Count() ?? 0;

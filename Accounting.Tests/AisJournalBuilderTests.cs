@@ -227,4 +227,81 @@ public sealed class AisJournalBuilderTests
         Assert.DoesNotContain(result, row => row.NOJURNAL == "BOR-01");
         Assert.Contains(result, row => row.NOJURNAL == "HAR-02");
     }
+
+    private static readonly Dictionary<string, (string Kode, string Nama)> NoDefaults = new();
+
+    [Fact]
+    public void BuildForDivision_BoronganNonPanenRows_GoToBoronganJournalWithoutPph()
+    {
+        List<AIS_JURNAL> aisRows =
+        [
+            new() { ISBORONGAN = 1, DIVISI = "D01", JENIS = "PANEN", PEKERJAAN = "Panen", BLOK = "A1", KODE = "40.1", DEBET = 975m, DEBETPPH = 975m, POSTED = true },
+            new() { ISBORONGAN = 1, DIVISI = "D01", JENIS = "RAWAT", PEKERJAAN = "Rawat", BLOK = "A2", KODE = "40.2", DEBET = 500m, DEBETPPH = 500m, POSTED = true },
+            new() { ISBORONGAN = 0, DIVISI = "D01", JENIS = "RAWAT", PEKERJAAN = "Rawat", BLOK = "A3", KODE = "40.3", DEBET = 300m, POSTED = true }
+        ];
+        Division borongan = new() { ISBORONGAN = 1, DIVISIID = "D01", DIVISI = "Divisi 01", NOMOR = "BOR" };
+        Division harian = new() { ISBORONGAN = 0, DIVISIID = "D01", DIVISI = "Divisi 01", NOMOR = "HAR" };
+
+        List<AIS_JURNAL_FINAL> boronganRows = AisJournalBuilder.BuildForDivision(aisRows, [], borongan, Context, NoDefaults);
+        List<AIS_JURNAL_FINAL> harianRows = AisJournalBuilder.BuildForDivision(aisRows, [], harian, Context, NoDefaults);
+
+        Assert.Equal(1000m, boronganRows.Single(r => r.KODE == "40.1").DEBET);
+        Assert.Equal(500m, boronganRows.Single(r => r.KODE == "40.2").DEBET);
+        Assert.Equal(25m, boronganRows.Single(r => r.KODE == "31.00001.001").KREDIT);
+        Assert.Equal(boronganRows.Sum(r => r.DEBET), boronganRows.Sum(r => r.KREDIT));
+        Assert.DoesNotContain(harianRows, r => r.KODE == "40.2");
+        Assert.Equal(300m, harianRows.Single(r => r.KODE == "33.00001.001").KREDIT);
+    }
+
+    [Fact]
+    public void BuildForDivision_KomponenAccounts_ComeFromAcctDefaultWithHrisFallback()
+    {
+        Dictionary<string, (string Kode, string Nama)> defaults = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["AIS_KOMPONEN_BPJS_JHT"] = ("70.10001.005", "Tunjangan Astek"),
+            ["HRIS_POT_BPJS"] = ("70.10001.006", "Potongan BPJS")
+        };
+        Division division = new() { ISBORONGAN = 0, DIVISIID = "D02", DIVISI = "Divisi 02", NOMOR = "HAR" };
+        List<AIS_JURNAL> aisRows = [new() { ISBORONGAN = 0, DIVISI = "D02", JENIS = "RAWAT", KODE = "40.3", DEBET = 1000m, POSTED = true }];
+        List<JurnalKomponen> components =
+        [
+            new() { Divisi = "D02", Keterangan = "BPJS JHT", Jumlah = 10m, Sisi = "K" },
+            new() { Divisi = "D02", Keterangan = "BPJS KESEHATAN", Jumlah = 20m, Sisi = "K" },
+            new() { Divisi = "D02", Keterangan = "UANG MAKAN", Jumlah = 30m, Sisi = "D" }
+        ];
+
+        List<AIS_JURNAL_FINAL> result = AisJournalBuilder.BuildForDivision(aisRows, components, division, Context, defaults);
+
+        Assert.Equal("70.10001.005", result.Single(r => r.KETERANGAN?.StartsWith("BPJS JHT") == true).KODE);
+        Assert.Equal("70.10001.006", result.Single(r => r.KETERANGAN?.StartsWith("BPJS KESEHATAN") == true).KODE);
+        Assert.Null(result.Single(r => r.KETERANGAN?.StartsWith("UANG MAKAN") == true).KODE);
+    }
+
+    [Fact]
+    public void GetJournaledMarker_MatchesBalancingCreditKeterangan()
+    {
+        Division harian = new() { ISBORONGAN = 0, DIVISIID = "D02", DIVISI = "Divisi 02", NOMOR = "HAR" };
+        Division borongan = new() { ISBORONGAN = 1, DIVISIID = "D01", DIVISI = "Divisi 01", NOMOR = "BOR" };
+        List<AIS_JURNAL> aisRows =
+        [
+            new() { ISBORONGAN = 0, DIVISI = "D02", JENIS = "RAWAT", KODE = "40.3", DEBET = 100m, POSTED = true },
+            new() { ISBORONGAN = 1, DIVISI = "D01", JENIS = "PANEN", KODE = "40.1", DEBET = 975m, DEBETPPH = 975m, POSTED = true }
+        ];
+
+        string harianLast = AisJournalBuilder.BuildForDivision(aisRows, [], harian, Context, NoDefaults).Last().KETERANGAN;
+        string boronganLast = AisJournalBuilder.BuildForDivision(aisRows, [], borongan, Context, NoDefaults).Last().KETERANGAN;
+
+        Assert.Equal(AisJournalBuilder.GetJournaledMarker(harian, Context), harianLast);
+        Assert.Equal(AisJournalBuilder.GetJournaledMarker(borongan, Context), boronganLast);
+        Assert.Equal("TOTAL BIAYA OPERASIONAL Divisi 02 EST1 R1 Mei 2026", harianLast);
+    }
+
+    [Theory]
+    [InlineData("BPJS JHT", "AIS_KOMPONEN_BPJS_JHT")]
+    [InlineData(" tunjangan perabot ", "AIS_KOMPONEN_TUNJANGAN_PERABOT")]
+    [InlineData(null, "AIS_KOMPONEN_")]
+    public void KomponenAccountKey_NormalizesKeterangan(string? keterangan, string expected)
+    {
+        Assert.Equal(expected, AisJournalBuilder.KomponenAccountKey(keterangan));
+    }
 }

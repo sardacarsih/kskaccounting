@@ -74,6 +74,9 @@ internal static class Program
                 case MigrationMode.PksCheck:
                     PksCheck(options);
                     break;
+                case MigrationMode.AisCheck:
+                    AisCheck(options);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unsupported mode: {options.Mode}");
             }
@@ -892,6 +895,60 @@ EXIT
         Console.WriteLine(result.Output.Trim());
     }
 
+    private static void AisCheck(AppOptions options)
+    {
+        const string sql = """
+SET HEADING ON
+SET FEEDBACK OFF
+SET LINESIZE 200
+SET PAGESIZE 500
+SET DEFINE OFF
+COLUMN TABLE_NAME FORMAT A22;
+COLUMN COLUMN_NAME FORMAT A28;
+COLUMN DATA_TYPE FORMAT A12;
+COLUMN JENIS FORMAT A20;
+COLUMN KETERANGAN FORMAT A50;
+PROMPT === Kolom tabel import AIS ===
+SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, DATA_LENGTH, NULLABLE
+  FROM USER_TAB_COLUMNS
+ WHERE TABLE_NAME IN ('FIN_JURNAL_KOMPONEN', 'AIS_BKMMASTER', 'AIS_JENIS', 'ACCT_JURNAL_HDR')
+ ORDER BY TABLE_NAME, COLUMN_ID;
+PROMPT === Borongan per jenis BKM (berapa yang bukan PANEN) ===
+SELECT M.ISBORONGAN, J.JENIS, COUNT(*) AS JUMLAH_BKM
+  FROM AIS_BKMMASTER M JOIN AIS_JENIS J ON J.ID = M.JENISBKM
+ WHERE M.SIGN = 1
+ GROUP BY M.ISBORONGAN, J.JENIS
+ ORDER BY 1, 2;
+PROMPT === Contoh FIN_JURNAL_KOMPONEN (10 baris) ===
+SELECT * FROM FIN_JURNAL_KOMPONEN WHERE ROWNUM <= 10;
+PROMPT === Panjang NOMOR jurnal AIS terpanjang per jenis ===
+SELECT M.ISBORONGAN, MAX(LENGTH(M.PERIODE || '/R' || M.REMISE || CASE WHEN M.ISBORONGAN = 1 THEN '/BORONGAN/' ELSE '/HARIAN/' END || M.ESTATE || '/' || D.DIVISI)) AS PANJANG_MAKS
+  FROM AIS_BKMMASTER M JOIN MASTER_DIVISI D ON D.DIVISIID = M.DIVISI
+ WHERE M.SIGN = 1
+ GROUP BY M.ISBORONGAN;
+PROMPT === Nilai KETERANGAN/SISI komponen ===
+SELECT UPPER(TRIM(KETERANGAN)) AS KETERANGAN, SISI, COUNT(*) AS JUMLAH
+  FROM FIN_JURNAL_KOMPONEN
+ GROUP BY UPPER(TRIM(KETERANGAN)), SISI
+ ORDER BY 1, 2;
+PROMPT === Key ACCT_DEFAULT ===
+SELECT IDDATA, NAMA, KODEACC FROM ACCT_DEFAULT ORDER BY IDDATA, NAMA;
+PROMPT === Contoh NOMOR jurnal sumber AIS yang sudah tersimpan (30 terbaru) ===
+SELECT * FROM (
+  SELECT IDDATA, NOJURNAL, PERIODE, LENGTH(NOJURNAL) AS PANJANG
+    FROM ACCT_JURNAL_HDR
+   WHERE SUMBER = 'AIS'
+   ORDER BY CREATED_DATE DESC NULLS LAST
+) WHERE ROWNUM <= 30;
+PROMPT === Nama divisi terpanjang ===
+SELECT * FROM (SELECT DIVISIID, DIVISI, LENGTH(DIVISI) AS PANJANG FROM MASTER_DIVISI ORDER BY LENGTH(DIVISI) DESC) WHERE ROWNUM <= 5;
+EXIT
+""";
+
+        SqlExecutionResult result = ExecuteSqlInline(options, sql, "ais_check");
+        Console.WriteLine(result.Output.Trim());
+    }
+
     private static void RepairMissingCoa(AppOptions options)
     {
         List<string> missing = [];
@@ -1658,7 +1715,8 @@ internal enum MigrationMode
     ShowSource,
     RepairMissingCoa,
     FindJurnal,
-    PksCheck
+    PksCheck,
+    AisCheck
 }
 
 internal sealed class AppOptions
@@ -1696,7 +1754,8 @@ Options:
   --config       Optional config.json path. If omitted, the executable probes common config.json locations.
   --server-key   Optional server key override for config.json resolution
   --mode         up (default), down, status, verify, checkconn, reconcilehistory, rebaselinechecksum,
-                  showcompileerrors, reconcilecoa, pkscheck (read-only: PKS companies + PKS report mappings)
+                  showcompileerrors, reconcilecoa, pkscheck (read-only: PKS companies + PKS report mappings),
+                  aischeck (read-only: AIS import table columns, sample komponen, NOMOR lengths)
   --migration-id Required for --mode rebaselinechecksum: the manifest id whose recorded checksum should be
                   updated to match the current script content (no SQL is re-executed unless --reexecute is
                   also given; use only when the script content change is a confirmed no-op on this server).
@@ -1786,7 +1845,7 @@ Default behavior:
         {
             if (!Enum.TryParse(modeArg, true, out mode))
             {
-                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors, reconcilecoa, showsource, repairmissingcoa, findjurnal, pkscheck.");
+                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors, reconcilecoa, showsource, repairmissingcoa, findjurnal, pkscheck, aischeck.");
             }
         }
 

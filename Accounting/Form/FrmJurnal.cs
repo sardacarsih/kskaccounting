@@ -44,7 +44,8 @@ namespace Accounting.Form
         None,
         AIS,
         Kasir,
-        Inventory
+        Inventory,
+        Hris
     }
 
     public partial class FrmJurnal : XtraForm
