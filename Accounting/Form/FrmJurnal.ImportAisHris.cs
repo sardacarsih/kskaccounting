@@ -255,7 +255,7 @@ namespace Accounting.Form
 		{
 			warnings.Add(
 				$"Baris komponen berikut belum punya kode akun:\n{string.Join("\n", komponenTanpaAkun)}\n" +
-				$"Isi kode di grid, atau daftarkan sekali di ACCT_DEFAULT dengan NAMA = {AisJournalBuilder.KomponenAccountKeyPrefix}<KETERANGAN> (contoh {AisJournalBuilder.KomponenAccountKey("BPJS JHT")}).");
+				$"Isi kode di grid, atau daftarkan sekali di ACCT_DEFAULT dengan NAMA = {AisJournalBuilder.KomponenAccountKeyPrefix}<KETERANGAN> (contoh {AisJournalBuilder.KomponenAccountKey("BPJS JHT")}; tambahkan _<DIVISIID> untuk akun khusus satu divisi).");
 		}
 
 		if (warnings.Count == 0)
