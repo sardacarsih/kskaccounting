@@ -37,6 +37,8 @@ namespace Accounting.BusinessLayer
 
         /// <summary>
         /// ACCT_DEFAULT.NAMA that maps a FIN_JURNAL_KOMPONEN.KETERANGAN to an account, e.g. "BPJS JHT" → "AIS_KOMPONEN_BPJS_JHT".
+        /// A "_{DIVISIID}" suffixed key (e.g. "AIS_KOMPONEN_UANG_MAKAN_KSKINTI21") overrides it for one division.
+        /// Must stay in sync with REGEXP_REPLACE in migration V20261121_001.
         /// </summary>
         public static string KomponenAccountKey(string? keterangan)
         {
@@ -119,7 +121,10 @@ namespace Accounting.BusinessLayer
 
             (string? Kode, string? Nama) GetKomponenAccount(string? keterangan)
             {
-                if (defaults.TryGetValue(KomponenAccountKey(keterangan), out var val) && !string.IsNullOrWhiteSpace(val.Kode))
+                // Per-division key first (e.g. UANG MAKAN is costed to each division's own account), then company-wide.
+                string key = KomponenAccountKey(keterangan);
+                if ((defaults.TryGetValue(key + "_" + divisiId, out var val) || defaults.TryGetValue(key, out val))
+                    && !string.IsNullOrWhiteSpace(val.Kode))
                 {
                     return val;
                 }

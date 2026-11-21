@@ -530,6 +530,14 @@
       "script": "migrations/V20261120_001__acct_tools_blok_keep_key.sql",
       "rollbackScript": "migrations/R20261120_001__acct_tools_blok_keep_key.sql",
       "checkScript": "migrations/C20261120_001__acct_tools_blok_keep_key_check.sql"
+    },
+    {
+      "id": "20261121_001_ais_komponen_acct_default",
+      "order": 71,
+      "description": "Seed ACCT_DEFAULT AIS_KOMPONEN_<KETERANGAN>[_<DIVISIID>] keys from accounts already used for komponen lines in saved AIS journals (unambiguous history only, never overwrites).",
+      "script": "migrations/V20261121_001__ais_komponen_acct_default.sql",
+      "rollbackScript": "migrations/R20261121_001__ais_komponen_acct_default.sql",
+      "checkScript": "migrations/C20261121_001__ais_komponen_acct_default_check.sql"
     }
   ]
 }

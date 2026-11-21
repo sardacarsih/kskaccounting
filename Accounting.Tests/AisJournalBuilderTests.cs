@@ -278,6 +278,36 @@ public sealed class AisJournalBuilderTests
     }
 
     [Fact]
+    public void BuildForDivision_KomponenDivisionKey_OverridesCompanyKey()
+    {
+        Dictionary<string, (string Kode, string Nama)> defaults = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["AIS_KOMPONEN_UANG_MAKAN"] = ("40.00000.004", "Uang Makan Umum"),
+            ["AIS_KOMPONEN_UANG_MAKAN_D02"] = ("40.01412.004", "Uang Makan Div 02")
+        };
+        List<AIS_JURNAL> aisRows =
+        [
+            new() { ISBORONGAN = 0, DIVISI = "D02", JENIS = "RAWAT", KODE = "40.3", DEBET = 100m, POSTED = true },
+            new() { ISBORONGAN = 0, DIVISI = "D03", JENIS = "RAWAT", KODE = "40.3", DEBET = 100m, POSTED = true }
+        ];
+        List<JurnalKomponen> components =
+        [
+            new() { Divisi = "D02", Keterangan = "UANG MAKAN", Jumlah = 30m, Sisi = "D" },
+            new() { Divisi = "D03", Keterangan = "UANG MAKAN", Jumlah = 30m, Sisi = "D" }
+        ];
+        Division d02 = new() { ISBORONGAN = 0, DIVISIID = "D02", DIVISI = "Divisi 02", NOMOR = "HAR2" };
+        Division d03 = new() { ISBORONGAN = 0, DIVISIID = "D03", DIVISI = "Divisi 03", NOMOR = "HAR3" };
+
+        string? kodeD02 = AisJournalBuilder.BuildForDivision(aisRows, components, d02, Context, defaults)
+            .Single(r => r.KETERANGAN?.StartsWith("UANG MAKAN") == true).KODE;
+        string? kodeD03 = AisJournalBuilder.BuildForDivision(aisRows, components, d03, Context, defaults)
+            .Single(r => r.KETERANGAN?.StartsWith("UANG MAKAN") == true).KODE;
+
+        Assert.Equal("40.01412.004", kodeD02);
+        Assert.Equal("40.00000.004", kodeD03);
+    }
+
+    [Fact]
     public void GetJournaledMarker_MatchesBalancingCreditKeterangan()
     {
         Division harian = new() { ISBORONGAN = 0, DIVISIID = "D02", DIVISI = "Divisi 02", NOMOR = "HAR" };
