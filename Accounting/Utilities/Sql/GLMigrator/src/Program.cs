@@ -190,15 +190,10 @@ internal static class Program
                 continue;
             }
 
+            // A check whose subject a later migration replaced must recognise that itself (see C20260320_003).
             IReadOnlyList<string> failures = ExecuteMigrationCheckIfPresent(options, migration, $"verify_{migration.Id}");
             if (failures.Count == 0)
             {
-                continue;
-            }
-
-            if (SupersededChecks.Contains(migration.Id))
-            {
-                Console.WriteLine($"[SUPERSEDED] {migration.Id}: {failures.Count} check(s) obsolete (replaced by a later migration), ignored.");
                 continue;
             }
 
@@ -294,18 +289,6 @@ EXIT
 
         return failures;
     }
-
-    /// <summary>
-    /// Check scripts of migrations whose subject was deliberately replaced by a later migration, so they can no
-    /// longer pass on an up-to-date database: 20260626_002 rewrote the recalc V2 body (no ApplyMutasiByMonth any
-    /// more) and 20260626_003 dropped the legacy UPDATE_COA_FROM_* triggers. Their failures are reported as
-    /// [SUPERSEDED] and do not fail verify.
-    /// </summary>
-    private static readonly HashSet<string> SupersededChecks = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "20260319_006_recalc_v2_atomic_body",
-        "20260320_002_jurnal_trigger_bypass_async_recalc"
-    };
 
     private static void ReconcileHistory(AppOptions options, Manifest manifest)
     {
