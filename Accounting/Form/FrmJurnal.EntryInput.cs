@@ -164,6 +164,7 @@ namespace Accounting.Form
                     FromModuleAis = importModule == ImportModule.AIS,
                     FromModuleKasir = importModule == ImportModule.Kasir,
                     FromModuleInv = importModule == ImportModule.Inventory,
+                    FromModuleHris = importModule == ImportModule.Hris,
                     DebetTotal = GetGridSummaryTotal("Debet"),
                     KreditTotal = GetGridSummaryTotal("Kredit"),
                     Details = normalizedDetails,

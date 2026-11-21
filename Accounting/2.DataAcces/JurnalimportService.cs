@@ -28,11 +28,10 @@ namespace Accounting._2.DataAcces
                         M.ISBORONGAN,
                         D.DIVISIID,
                         D.DIVISI,
-                        :P_PERIODE || '/R' || :P_REMISE || 
-                        CASE WHEN M.ISBORONGAN = 1 THEN '/BORONGAN/' ELSE '/HARIAN/' END || 
-                        :P_ESTATE || '/' || D.DIVISI AS NOMOR,
-                        NULL AS Jurnal,
-                        NULL AS NoJurnal
+                        -- DIVISIID (not ESTATE/DIVISI name) keeps the number within ACCT_JURNAL_HDR.NOJURNAL VARCHAR2(30).
+                        :P_PERIODE || '/R' || :P_REMISE ||
+                        CASE WHEN M.ISBORONGAN = 1 THEN '/BORONGAN/' ELSE '/HARIAN/' END ||
+                        D.DIVISIID AS NOMOR
                     FROM 
                         AIS_BKMMASTER M
                     JOIN 
@@ -566,13 +565,35 @@ namespace Accounting._2.DataAcces
 
             string query = @"SELECT ISBORONGAN, DIVISI, KETERANGAN, ROUND(JUMLAH, 2) AS JUMLAH, SISI
                     FROM FIN_JURNAL_KOMPONEN
-                    WHERE PERIODE = :P_PERIODE 
-                      AND REMISE = :P_REMISE 
+                    WHERE IDDATA = :P_IDDATA
+                      AND PERIODE = :P_PERIODE
+                      AND REMISE = :P_REMISE
                       AND ESTATE = :P_ESTATE";
 
-            var result = await dbConnection.QueryAsync<JurnalKomponen>(query, new { P_PERIODE = periode, P_REMISE = remise, P_ESTATE = estateId });
+            var result = await dbConnection.QueryAsync<JurnalKomponen>(query, new { P_IDDATA = idData, P_PERIODE = periode, P_REMISE = remise, P_ESTATE = estateId });
 
             return result.AsList();
+        }
+
+        public async Task<Dictionary<string, string>> GetJournaledAisMarkersAsync(string idData, string periode)
+        {
+            using IDbConnection dbConnection = new OracleConnection(LoginInfo.OracleConnString);
+            dbConnection.Open();
+
+            // Balancing credit lines written by AisJournalBuilder; their KETERANGAN identifies division/remise/period.
+            const string query = @"SELECT KETERANGAN, MAX(NOJURNAL) AS NOJURNAL
+                    FROM ACCT_JURNAL_DTL
+                    WHERE IDDATA = :P_IDDATA
+                      AND PERIODE = :P_PERIODE
+                      AND (KETERANGAN LIKE 'TOTAL BORONGAN PANEN %' OR KETERANGAN LIKE 'TOTAL BIAYA OPERASIONAL %')
+                    GROUP BY KETERANGAN";
+
+            var rows = await dbConnection.QueryAsync<(string Keterangan, string NoJurnal)>(query, new { P_IDDATA = idData, P_PERIODE = periode });
+
+            return rows
+                .Where(row => !string.IsNullOrWhiteSpace(row.Keterangan))
+                .GroupBy(row => row.Keterangan.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First().NoJurnal, StringComparer.OrdinalIgnoreCase);
         }
 
     }

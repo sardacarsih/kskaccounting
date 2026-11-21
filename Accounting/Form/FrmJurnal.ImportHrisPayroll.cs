@@ -26,15 +26,14 @@ namespace Accounting.Form
 	{
 		if (jurnalfinalHRIS != null && jurnalfinalHRIS.Any())
 		{
-			string text = gridViewAISheader.GetRowCellValue(gridViewAISheader.FocusedRowHandle, "NOJURNAL")?.ToString() ?? string.Empty;
-			noAIS_Bukti = gridViewAISheader.GetRowCellValue(gridViewAISheader.FocusedRowHandle, "NOMOR")?.ToString() ?? string.Empty;
-			importModule = ImportModule.AIS;
+			importModule = ImportModule.Hris;
 			string text2 = lookUpEditestatehris.EditValue?.ToString() ?? string.Empty;
 			int month = cmbbulanhris.SelectedIndex + 1;
 			int year = (int)setahunhris.Value;
 			DateTime dateTime = new DateTime(year, month, 1).AddMonths(1).AddDays(-1.0);
 			DateTime dateTime2 = dateTime;
-			NoJurnaltxt.Text = (string.IsNullOrEmpty(text) ? ("XXX/MK-" + text2) : text);
+			// The AIS header grid belongs to the AIS tab; HRIS journals always start from the manual-number template.
+			NoJurnaltxt.Text = "XXX/MK-" + text2;
 			deJurnal.EditValue = dateTime2;
 			InputJurnalDetail.Clear();
 			List<JurnalDetailAdd> list = jurnalPayrollUmumService.BuildDetailRows(jurnalfinalHRIS);
@@ -49,7 +48,7 @@ namespace Accounting.Form
 		}
 		else
 		{
-			string text4 = ((jurnalfinalAIS == null) ? "Pilih Nomor untuk membuat Jurnal MK-AGRO" : "Tidak ada transaksi untuk dibuat jurnal");
+			string text4 = ((jurnalfinalHRIS == null) ? "Pilih Nomor untuk membuat Jurnal MK" : "Tidak ada transaksi untuk dibuat jurnal");
 			XtraMessageBox.Show(text4, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
 	}

@@ -48,6 +48,7 @@ namespace Accounting.BusinessLayer
         public bool FromModuleAis { get; init; }
         public bool FromModuleKasir { get; init; }
         public bool FromModuleInv { get; init; }
+        public bool FromModuleHris { get; init; }
         public decimal DebetTotal { get; init; }
         public decimal KreditTotal { get; init; }
         public IReadOnlyList<JurnalDetailAdd> Details { get; init; } = [];
@@ -311,7 +312,7 @@ namespace Accounting.BusinessLayer
             try
             {
                 long dbOperationStartMs = stopwatch.ElapsedMilliseconds;
-                string sumber = ResolveSumber(request.FromModuleAis, request.FromModuleKasir, request.FromModuleInv);
+                string sumber = ResolveSumber(request.FromModuleAis, request.FromModuleKasir, request.FromModuleInv, request.FromModuleHris);
                 string isRe = request.IsJurnalBalik ? "Y" : "T";
                 string nomorHid = request.IdData + request.Periode + request.Nomor + request.Tanggal.Value.ToString("yyMMdd");
                 string hostName = System.Net.Dns.GetHostName();
@@ -480,13 +481,18 @@ namespace Accounting.BusinessLayer
             }
         }
 
-        private static string ResolveSumber(bool fromModuleAis, bool fromModuleKasir, bool fromModuleInv)
+        private static string ResolveSumber(bool fromModuleAis, bool fromModuleKasir, bool fromModuleInv, bool fromModuleHris)
         {
             string sumber = "JV";
 
             if (fromModuleAis)
             {
                 sumber = "AIS";
+            }
+
+            if (fromModuleHris)
+            {
+                sumber = "HRIS";
             }
 
             if (fromModuleKasir)
