@@ -1,215 +1,200 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
-    <StartupObject>Accounting.Program</StartupObject>
-    <ApplicationIcon>icons\gl1_9S6_2.ico</ApplicationIcon>
-    <PackageIcon>gl1_9S6_2.ico</PackageIcon>
-    <Platforms>AnyCPU;x64</Platforms>
-    <Nullable>annotations</Nullable>
-    <Version>2.1.10.0</Version>
-    <AssemblyVersion>2.1.10.0</AssemblyVersion>
-    <FileVersion>2.1.10.0</FileVersion>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="Accounting.Updater\**" />
-    <EmbeddedResource Remove="Accounting.Updater\**" />
-    <None Remove="Accounting.Updater\**" />
-    <Compile Remove="Form\FrmloginOld.cs" />
-    <Compile Remove="Form\FrmloginOld.designer.cs" />
-    <Compile Remove="Utilities\ConnectionManager OLD.cs" />
-    <Compile Remove="Utilities\Sql\GLMigrator\**\*.cs" />
-    <Compile Remove="Laporan\GeneralLedgerD.cs" />
-    <Compile Remove="Laporan\GeneralLedgerD.Designer.cs" />
-    <Compile Remove="Laporan\GeneralLedgerK.cs" />
-    <Compile Remove="Laporan\GeneralLedgerK.Designer.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="Form\FrmloginOld.resx" />
-    <EmbeddedResource Remove="Laporan\GeneralLedgerD.resx" />
-    <EmbeddedResource Remove="Laporan\GeneralLedgerK.resx" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Form\FrmUsersOld.rar" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="icons\gl1_9S6_2.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.35" />
-    <PackageReference Include="DevExpress.Win.BonusSkins" Version="24.1.3" />
-    <PackageReference Include="DevExpress.Win.Design" Version="24.1.*-*" />
-    <PackageReference Include="EPPlus" Version="7.5.1" />
-    <PackageReference Include="ExcelDataReader" Version="3.7.0" />
-    <PackageReference Include="ExcelDataReader.DataSet" Version="3.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0" PrivateAssets="all" />
-    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.6.1" />
-    <PackageReference Include="Serilog" Version="4.1.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-    <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
-    <PackageReference Include="System.Data.Odbc" Version="8.0.0" />
-    <PackageReference Include="System.Data.OleDb" Version="8.0.0" />
-    <PackageReference Include="System.Formats.Asn1" Version="8.0.1" />
-    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
-    <PackageReference Include="System.ServiceModel.Syndication" Version="8.0.0" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Form\FrmUpdateSaldoAwal.cs" />
-    <Compile Update="Form\FrmSetAkunAgronomy.cs" />
-    <Compile Update="Form\Jurnal_NotBalanced.cs" />
-    <Compile Update="Form\COAError.cs" />
-    <Compile Update="Form\FrmAkunEF_Luas.cs" />
-    <Compile Update="Form\FrmDeveloper.cs" />
-    <Compile Update="Laporan\BalanceSheetDetail.cs" />
-    <Compile Update="Laporan\GeneralLedgerK2.cs" />
-    <Compile Update="Laporan\GeneralLedgerD2.cs" />
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Update="Properties\Settings.Designer.cs">
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="App.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="CHANGELOG.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="icons\gl1_9S6_2.ico">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Update="Resources\login-wireguard-bg.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-    <None Update="Utilities\config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\akhir_bulan_jurnal.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\akhir_bulan_kunci.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\akhir_bulan_perkiraan.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\akhir_tahun.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\akhir_tahun_jurnal.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\akhir_tahun_kunci.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\closing_accounts.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\closing_month.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\export_jurnal.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\hub_manager.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\iddata.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\jurnal_bedaperiode.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\jurnal_daftarperk.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\jurnal_duplikasi.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\jurnal_imbang.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\jurnal_selesai.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\maaf_noakses.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\neraca_error.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\nore_userid.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\periode_beda.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\periode_dikunci.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\sandi_salah.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="wav\userid.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Views\" />
-  </ItemGroup>
-
-  <!-- Accounting.Updater.exe ships beside Accounting.exe so the app can install downloaded updates. -->
-  <Target Name="BuildAccountingUpdater" BeforeTargets="CopyFilesToOutputDirectory">
-    <MSBuild Projects="Accounting.Updater\Accounting.Updater.csproj" Targets="Build" Properties="Configuration=$(Configuration)" RemoveProperties="RuntimeIdentifier;SelfContained;PublishDir;Platform;TargetFramework">
-      <Output TaskParameter="TargetOutputs" ItemName="_AccountingUpdaterTargetPath" />
-    </MSBuild>
     <PropertyGroup>
-      <_AccountingUpdaterDir>@(_AccountingUpdaterTargetPath->'%(RootDir)%(Directory)')</_AccountingUpdaterDir>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net8.0-windows7.0</TargetFramework>
+        <UseWindowsForms>true</UseWindowsForms>
+        <StartupObject>Accounting.Program</StartupObject>
+        <ApplicationIcon>icons\gl1_9S6_2.ico</ApplicationIcon>
+        <PackageIcon>gl1_9S6_2.ico</PackageIcon>
+        <Platforms>AnyCPU;x64</Platforms>
+        <Nullable>annotations</Nullable>
+        <Version>2.1.10.0</Version>
+        <AssemblyVersion>2.1.10.0</AssemblyVersion>
+        <FileVersion>2.1.10.0</FileVersion>
+        <PlatformTarget>AnyCPU</PlatformTarget>
     </PropertyGroup>
     <ItemGroup>
-      <_AccountingUpdaterFiles Include="$(_AccountingUpdaterDir)Accounting.Updater.dll;$(_AccountingUpdaterDir)Accounting.Updater.exe;$(_AccountingUpdaterDir)Accounting.Updater.runtimeconfig.json;$(_AccountingUpdaterDir)Accounting.Updater.deps.json" />
+        <Compile Remove="Accounting.Updater\**" />
+        <EmbeddedResource Remove="Accounting.Updater\**" />
+        <None Remove="Accounting.Updater\**" />
+        <Compile Remove="Form\FrmloginOld.cs" />
+        <Compile Remove="Form\FrmloginOld.designer.cs" />
+        <Compile Remove="Utilities\ConnectionManager OLD.cs" />
+        <Compile Remove="Utilities\Sql\GLMigrator\**\*.cs" />
+        <Compile Remove="Laporan\GeneralLedgerD.cs" />
+        <Compile Remove="Laporan\GeneralLedgerD.Designer.cs" />
+        <Compile Remove="Laporan\GeneralLedgerK.cs" />
+        <Compile Remove="Laporan\GeneralLedgerK.Designer.cs" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="CopyAccountingUpdaterToOutput" AfterTargets="CopyFilesToOutputDirectory" DependsOnTargets="BuildAccountingUpdater">
-    <Copy SourceFiles="@(_AccountingUpdaterFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
-  </Target>
-
-  <Target Name="CopyAccountingUpdaterToPublish" AfterTargets="Publish" DependsOnTargets="BuildAccountingUpdater">
-    <Copy SourceFiles="@(_AccountingUpdaterFiles)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="false" />
-  </Target>
-
+    <ItemGroup>
+        <EmbeddedResource Remove="Form\FrmloginOld.resx" />
+        <EmbeddedResource Remove="Laporan\GeneralLedgerD.resx" />
+        <EmbeddedResource Remove="Laporan\GeneralLedgerK.resx" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Remove="Form\FrmUsersOld.rar" />
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="icons\gl1_9S6_2.ico" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Dapper" Version="2.1.35" />
+        <PackageReference Include="DevExpress.Win.Design" Version="25.2.*-*" />
+        <PackageReference Include="EPPlus" Version="7.5.1" />
+        <PackageReference Include="ExcelDataReader" Version="3.7.0" />
+        <PackageReference Include="ExcelDataReader.DataSet" Version="3.7.0" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0" PrivateAssets="all" />
+        <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.6.1" />
+        <PackageReference Include="Serilog" Version="4.1.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+        <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
+        <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+        <PackageReference Include="System.Data.Odbc" Version="8.0.0" />
+        <PackageReference Include="System.Data.OleDb" Version="8.0.1" />
+        <PackageReference Include="System.Formats.Asn1" Version="8.0.1" />
+        <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+        <PackageReference Include="System.ServiceModel.Syndication" Version="8.0.0" />
+        <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+        <PackageReference Include="System.Text.Json" Version="9.0.6" />
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Update="Form\FrmUpdateSaldoAwal.cs" />
+        <Compile Update="Form\FrmSetAkunAgronomy.cs" />
+        <Compile Update="Form\Jurnal_NotBalanced.cs" />
+        <Compile Update="Form\COAError.cs" />
+        <Compile Update="Form\FrmAkunEF_Luas.cs" />
+        <Compile Update="Form\FrmDeveloper.cs" />
+        <Compile Update="Laporan\BalanceSheetDetail.cs" />
+        <Compile Update="Laporan\GeneralLedgerK2.cs" />
+        <Compile Update="Laporan\GeneralLedgerD2.cs" />
+        <Compile Update="Properties\Resources.Designer.cs">
+            <DesignTime>True</DesignTime>
+            <AutoGen>True</AutoGen>
+            <DependentUpon>Resources.resx</DependentUpon>
+        </Compile>
+        <Compile Update="Properties\Settings.Designer.cs">
+            <DesignTimeSharedInput>True</DesignTimeSharedInput>
+            <AutoGen>True</AutoGen>
+            <DependentUpon>Settings.settings</DependentUpon>
+        </Compile>
+    </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Update="Properties\Resources.resx">
+            <Generator>ResXFileCodeGenerator</Generator>
+            <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+    </ItemGroup>
+    <ItemGroup>
+        <None Update="App.config">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="CHANGELOG.md">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="icons\gl1_9S6_2.ico">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+        <None Update="Resources\login-wireguard-bg.png">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Properties\Settings.settings">
+            <Generator>SettingsSingleFileGenerator</Generator>
+            <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+        </None>
+        <None Update="Utilities\config.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\akhir_bulan_jurnal.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\akhir_bulan_kunci.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\akhir_bulan_perkiraan.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\akhir_tahun.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\akhir_tahun_jurnal.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\akhir_tahun_kunci.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\closing_accounts.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\closing_month.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\export_jurnal.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\hub_manager.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\iddata.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\jurnal_bedaperiode.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\jurnal_daftarperk.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\jurnal_duplikasi.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\jurnal_imbang.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\jurnal_selesai.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\maaf_noakses.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\neraca_error.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\nore_userid.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\periode_beda.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\periode_dikunci.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\sandi_salah.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="wav\userid.wav">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+    <ItemGroup>
+        <Folder Include="Views\" />
+    </ItemGroup>
+    <!-- Accounting.Updater.exe ships beside Accounting.exe so the app can install downloaded updates. -->
+    <Target Name="BuildAccountingUpdater" BeforeTargets="CopyFilesToOutputDirectory">
+        <MSBuild Projects="Accounting.Updater\Accounting.Updater.csproj" Targets="Build" Properties="Configuration=$(Configuration)" RemoveProperties="RuntimeIdentifier;SelfContained;PublishDir;Platform;TargetFramework">
+            <Output TaskParameter="TargetOutputs" ItemName="_AccountingUpdaterTargetPath" />
+        </MSBuild>
+        <PropertyGroup>
+            <_AccountingUpdaterDir>@(_AccountingUpdaterTargetPath->'%(RootDir)%(Directory)')</_AccountingUpdaterDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <_AccountingUpdaterFiles Include="$(_AccountingUpdaterDir)Accounting.Updater.dll;$(_AccountingUpdaterDir)Accounting.Updater.exe;$(_AccountingUpdaterDir)Accounting.Updater.runtimeconfig.json;$(_AccountingUpdaterDir)Accounting.Updater.deps.json" />
+        </ItemGroup>
+    </Target>
+    <Target Name="CopyAccountingUpdaterToOutput" AfterTargets="CopyFilesToOutputDirectory" DependsOnTargets="BuildAccountingUpdater">
+        <Copy SourceFiles="@(_AccountingUpdaterFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    </Target>
+    <Target Name="CopyAccountingUpdaterToPublish" AfterTargets="Publish" DependsOnTargets="BuildAccountingUpdater">
+        <Copy SourceFiles="@(_AccountingUpdaterFiles)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="false" />
+    </Target>
 </Project>
