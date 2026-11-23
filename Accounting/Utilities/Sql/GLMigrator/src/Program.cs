@@ -74,6 +74,9 @@ internal static class Program
                 case MigrationMode.PksCheck:
                     PksCheck(options);
                     break;
+                case MigrationMode.AisRekon:
+                    AisRekon(options);
+                    break;
                 case MigrationMode.AisCheck:
                     AisCheck(options);
                     break;
@@ -875,6 +878,79 @@ EXIT
 """;
 
         SqlExecutionResult result = ExecuteSqlInline(options, sql, "pks_check");
+        Console.WriteLine(result.Output.Trim());
+    }
+
+    // Read-only: total sumber AIS (AIS_BKMDETAIL.JUMLAH) vs jurnal GL hasil import AIS per divisi/remise.
+    // --iddata KSKINTI --estate SE --periode 11/2026. Jurnal GL dikenali dari baris kredit penyeimbang AisJournalBuilder.
+    private static void AisRekon(AppOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.IdData) || !System.Text.RegularExpressions.Regex.IsMatch(options.Periode, @"^\d{2}/\d{4}$")
+            || !System.Text.RegularExpressions.Regex.IsMatch(options.IdData, @"^[A-Za-z0-9_]+$")
+            || !System.Text.RegularExpressions.Regex.IsMatch(options.Estate, @"^[A-Z0-9_]+$"))
+        {
+            throw new ArgumentException("--mode aisrekon requires --iddata <IDDATA> --estate <ESTATEID> --periode MM/YYYY. Example: --iddata KSKINTI --estate SE --periode 11/2026");
+        }
+
+        string idData = options.IdData.ToUpperInvariant();
+        string estate = options.Estate;
+        string periode = options.Periode;
+        string aisPeriode = periode[3..] + periode[..2];
+        string sql = $"""
+SET HEADING ON
+SET FEEDBACK OFF
+SET LINESIZE 250
+SET PAGESIZE 500
+SET DEFINE OFF
+COLUMN DIVISI FORMAT A20;
+COLUMN NOJURNAL FORMAT A32;
+COLUMN MARKER FORMAT A80;
+PROMPT === SUMBER AIS per remise/divisi/jenis (SIGN=1) ===
+SELECT M.REMISE, M.ESTATE, MD.DIVISI, M.ISBORONGAN, COUNT(DISTINCT M.MASTERID) BKM,
+       ROUND(SUM(D.JUMLAH), 2) TOTAL_SUMBER, ROUND(SUM(ROUND(D.JUMLAH, 2)), 2) TOTAL_SUMBER_RND
+  FROM AIS_BKMMASTER M JOIN AIS_BKMDETAIL D ON D.MASTERID = M.MASTERID
+  LEFT JOIN MASTER_DIVISI MD ON MD.DIVISIID = M.DIVISI
+ WHERE M.SIGN = 1 AND M.IDDATA = '{idData}' AND M.ESTATE = '{estate}' AND M.PERIODE = {aisPeriode}
+ GROUP BY ROLLUP(M.REMISE, (M.ESTATE, MD.DIVISI, M.ISBORONGAN))
+ ORDER BY 1, 2, 3, 4;
+PROMPT === SUMBER AIS SIGN<>1 (tidak ikut dijurnal) ===
+SELECT M.REMISE, M.SIGN, COUNT(DISTINCT M.MASTERID) BKM, ROUND(SUM(D.JUMLAH), 2) TOTAL
+  FROM AIS_BKMMASTER M JOIN AIS_BKMDETAIL D ON D.MASTERID = M.MASTERID
+ WHERE NVL(M.SIGN, 0) <> 1 AND M.IDDATA = '{idData}' AND M.ESTATE = '{estate}' AND M.PERIODE = {aisPeriode}
+ GROUP BY M.REMISE, M.SIGN ORDER BY 1, 2;
+PROMPT === JURNAL GL hasil import AIS (per jurnal) ===
+WITH J AS (
+  SELECT DISTINCT H.JURNALID, H.NOJURNAL, H.SUMBER, D.KETERANGAN MARKER, D.KREDIT MARKER_KREDIT,
+         TO_NUMBER(REGEXP_SUBSTR(D.KETERANGAN, ' R([0-9]+) ', 1, 1, NULL, 1)) REMISE
+    FROM ACCT_JURNAL_HDR H JOIN ACCT_JURNAL_DTL D ON D.REFFID = H.JURNALID
+   WHERE H.IDDATA = '{idData}' AND D.PERIODE = '{periode}'
+     AND (UPPER(D.KETERANGAN) LIKE 'TOTAL BORONGAN PANEN %' OR UPPER(D.KETERANGAN) LIKE 'TOTAL BIAYA OPERASIONAL %')
+     AND UPPER(D.KETERANGAN) LIKE '% {estate} R%'
+)
+SELECT J.REMISE, J.NOJURNAL, J.SUMBER, J.MARKER, J.MARKER_KREDIT,
+       (SELECT ROUND(SUM(X.DEBET), 2) FROM ACCT_JURNAL_DTL X WHERE X.REFFID = J.JURNALID) TOTAL_DEBET,
+       (SELECT ROUND(SUM(X.KREDIT), 2) FROM ACCT_JURNAL_DTL X WHERE X.REFFID = J.JURNALID) TOTAL_KREDIT
+  FROM J ORDER BY 1, 2;
+PROMPT === Ringkas GL per remise ===
+WITH J AS (
+  SELECT DISTINCT H.JURNALID,
+         TO_NUMBER(REGEXP_SUBSTR(D.KETERANGAN, ' R([0-9]+) ', 1, 1, NULL, 1)) REMISE
+    FROM ACCT_JURNAL_HDR H JOIN ACCT_JURNAL_DTL D ON D.REFFID = H.JURNALID
+   WHERE H.IDDATA = '{idData}' AND D.PERIODE = '{periode}'
+     AND (UPPER(D.KETERANGAN) LIKE 'TOTAL BORONGAN PANEN %' OR UPPER(D.KETERANGAN) LIKE 'TOTAL BIAYA OPERASIONAL %')
+     AND UPPER(D.KETERANGAN) LIKE '% {estate} R%'
+)
+SELECT J.REMISE, COUNT(DISTINCT J.JURNALID) JURNAL, ROUND(SUM(X.DEBET), 2) TOTAL_DEBET, ROUND(SUM(X.KREDIT), 2) TOTAL_KREDIT
+  FROM J JOIN ACCT_JURNAL_DTL X ON X.REFFID = J.JURNALID
+ GROUP BY J.REMISE ORDER BY 1;
+PROMPT === Semua jurnal NOJURNAL pola AIS periode ini (cek jurnal tanpa marker) ===
+SELECT H.NOJURNAL, H.SUMBER, ROUND(SUM(X.DEBET), 2) DEBET, ROUND(SUM(X.KREDIT), 2) KREDIT
+  FROM ACCT_JURNAL_HDR H JOIN ACCT_JURNAL_DTL X ON X.REFFID = H.JURNALID
+ WHERE H.IDDATA = '{idData}' AND (H.NOJURNAL LIKE '{aisPeriode}/R%' OR H.SUMBER = 'AIS') AND X.PERIODE = '{periode}'
+ GROUP BY H.NOJURNAL, H.SUMBER ORDER BY 1;
+""";
+
+        SqlExecutionResult result = ExecuteSqlInline(options, sql, "ais_rekon");
         Console.WriteLine(result.Output.Trim());
     }
 
@@ -1762,7 +1838,8 @@ internal enum MigrationMode
     RepairMissingCoa,
     FindJurnal,
     PksCheck,
-    AisCheck
+    AisCheck,
+    AisRekon
 }
 
 internal sealed class AppOptions
@@ -1786,6 +1863,7 @@ internal sealed class AppOptions
     public string BulanList { get; private init; } = string.Empty;
     public string UserId { get; private init; } = string.Empty;
     public string NoJurnal { get; private init; } = string.Empty;
+    public string Estate { get; private init; } = string.Empty;
     public bool LikeMatch { get; private init; }
     public bool Apply { get; private init; }
     public int ScriptTimeoutMs { get; private init; } = 600000;
@@ -2003,6 +2081,7 @@ Default behavior:
             BulanList = bulanList,
             UserId = userId,
             NoJurnal = noJurnal,
+            Estate = map.TryGetValue("estate", out string? estateArg) && !string.IsNullOrWhiteSpace(estateArg) ? estateArg.Trim().ToUpperInvariant() : string.Empty,
             LikeMatch = likeMatch,
             Apply = apply,
             ScriptTimeoutMs = scriptTimeoutMs,
