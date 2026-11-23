@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    # Self-hosted runner D:\actions-runner\GL (repo publik: workflow dari fork wajib di-approve).
+    runs-on: [self-hosted, windows, gl]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build solution
+        run: dotnet build Accounting/GL_MVC_Repository.sln -c Release -nologo
+
+      - name: Test
+        run: dotnet test Accounting.Tests/Accounting.Tests.csproj -c Release --no-build -nologo
+
+      - name: Build GLMigrator
+        run: dotnet build Accounting/Utilities/Sql/GLMigrator/src -c Release -nologo
