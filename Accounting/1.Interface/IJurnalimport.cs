@@ -13,6 +13,7 @@ namespace Accounting._1.Interface
         Task<List<Division>> GetDivisionsAsync(string idData,string estateId, int periode, int remise);
         Task<List<AIS_JURNAL>> GetAISforJurnalAsync(string idData, string estateId, int periode, int remise, int tahun, string periodes);
         Task<List<JurnalKomponen>> GetAISforJurnalKomponenAsync(string idData, string estateId, int periode, int remise);
+        Task<Dictionary<string, string>> GetJournaledAisMarkersAsync(string idData, string periode);
         Task<List<AIS_JURNAL_FINAL>> GetPayrollforJurnalAsync(string idData, int periode, int remise, int tahun);
         Task<List<BPJS_INFO_DTO>> GetBPJSUmumAsync(string idData, int periode, int remise);
         Task<IEnumerable<BKM_KOMPONEN_KHT>> GetKOMPONEN_KHTAsync(string idData, int periode, int remise, string divisiid);
@@ -229,5 +230,7 @@ namespace Accounting._1.Interface
         public string DIVISIID { get; set; }
         public string DIVISI { get; set; }
         public string NOMOR { get; set; }
+        /// <summary>Existing journal number when this division/remise/period was already journaled; empty otherwise.</summary>
+        public string NOJURNAL { get; set; }
     }
 }
