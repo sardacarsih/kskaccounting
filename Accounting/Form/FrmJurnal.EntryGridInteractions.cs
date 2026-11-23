@@ -198,15 +198,23 @@ namespace Accounting.Form
 
         private void GridViewAISheader_FocusedRowChanged(object sender, FocusedRowChangedEventArgs e)
         {
+            RebuildAisPreview();
+        }
+
+        /// <summary>
+        /// Rebuilds <see cref="jurnalfinalAIS"/> and the AIS detail grid from the focused division and the currently loaded AIS data.
+        /// </summary>
+        private void RebuildAisPreview()
+        {
             if (gridViewAISheader.GetFocusedRow() is not Division division ||
                 !TryCreateAisJournalBuildContext(out AisJournalBuildContext context) ||
                 aisJurnal == null)
             {
+                jurnalfinalAIS = [];
                 gcAISdetail.DataSource = null;
                 return;
             }
 
-            noAIS_Bukti = division.NOMOR ?? string.Empty;
             jurnalfinalAIS = AisJournalBuilder.BuildForDivision(
                 aisJurnal,
                 komponenjurnal ?? Enumerable.Empty<JurnalKomponen>(),

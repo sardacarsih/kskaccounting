@@ -1,11 +1,15 @@
 -- Purpose: Verify ACCT_RECALLCULATIONS_V2 atomic body is active.
--- Date: 2026-03-19
+--          20260626_002 later replaced the additive body (ApplyMutasiByMonth +
+--          UpdSaldoAkhir_sd_Des_ByKode) with an idempotent recompute (ReCalcByJob), which has its
+--          own check. Once that body is installed, only the no-COMMIT rule below still applies.
+-- Date: 2026-03-19 (updated 2026-11-21)
 
 SET SERVEROUTPUT ON;
 
 DECLARE
     v_count NUMBER := 0;
     v_errors NUMBER := 0;
+    v_recompute NUMBER := 0;
 
     PROCEDURE fail(p_msg IN VARCHAR2) IS
     BEGIN
@@ -22,27 +26,38 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('');
 
     SELECT COUNT(1)
-      INTO v_count
+      INTO v_recompute
       FROM USER_SOURCE
      WHERE NAME = 'ACCT_RECALLCULATIONS_V2'
        AND TYPE = 'PACKAGE BODY'
-       AND UPPER(TEXT) LIKE '%PROCEDURE APPLYMUTASIBYMONTH%';
-    IF v_count = 0 THEN
-        fail('ApplyMutasiByMonth helper not found in ACCT_RECALLCULATIONS_V2 body');
-    ELSE
-        ok('ApplyMutasiByMonth helper found');
-    END IF;
+       AND UPPER(TEXT) LIKE '%PROCEDURE RECALCBYJOB%';
 
-    SELECT COUNT(1)
-      INTO v_count
-      FROM USER_SOURCE
-     WHERE NAME = 'ACCT_RECALLCULATIONS_V2'
-       AND TYPE = 'PACKAGE BODY'
-       AND UPPER(TEXT) LIKE '%UPDSALDOAKHIR_SD_DES_BYKODE%';
-    IF v_count = 0 THEN
-        fail('Saldo propagation call not found');
+    IF v_recompute > 0 THEN
+        ok('Additive body superseded by recompute body (20260626_002); helper checks skipped');
     ELSE
-        ok('Saldo propagation call found');
+        SELECT COUNT(1)
+          INTO v_count
+          FROM USER_SOURCE
+         WHERE NAME = 'ACCT_RECALLCULATIONS_V2'
+           AND TYPE = 'PACKAGE BODY'
+           AND UPPER(TEXT) LIKE '%PROCEDURE APPLYMUTASIBYMONTH%';
+        IF v_count = 0 THEN
+            fail('ApplyMutasiByMonth helper not found in ACCT_RECALLCULATIONS_V2 body');
+        ELSE
+            ok('ApplyMutasiByMonth helper found');
+        END IF;
+
+        SELECT COUNT(1)
+          INTO v_count
+          FROM USER_SOURCE
+         WHERE NAME = 'ACCT_RECALLCULATIONS_V2'
+           AND TYPE = 'PACKAGE BODY'
+           AND UPPER(TEXT) LIKE '%UPDSALDOAKHIR_SD_DES_BYKODE%';
+        IF v_count = 0 THEN
+            fail('Saldo propagation call not found');
+        ELSE
+            ok('Saldo propagation call found');
+        END IF;
     END IF;
 
     SELECT COUNT(1)

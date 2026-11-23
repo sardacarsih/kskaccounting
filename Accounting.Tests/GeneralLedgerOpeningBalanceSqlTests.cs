@@ -7,7 +7,7 @@ public sealed class GeneralLedgerOpeningBalanceSqlTests
     private const string MigrationId = "20260728_001_bukubesar_all_account_opening_balances";
 
     [Fact]
-    public void Manifest_RegistersAllAccountOpeningBalanceMigrationAsLatestEntry()
+    public void Manifest_RegistersAllAccountOpeningBalanceMigration()
     {
         string migratorDirectory = FindMigratorDirectory();
         using JsonDocument manifest = JsonDocument.Parse(
@@ -19,7 +19,8 @@ public sealed class GeneralLedgerOpeningBalanceSqlTests
 
         Assert.Equal("2026.10.08.2", root.GetProperty("version").GetString());
         Assert.Equal(67, migration.GetProperty("order").GetInt32());
-        Assert.Equal(69, migrations.Max(entry => entry.GetProperty("order").GetInt32()));
+        // Later migrations keep being appended; the invariant is that every order is unique.
+        Assert.Equal(migrations.Length, migrations.Select(entry => entry.GetProperty("order").GetInt32()).Distinct().Count());
 
         AssertMigrationFileExists(migratorDirectory, migration, "script");
         AssertMigrationFileExists(migratorDirectory, migration, "checkScript");

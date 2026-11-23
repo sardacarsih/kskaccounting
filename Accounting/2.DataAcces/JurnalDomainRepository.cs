@@ -328,6 +328,11 @@ namespace Accounting._2.DataAcces
             return jurnalImportRepository.GetAISforJurnalKomponenAsync(pIdData, pEstateId, pPeriode, pRemise);
         }
 
+        public Task<Dictionary<string, string>> GetJournaledAisMarkersAsync(string pIdData, string pPeriode)
+        {
+            return jurnalImportRepository.GetJournaledAisMarkersAsync(pIdData, pPeriode);
+        }
+
         public Task<List<SlipGaji_DTO>> viewDaftarGajidanTunjangan_BulananAsync(string pIdData, string pEstateId, int pPeriode)
         {
             return jurnalImportRepository.viewDaftarGajidanTunjangan_BulananAsync(pIdData, pEstateId, pPeriode);

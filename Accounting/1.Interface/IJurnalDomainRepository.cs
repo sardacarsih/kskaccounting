@@ -69,6 +69,7 @@ namespace Accounting._1.Interface
         Task<List<Division>> GetDivisionsAsync(string pIdData, string pEstateId, int pPeriode, int pRemise);
         Task<List<AIS_JURNAL>> GetAISforJurnalAsync(string pIdData, string pEstateId, int pPeriode, int pRemise, int pTahun, string pPeriodeKet);
         Task<List<JurnalKomponen>> GetAISforJurnalKomponenAsync(string pIdData, string pEstateId, int pPeriode, int pRemise);
+        Task<Dictionary<string, string>> GetJournaledAisMarkersAsync(string pIdData, string pPeriode);
         Task<List<SlipGaji_DTO>> viewDaftarGajidanTunjangan_BulananAsync(string pIdData, string pEstateId, int pPeriode);
         Task<List<FIN_POTONGAN_KANTOR>> viewPotonganKantorAsync(string pIdData, string pEstateId, int pPeriode);
         Task<List<ALOKASI_JURNAL_DTO>> AlokasiJurnalAsync(string pIdData);

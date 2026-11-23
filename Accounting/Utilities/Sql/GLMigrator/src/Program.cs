@@ -74,6 +74,9 @@ internal static class Program
                 case MigrationMode.PksCheck:
                     PksCheck(options);
                     break;
+                case MigrationMode.AisCheck:
+                    AisCheck(options);
+                    break;
                 default:
                     throw new InvalidOperationException($"Unsupported mode: {options.Mode}");
             }
@@ -187,15 +190,10 @@ internal static class Program
                 continue;
             }
 
+            // A check whose subject a later migration replaced must recognise that itself (see C20260320_003).
             IReadOnlyList<string> failures = ExecuteMigrationCheckIfPresent(options, migration, $"verify_{migration.Id}");
             if (failures.Count == 0)
             {
-                continue;
-            }
-
-            if (SupersededChecks.Contains(migration.Id))
-            {
-                Console.WriteLine($"[SUPERSEDED] {migration.Id}: {failures.Count} check(s) obsolete (replaced by a later migration), ignored.");
                 continue;
             }
 
@@ -291,18 +289,6 @@ EXIT
 
         return failures;
     }
-
-    /// <summary>
-    /// Check scripts of migrations whose subject was deliberately replaced by a later migration, so they can no
-    /// longer pass on an up-to-date database: 20260626_002 rewrote the recalc V2 body (no ApplyMutasiByMonth any
-    /// more) and 20260626_003 dropped the legacy UPDATE_COA_FROM_* triggers. Their failures are reported as
-    /// [SUPERSEDED] and do not fail verify.
-    /// </summary>
-    private static readonly HashSet<string> SupersededChecks = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "20260319_006_recalc_v2_atomic_body",
-        "20260320_002_jurnal_trigger_bypass_async_recalc"
-    };
 
     private static void ReconcileHistory(AppOptions options, Manifest manifest)
     {
@@ -889,6 +875,123 @@ EXIT
 """;
 
         SqlExecutionResult result = ExecuteSqlInline(options, sql, "pks_check");
+        Console.WriteLine(result.Output.Trim());
+    }
+
+    private static void AisCheck(AppOptions options)
+    {
+        const string sql = """
+SET HEADING ON
+SET FEEDBACK OFF
+SET LINESIZE 200
+SET PAGESIZE 500
+SET DEFINE OFF
+COLUMN TABLE_NAME FORMAT A22;
+COLUMN COLUMN_NAME FORMAT A28;
+COLUMN DATA_TYPE FORMAT A12;
+COLUMN JENIS FORMAT A20;
+COLUMN KETERANGAN FORMAT A50;
+PROMPT === Kolom tabel import AIS ===
+SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, DATA_LENGTH, NULLABLE
+  FROM USER_TAB_COLUMNS
+ WHERE TABLE_NAME IN ('FIN_JURNAL_KOMPONEN', 'AIS_BKMMASTER', 'AIS_JENIS', 'ACCT_JURNAL_HDR')
+ ORDER BY TABLE_NAME, COLUMN_ID;
+PROMPT === Borongan per jenis BKM (berapa yang bukan PANEN) ===
+SELECT M.ISBORONGAN, J.JENIS, COUNT(*) AS JUMLAH_BKM
+  FROM AIS_BKMMASTER M JOIN AIS_JENIS J ON J.ID = M.JENISBKM
+ WHERE M.SIGN = 1
+ GROUP BY M.ISBORONGAN, J.JENIS
+ ORDER BY 1, 2;
+PROMPT === Contoh FIN_JURNAL_KOMPONEN (10 baris) ===
+SELECT * FROM FIN_JURNAL_KOMPONEN WHERE ROWNUM <= 10;
+PROMPT === Panjang NOMOR jurnal AIS terpanjang per jenis ===
+SELECT M.ISBORONGAN, MAX(LENGTH(M.PERIODE || '/R' || M.REMISE || CASE WHEN M.ISBORONGAN = 1 THEN '/BORONGAN/' ELSE '/HARIAN/' END || M.ESTATE || '/' || D.DIVISI)) AS PANJANG_MAKS
+  FROM AIS_BKMMASTER M JOIN MASTER_DIVISI D ON D.DIVISIID = M.DIVISI
+ WHERE M.SIGN = 1
+ GROUP BY M.ISBORONGAN;
+PROMPT === Nilai KETERANGAN/SISI komponen ===
+SELECT UPPER(TRIM(KETERANGAN)) AS KETERANGAN, SISI, COUNT(*) AS JUMLAH
+  FROM FIN_JURNAL_KOMPONEN
+ GROUP BY UPPER(TRIM(KETERANGAN)), SISI
+ ORDER BY 1, 2;
+PROMPT === Key ACCT_DEFAULT ===
+SELECT IDDATA, NAMA, KODEACC FROM ACCT_DEFAULT ORDER BY IDDATA, NAMA;
+PROMPT === Contoh NOMOR jurnal sumber AIS yang sudah tersimpan (30 terbaru) ===
+SELECT * FROM (
+  SELECT IDDATA, NOJURNAL, PERIODE, LENGTH(NOJURNAL) AS PANJANG
+    FROM ACCT_JURNAL_HDR
+   WHERE SUMBER = 'AIS'
+   ORDER BY CREATED_DATE DESC NULLS LAST
+) WHERE ROWNUM <= 30;
+PROMPT === Kolom ACCT_DEFAULT ===
+SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH, NULLABLE FROM USER_TAB_COLUMNS WHERE TABLE_NAME = 'ACCT_DEFAULT' ORDER BY COLUMN_ID;
+PROMPT === Akun yang dipilih user untuk baris komponen di jurnal AIS (per IDDATA) ===
+SELECT D.IDDATA, K.KOMPONEN, D.KODE, COUNT(*) AS JUMLAH
+  FROM ACCT_JURNAL_DTL D
+  JOIN ACCT_JURNAL_HDR H ON H.JURNALID = D.REFFID
+  JOIN (SELECT DISTINCT UPPER(TRIM(KETERANGAN)) AS KOMPONEN FROM FIN_JURNAL_KOMPONEN) K
+    ON UPPER(D.KETERANGAN) LIKE K.KOMPONEN || ' %'
+ WHERE H.SUMBER = 'AIS' AND D.KODE IS NOT NULL
+ GROUP BY D.IDDATA, K.KOMPONEN, D.KODE
+ ORDER BY 1, 2, 4 DESC;
+PROMPT === Akun komponen per divisi (jurnal AIS) ===
+SELECT D.IDDATA, K.KOMPONEN, MD.DIVISIID, D.KODE, COUNT(*) AS JUMLAH
+  FROM ACCT_JURNAL_DTL D
+  JOIN ACCT_JURNAL_HDR H ON H.JURNALID = D.REFFID
+  JOIN (SELECT DISTINCT UPPER(TRIM(KETERANGAN)) AS KOMPONEN FROM FIN_JURNAL_KOMPONEN) K
+    ON UPPER(D.KETERANGAN) LIKE K.KOMPONEN || ' %'
+  JOIN MASTER_DIVISI MD ON UPPER(D.KETERANGAN) LIKE K.KOMPONEN || ' ' || UPPER(MD.DIVISI) || ' %'
+ WHERE H.SUMBER = 'AIS' AND D.KODE IS NOT NULL
+ GROUP BY D.IDDATA, K.KOMPONEN, MD.DIVISIID, D.KODE
+ ORDER BY 1, 2, 3, 5 DESC;
+PROMPT === Pengisian ACCT_DEFAULT.ID ===
+SELECT TRIGGER_NAME, STATUS FROM USER_TRIGGERS WHERE TABLE_NAME = 'ACCT_DEFAULT';
+SELECT COLUMN_NAME, DATA_DEFAULT FROM USER_TAB_COLUMNS WHERE TABLE_NAME = 'ACCT_DEFAULT' AND COLUMN_NAME = 'ID';
+SELECT SEQUENCE_NAME FROM USER_SEQUENCES WHERE SEQUENCE_NAME LIKE '%DEFAULT%';
+SELECT MAX(ID) AS MAX_ID, COUNT(*) AS JUMLAH FROM ACCT_DEFAULT;
+PROMPT === Preview key AIS_KOMPONEN yang akan diisi migrasi 20261121_001 ===
+COLUMN NAMA FORMAT A45;
+WITH komponen AS (
+    SELECT DISTINCT UPPER(TRIM(KETERANGAN)) AS KOMPONEN FROM FIN_JURNAL_KOMPONEN WHERE TRIM(KETERANGAN) IS NOT NULL
+),
+history AS (
+    SELECT dtl.IDDATA, k.KOMPONEN, md.DIVISIID, TRIM(dtl.KODE) AS KODE
+      FROM ACCT_JURNAL_DTL dtl
+      JOIN ACCT_JURNAL_HDR hdr ON hdr.JURNALID = dtl.REFFID
+      JOIN komponen k ON UPPER(dtl.KETERANGAN) LIKE k.KOMPONEN || ' %'
+      LEFT JOIN MASTER_DIVISI md
+        ON UPPER(dtl.KETERANGAN) LIKE k.KOMPONEN || ' ' || UPPER(md.DIVISI) || ' ' || UPPER(md.ESTATEID) || ' R%'
+     WHERE hdr.SUMBER = 'AIS' AND TRIM(dtl.KODE) IS NOT NULL
+),
+company_level AS (
+    SELECT IDDATA, KOMPONEN, MIN(KODE) AS KODE FROM history GROUP BY IDDATA, KOMPONEN HAVING COUNT(DISTINCT KODE) = 1
+),
+division_level AS (
+    SELECT h.IDDATA, h.KOMPONEN, h.DIVISIID, MIN(h.KODE) AS KODE
+      FROM history h
+     WHERE h.DIVISIID IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM company_level c WHERE c.IDDATA = h.IDDATA AND c.KOMPONEN = h.KOMPONEN)
+     GROUP BY h.IDDATA, h.KOMPONEN, h.DIVISIID
+    HAVING COUNT(DISTINCT h.KODE) = 1
+),
+candidates AS (
+    SELECT IDDATA, 'AIS_KOMPONEN_' || REGEXP_REPLACE(KOMPONEN, '[^A-Z0-9]', '_') AS NAMA, KODE AS KODEACC FROM company_level
+    UNION ALL
+    SELECT IDDATA, 'AIS_KOMPONEN_' || REGEXP_REPLACE(KOMPONEN, '[^A-Z0-9]', '_') || '_' || DIVISIID, KODE FROM division_level
+)
+SELECT c.IDDATA, c.NAMA, c.KODEACC,
+       CASE WHEN EXISTS (SELECT 1 FROM ACCT_DEFAULT d WHERE d.IDDATA = c.IDDATA AND d.NAMA = c.NAMA) THEN 'SUDAH ADA'
+            WHEN NOT EXISTS (SELECT 1 FROM ACCT_COA coa WHERE coa.IDDATA = c.IDDATA AND coa.KODEACC = c.KODEACC) THEN 'SKIP: TIDAK DI COA'
+            WHEN LENGTH(c.NAMA) > 100 THEN 'SKIP: NAMA > 100'
+            ELSE 'AKAN DIISI' END AS STATUS
+  FROM candidates c
+ ORDER BY 1, 2;
+PROMPT === Nama divisi terpanjang ===
+SELECT * FROM (SELECT DIVISIID, DIVISI, LENGTH(DIVISI) AS PANJANG FROM MASTER_DIVISI ORDER BY LENGTH(DIVISI) DESC) WHERE ROWNUM <= 5;
+EXIT
+""";
+
+        SqlExecutionResult result = ExecuteSqlInline(options, sql, "ais_check");
         Console.WriteLine(result.Output.Trim());
     }
 
@@ -1658,7 +1761,8 @@ internal enum MigrationMode
     ShowSource,
     RepairMissingCoa,
     FindJurnal,
-    PksCheck
+    PksCheck,
+    AisCheck
 }
 
 internal sealed class AppOptions
@@ -1696,7 +1800,8 @@ Options:
   --config       Optional config.json path. If omitted, the executable probes common config.json locations.
   --server-key   Optional server key override for config.json resolution
   --mode         up (default), down, status, verify, checkconn, reconcilehistory, rebaselinechecksum,
-                  showcompileerrors, reconcilecoa, pkscheck (read-only: PKS companies + PKS report mappings)
+                  showcompileerrors, reconcilecoa, pkscheck (read-only: PKS companies + PKS report mappings),
+                  aischeck (read-only: AIS import table columns, sample komponen, NOMOR lengths)
   --migration-id Required for --mode rebaselinechecksum: the manifest id whose recorded checksum should be
                   updated to match the current script content (no SQL is re-executed unless --reexecute is
                   also given; use only when the script content change is a confirmed no-op on this server).
@@ -1786,7 +1891,7 @@ Default behavior:
         {
             if (!Enum.TryParse(modeArg, true, out mode))
             {
-                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors, reconcilecoa, showsource, repairmissingcoa, findjurnal, pkscheck.");
+                throw new ArgumentException($"Invalid mode '{modeArg}'. Valid: up, down, status, verify, checkconn, reconcilehistory, rebaselinechecksum, showcompileerrors, reconcilecoa, showsource, repairmissingcoa, findjurnal, pkscheck, aischeck.");
             }
         }
 
