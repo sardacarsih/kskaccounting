@@ -231,7 +231,7 @@ public sealed class AisJournalBuilderTests
     private static readonly Dictionary<string, (string Kode, string Nama)> NoDefaults = new();
 
     [Fact]
-    public void BuildForDivision_BoronganNonPanenRows_GoToBoronganJournalWithoutPph()
+    public void BuildForDivision_BoronganNonPanenRows_GoToHarianJournal()
     {
         List<AIS_JURNAL> aisRows =
         [
@@ -246,11 +246,12 @@ public sealed class AisJournalBuilderTests
         List<AIS_JURNAL_FINAL> harianRows = AisJournalBuilder.BuildForDivision(aisRows, [], harian, Context, NoDefaults);
 
         Assert.Equal(1000m, boronganRows.Single(r => r.KODE == "40.1").DEBET);
-        Assert.Equal(500m, boronganRows.Single(r => r.KODE == "40.2").DEBET);
+        Assert.DoesNotContain(boronganRows, r => r.KODE == "40.2");
         Assert.Equal(25m, boronganRows.Single(r => r.KODE == "31.00001.001").KREDIT);
         Assert.Equal(boronganRows.Sum(r => r.DEBET), boronganRows.Sum(r => r.KREDIT));
-        Assert.DoesNotContain(harianRows, r => r.KODE == "40.2");
-        Assert.Equal(300m, harianRows.Single(r => r.KODE == "33.00001.001").KREDIT);
+        Assert.Equal(500m, harianRows.Single(r => r.KODE == "40.2").DEBET);
+        Assert.Equal(800m, harianRows.Single(r => r.KODE == "33.00001.001").KREDIT);
+        Assert.Equal(harianRows.Sum(r => r.DEBET), harianRows.Sum(r => r.KREDIT));
     }
 
     [Fact]
