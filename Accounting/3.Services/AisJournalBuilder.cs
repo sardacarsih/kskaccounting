@@ -223,9 +223,9 @@ namespace Accounting.BusinessLayer
             Func<string, string, string, (string Kode, string Nama)> getAccount,
             Func<string?, (string? Kode, string? Nama)> getKomponenAccount)
         {
-            // Every borongan BKM row (panen, rawat, umum) belongs to the borongan journal; only panen gets the PPh21 gross-up.
+            // Only borongan PANEN rows; borongan rawat/umum go to the harian journal (see IsBoronganPanen).
             List<AIS_JURNAL> journalRows = aisRows
-                .Where(f => f.DIVISI == divisiId && f.ISBORONGAN == 1)
+                .Where(f => f.DIVISI == divisiId && IsBoronganPanen(f))
                 .OrderBy(f => f.JENIS)
                 .ThenBy(f => f.PEKERJAAN)
                 .ThenBy(f => f.BLOK)
@@ -240,11 +240,6 @@ namespace Accounting.BusinessLayer
                 item.KREDIT = JurnalAmountRounding.RoundJournalAmount(item.KREDIT);
                 item.PPH21 = JurnalAmountRounding.RoundJournalAmount(item.PPH21);
 
-                if (item.JENIS != "PANEN")
-                {
-                    continue;
-                }
-
                 decimal debetWithPph21 = JurnalAmountRounding.RoundJournalAmount(item.DEBETPPH / 0.975m);
                 if (item.DEBET < debetWithPph21)
                 {
@@ -254,6 +249,8 @@ namespace Accounting.BusinessLayer
                 }
             }
 
+            // shortcut: borongan komponen stay with the borongan (panen) journal; a division with borongan komponen
+            // but no panen BKM gets no /BORONGAN/ number, so those komponen are dropped. Route them to harian if that occurs.
             journalRows.AddRange(BuildKomponenRows(componentRows, divisiId, true, keteranganSuffix, periodString, getKomponenAccount));
 
             decimal totalDebet = JurnalAmountRounding.RoundJournalAmount(journalRows.Sum(f => f.DEBET));
@@ -283,7 +280,7 @@ namespace Accounting.BusinessLayer
             Func<string?, (string? Kode, string? Nama)> getKomponenAccount)
         {
             List<AIS_JURNAL> journalRows = aisRows
-                .Where(f => f.DIVISI == divisiId && f.ISBORONGAN != 1)
+                .Where(f => f.DIVISI == divisiId && !IsBoronganPanen(f))
                 .OrderBy(f => f.JENIS)
                 .ThenBy(f => f.PEKERJAAN)
                 .ThenBy(f => f.BLOK)
@@ -319,6 +316,9 @@ namespace Accounting.BusinessLayer
 
             return journalRows;
         }
+
+        // Must match the ISBORONGAN expression in JurnalimportService.GetDivisionsAsync (decides /BORONGAN/ vs /HARIAN/).
+        private static bool IsBoronganPanen(AIS_JURNAL row) => row.ISBORONGAN == 1 && row.JENIS == "PANEN";
 
         private static AIS_JURNAL CloneAisJournal(AIS_JURNAL source)
         {
