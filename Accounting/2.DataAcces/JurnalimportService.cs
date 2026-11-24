@@ -25,24 +25,28 @@ namespace Accounting._2.DataAcces
                 dbConnection.Open();
                 string query = @"
                     SELECT DISTINCT
-                        M.ISBORONGAN,
+                        -- Only borongan PANEN gets a /BORONGAN/ journal; borongan rawat/umum goes to /HARIAN/
+                        -- (must match AisJournalBuilder.IsBoronganPanen).
+                        CASE WHEN M.ISBORONGAN = 1 AND J.JENIS = 'PANEN' THEN 1 ELSE 0 END AS ISBORONGAN,
                         D.DIVISIID,
                         D.DIVISI,
                         -- DIVISIID (not ESTATE/DIVISI name) keeps the number within ACCT_JURNAL_HDR.NOJURNAL VARCHAR2(30).
                         :P_PERIODE || '/R' || :P_REMISE ||
-                        CASE WHEN M.ISBORONGAN = 1 THEN '/BORONGAN/' ELSE '/HARIAN/' END ||
+                        CASE WHEN M.ISBORONGAN = 1 AND J.JENIS = 'PANEN' THEN '/BORONGAN/' ELSE '/HARIAN/' END ||
                         D.DIVISIID AS NOMOR
-                    FROM 
+                    FROM
                         AIS_BKMMASTER M
-                    JOIN 
+                    JOIN
                         MASTER_DIVISI D ON D.DIVISIID = M.DIVISI
-                    WHERE 
-                        M.SIGN = 1 
-                        AND M.PERIODE = :P_PERIODE 
-                        AND M.REMISE = :P_REMISE 
-                        AND M.IDDATA = :P_IDDATA 
-                        AND M.ESTATE = :P_ESTATE 
-                    ORDER BY D.DIVISI, M.ISBORONGAN";
+                    JOIN
+                        AIS_JENIS J ON J.ID = M.JENISBKM
+                    WHERE
+                        M.SIGN = 1
+                        AND M.PERIODE = :P_PERIODE
+                        AND M.REMISE = :P_REMISE
+                        AND M.IDDATA = :P_IDDATA
+                        AND M.ESTATE = :P_ESTATE
+                    ORDER BY D.DIVISI, ISBORONGAN";
 
                 var parameters = new
                 {
